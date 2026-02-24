@@ -27,11 +27,15 @@ jobs:
       - name: Build with Maven
         run: mvn clean install
 
+      - name: Rename executable JAR to app.jar
+        run: |
+          find target/ -maxdepth 1 -name "*.jar" ! -name "*-plain.jar" -exec mv {} target/app.jar \;
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/target/*.jar'
+          path: '${{ github.workspace }}/target/app.jar'
 
   deploy:
     runs-on: ubuntu-latest
@@ -45,7 +49,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: java-app
-      
+       
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -59,5 +63,4 @@ jobs:
         with:
           app-name: 'vtuber-fanhub'
           slot-name: 'Production'
-          package: '*.jar'
-          
+          package: 'app.jar'
