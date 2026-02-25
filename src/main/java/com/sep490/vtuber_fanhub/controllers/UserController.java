@@ -23,8 +23,6 @@ public class UserController {
 
     private final OtpService otpService;
 
-    private final VTuberApplicationService vtuberApplicationService;
-
     @PostMapping("/verify")
     public ResponseEntity<?> verify(@RequestParam("email") String email){
         String otp = otpService.generateOtp(email);
@@ -55,13 +53,5 @@ public class UserController {
         );
     }
 
-    @PostMapping("/register-vtuber")
-    public ResponseEntity<?> registerVTuber(@RequestBody @Valid CreateVTuberApplication request) {
-        return ResponseEntity.ok().body(APIResponse.<String>builder()
-                .success(true)
-                .message("Success")
-                .data(vtuberApplicationService.createVTuberApplication(request))
-                .build()
-        );
-    }
+
 }
