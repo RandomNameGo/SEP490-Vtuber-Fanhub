@@ -39,4 +39,14 @@ public class AuthController {
                 .build()
         );
     }
+
+    @PostMapping("/system-account-login")
+    public ResponseEntity<?> systemAccountLogin(@RequestParam("username") String username, @RequestParam("password") String password) {
+        return ResponseEntity.ok().body(APIResponse.<LoginResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(authService.SystemAccountLogin(username, password))
+                .build()
+        );
+    }
 }

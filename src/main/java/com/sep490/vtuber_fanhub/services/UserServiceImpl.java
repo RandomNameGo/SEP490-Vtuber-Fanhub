@@ -6,6 +6,7 @@ import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
@@ -18,6 +19,7 @@ public class UserServiceImpl implements UserService{
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public String createUser(CreateUserRequest createUserRequest) {
 
         if(userRepository.existsByUsername(createUserRequest.getUsername())){

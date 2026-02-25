@@ -1,10 +1,12 @@
 package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
+import com.sep490.vtuber_fanhub.dto.requests.CreateVTuberApplication;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.services.EmailService;
 import com.sep490.vtuber_fanhub.services.OtpService;
 import com.sep490.vtuber_fanhub.services.UserService;
+import com.sep490.vtuber_fanhub.services.VTuberApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,8 @@ public class UserController {
     private final EmailService emailService;
 
     private final OtpService otpService;
+
+    private final VTuberApplicationService vtuberApplicationService;
 
     @PostMapping("/verify")
     public ResponseEntity<?> verify(@RequestParam("email") String email){
@@ -47,6 +51,16 @@ public class UserController {
                 .success(true)
                 .message("Fail")
                 .data("Can not register user")
+                .build()
+        );
+    }
+
+    @PostMapping("/register-vtuber")
+    public ResponseEntity<?> registerVTuber(@RequestBody @Valid CreateVTuberApplication request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(vtuberApplicationService.createVTuberApplication(request))
                 .build()
         );
     }

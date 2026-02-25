@@ -2,7 +2,9 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.responses.LoginResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
+import com.sep490.vtuber_fanhub.models.SystemAccount;
 import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.repositories.SystemAccountRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final RefreshTokenService refreshTokenService;
 
+    private final SystemAccountRepository systemAccountRepository;
+
     @Override
     public LoginResponse login(String username, String password) {
         Optional<User> user = userRepository.findByUsernameAndIsActive(username);
@@ -40,6 +44,27 @@ public class AuthServiceImpl implements AuthService {
         } else {
             throw new CustomAuthenticationException("Invalid username or password");
         }
+    }
+
+    @Override
+    public LoginResponse SystemAccountLogin(String username, String password) {
+
+        Optional<SystemAccount> systemAccount = systemAccountRepository.findByUsername(username);
+
+        if (systemAccount.isEmpty()) {
+            throw new CustomAuthenticationException("Invalid username or password");
+        }
+
+        if(passwordEncoder.matches(password, systemAccount.get().getPasswordHash())){
+            LoginResponse loginResponse = new LoginResponse();
+            loginResponse.setId(systemAccount.get().getId());
+            loginResponse.setUsername(systemAccount.get().getUsername());
+            loginResponse.setToken(jwtService.generateTokenSystemAccount(systemAccount.get()));
+            return loginResponse;
+        } else {
+            throw new CustomAuthenticationException("Invalid username or password");
+        }
+
     }
 
 
