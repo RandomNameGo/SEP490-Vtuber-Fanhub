@@ -1,16 +1,17 @@
 package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
-import com.sep490.vtuber_fanhub.dto.requests.CreateVTuberApplication;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.services.EmailService;
 import com.sep490.vtuber_fanhub.services.OtpService;
 import com.sep490.vtuber_fanhub.services.UserService;
-import com.sep490.vtuber_fanhub.services.VTuberApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("vhub/api/v1/user")
@@ -53,5 +54,15 @@ public class UserController {
         );
     }
 
+    @PostMapping("/upload-avatar-frame")
+    public ResponseEntity<?> uploadAvatarFrame(@RequestParam(value = "avatar", required = false) MultipartFile avatarFile,
+                                               @RequestParam(value = "frame", required = false) MultipartFile frameFile) throws IOException {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(userService.uploadAvatarFrame(avatarFile, frameFile))
+                .build()
+        );
+    }
 
 }

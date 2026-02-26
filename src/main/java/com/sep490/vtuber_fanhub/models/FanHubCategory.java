@@ -10,6 +10,7 @@ import lombok.Setter;
 @Table(name = "fan_hub_category")
 public class FanHubCategory {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "hub_category_id", nullable = false)
     private Long id;
 

@@ -2,9 +2,11 @@ package com.sep490.vtuber_fanhub.services;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jdk.jfr.Enabled;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,6 +15,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Async
     public void sendOtpEmail(String to, String otp) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
