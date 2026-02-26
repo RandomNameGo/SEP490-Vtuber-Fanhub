@@ -28,13 +28,12 @@ public class FanHubController {
         );
     }
 
-    @PostMapping("/{fanHubId}/upload-images")
+    @PostMapping("/upload-images/{fanHubId}")
     @PreAuthorize("hasRole('VTUBER')")
-    public ResponseEntity<?> uploadFanHubBannerBackgroundAvatar(
-            @PathVariable Long fanHubId,
-            @RequestParam(value = "banner", required = false) MultipartFile banner,
-            @RequestParam(value = "background", required = false) MultipartFile background,
-            @RequestParam(value = "avatar", required = false) MultipartFile avatar) throws Exception {
+    public ResponseEntity<?> uploadFanHubBannerBackgroundAvatar(@PathVariable Long fanHubId,
+                                                                @RequestParam(value = "banner", required = false) MultipartFile banner,
+                                                                @RequestParam(value = "background", required = false) MultipartFile background,
+                                                                @RequestParam(value = "avatar", required = false) MultipartFile avatar) throws Exception {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")

@@ -2,7 +2,6 @@ package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateSystemAccountRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
-import com.sep490.vtuber_fanhub.dto.responses.LoginResponse;
 import com.sep490.vtuber_fanhub.services.SystemAccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
