@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -93,7 +94,7 @@ public class FanHubServiceImpl implements FanHubService {
         }
 
         if (!fanHub.get().getOwnerUser().getId().equals(tokenUser.get().getId())) {
-            throw new CustomAuthenticationException("Authentication failed");
+            throw new AccessDeniedException("Access denied");
         }
 
         if (banner != null && !banner.isEmpty()) {

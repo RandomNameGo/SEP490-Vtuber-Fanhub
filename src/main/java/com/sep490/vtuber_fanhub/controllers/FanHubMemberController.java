@@ -44,7 +44,7 @@ public class FanHubMemberController {
     }
 
     @GetMapping("/pending-members/{fanHubId}")
-    @PreAuthorize("hasRole('VTUBER')")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> getPendingFanHubMembers(
             @PathVariable long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
@@ -57,4 +57,16 @@ public class FanHubMemberController {
                 .build()
         );
     }
+
+    @PostMapping("/set-moderator/{fanHubId}")
+    @PreAuthorize("hasRole('VTUBER')")
+    public ResponseEntity<?> setModerator(@PathVariable long fanHubId, @RequestParam List<Long> memberIds) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.addModerator(fanHubId, memberIds))
+                .build()
+        );
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
@@ -61,6 +62,7 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
+    @Transactional
     public String uploadAvatarFrame(MultipartFile avatarFile, MultipartFile frameFile) throws IOException {
 
         String token = jwtService.getCurrentToken(httpServletRequest);
@@ -82,5 +84,46 @@ public class UserServiceImpl implements UserService{
         }
 
         return "Uploaded successfully";
+    }
+
+    @Override
+    @Transactional
+    public String updateUser(UpdateUserRequest updateUserRequest) {
+
+        String token = jwtService.getCurrentToken(httpServletRequest);
+
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        User user = tokenUser.get();
+
+        if (updateUserRequest.getEmail() != null && !updateUserRequest.getEmail().isEmpty()) {
+            if (!user.getEmail().equals(updateUserRequest.getEmail()) && userRepository.existsByEmail(updateUserRequest.getEmail())) {
+                return "Email is already in use";
+            }
+            user.setEmail(updateUserRequest.getEmail());
+        }
+
+        if (updateUserRequest.getDisplayName() != null) {
+            user.setDisplayName(updateUserRequest.getDisplayName());
+        }
+
+        if (updateUserRequest.getTranslateLanguage() != null) {
+            user.setTranslateLanguage(updateUserRequest.getTranslateLanguage());
+        }
+
+        if (updateUserRequest.getBio() != null) {
+            user.setBio(updateUserRequest.getBio());
+        }
+
+        user.setUpdatedAt(Instant.now());
+
+        userRepository.save(user);
+
+        return "Updated user successfully";
     }
 }

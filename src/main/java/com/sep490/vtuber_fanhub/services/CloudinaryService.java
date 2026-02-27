@@ -29,4 +29,19 @@ public class CloudinaryService {
         );
         return uploadResult.get("secure_url").toString();
     }
+
+    public String uploadImage(MultipartFile file, boolean resize, int width, int height) throws IOException {
+        Map<String, Object> options = ObjectUtils.emptyMap();
+        if (resize) {
+            options = ObjectUtils.asMap(
+                    "transformation", ObjectUtils.asMap(
+                            "width", width,
+                            "height", height,
+                            "crop", "limit"
+                    )
+            );
+        }
+        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), options);
+        return uploadResult.get("secure_url").toString();
+    }
 }

@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,7 +58,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         Optional<FanHubMember> existingMember = fanHubMemberRepository.findByHubIdAndUserId(
                 fanHubId, tokenUser.get().getId());
         if (existingMember.isPresent()) {
-            throw new CustomAuthenticationException("User is already a member of this FanHub");
+            return "User is already a member of this FanHub";
         }
 
         FanHubMember member = new FanHubMember();
@@ -105,7 +106,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
                 .orElse(false);
 
         if (!isOwner && !isModerator) {
-            throw new CustomAuthenticationException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
@@ -146,7 +147,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
                 .orElse(false);
 
         if (!isOwner && !isModerator) {
-            throw new CustomAuthenticationException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
@@ -160,6 +161,43 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         }
 
         return List.of();
+    }
+
+    @Override
+    @Transactional
+    public String addModerator(long fanHubId, List<Long> fanHubMemberIds) {
+
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(tokenUser.get().getId());
+
+        if (!isOwner) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        for (Long fanHubMemberId : fanHubMemberIds) {
+            Optional<FanHubMember> member = fanHubMemberRepository.findById(fanHubMemberId);
+            if (member.isPresent()) {
+                member.get().setRoleInHub("MODERATOR");
+                fanHubMemberRepository.save(member.get());
+            } else {
+                throw new NotFoundException("Member not found");
+            }
+        }
+
+        return "Set moderator successfully";
     }
 
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {

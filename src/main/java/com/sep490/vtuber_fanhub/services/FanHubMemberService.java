@@ -11,4 +11,6 @@ public interface FanHubMemberService {
     List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy);
 
     List<FanHubMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy);
+
+    String addModerator(long fanHubId, List<Long> fanHubMemberIds);
 }
