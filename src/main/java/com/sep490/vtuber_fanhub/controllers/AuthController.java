@@ -1,12 +1,15 @@
 package com.sep490.vtuber_fanhub.controllers;
 
+import com.sep490.vtuber_fanhub.dto.requests.LoginRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.LoginResponse;
 import com.sep490.vtuber_fanhub.services.AuthService;
 import com.sep490.vtuber_fanhub.services.RefreshTokenService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,11 +24,11 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam("username") String username, @RequestParam("password") String password) {
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
         return ResponseEntity.ok().body(APIResponse.<LoginResponse>builder()
                 .success(true)
                 .message("Success")
-                .data(authService.login(username, password))
+                .data(authService.login(request.getUsername(), request.getPassword()))
                 .build()
         );
     }
@@ -41,11 +44,11 @@ public class AuthController {
     }
 
     @PostMapping("/system-account-login")
-    public ResponseEntity<?> systemAccountLogin(@RequestParam("username") String username, @RequestParam("password") String password) {
+    public ResponseEntity<?> systemAccountLogin(@RequestBody @Valid LoginRequest request) {
         return ResponseEntity.ok().body(APIResponse.<LoginResponse>builder()
                 .success(true)
                 .message("Success")
-                .data(authService.SystemAccountLogin(username, password))
+                .data(authService.SystemAccountLogin(request.getUsername(), request.getPassword()))
                 .build()
         );
     }

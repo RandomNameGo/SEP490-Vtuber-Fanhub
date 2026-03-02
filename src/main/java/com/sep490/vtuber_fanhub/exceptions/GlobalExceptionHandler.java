@@ -71,4 +71,14 @@ public class GlobalExceptionHandler {
                 .build());
     }
 
+    @ExceptionHandler(RateLimitException.class)
+    public ResponseEntity<APIResponse<String>> handleRateLimitException(RateLimitException e) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(APIResponse.<String>builder()
+                .success(false)
+                .message("Too Many Requests")
+                .data(e.getMessage())
+                .error("429")
+                .build());
+    }
+
 }

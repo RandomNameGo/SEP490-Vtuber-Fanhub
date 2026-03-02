@@ -44,7 +44,7 @@ public class VTuberApplicationController {
         );
     }
 
-    @PostMapping("/review-application")
+    @PutMapping("/review-application")
     @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
     public ResponseEntity<?> reviewVTuber(@RequestParam long vTuberApplicationId,
                                           @RequestParam String status,

@@ -69,4 +69,17 @@ public class FanHubMemberController {
         );
     }
 
+    @PutMapping("/review")
+    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    public ResponseEntity<?> reviewFanHubMember(
+            @RequestParam long fanHubMemberId,
+            @RequestParam String status) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.reviewFanHubMember(fanHubMemberId, status))
+                .build()
+        );
+    }
+
 }

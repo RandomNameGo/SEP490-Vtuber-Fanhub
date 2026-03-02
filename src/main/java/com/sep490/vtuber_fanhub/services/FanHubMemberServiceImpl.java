@@ -200,6 +200,61 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         return "Set moderator successfully";
     }
 
+    @Override
+    @Transactional
+    public String reviewFanHubMember(long fanHubMemberId, String status) {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        Optional<FanHubMember> member = fanHubMemberRepository.findById(fanHubMemberId);
+        if (member.isEmpty()) {
+            throw new NotFoundException("FanHub member not found");
+        }
+
+        // Validate status parameter
+        String normalizedStatus = status.toUpperCase();
+        if (!List.of("APPROVED", "REJECTED").contains(normalizedStatus)) {
+            throw new IllegalArgumentException("Invalid status. Must be APPROVED or REJECTED");
+        }
+
+        Long fanHubId = member.get().getHub().getId();
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(tokenUser.get().getId()))
+                        .orElse(false);
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
+                .map(m -> "MODERATOR".equals(m.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can review membership requests");
+        }
+
+        // Check if member is in PENDING status
+        if (!"PENDING".equals(member.get().getStatus())) {
+            throw new IllegalArgumentException("Member request is not pending");
+        }
+
+        if ("APPROVED".equals(normalizedStatus)) {
+            member.get().setStatus("JOINED");
+            member.get().setRoleInHub("MEMBER");
+        } else {
+            member.get().setStatus("REJECTED");
+        }
+        fanHubMemberRepository.save(member.get());
+
+        return "Membership request " + normalizedStatus.toLowerCase() + " successfully";
+    }
+
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {
         FanHubMemberResponse response = new FanHubMemberResponse();
 

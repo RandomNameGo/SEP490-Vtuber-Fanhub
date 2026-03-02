@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
+import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
@@ -17,6 +18,10 @@ import com.sep490.vtuber_fanhub.repositories.PostRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +29,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -118,7 +125,7 @@ public class PostServiceImpl implements PostService {
             if ("IMAGE".equals(postType) && images != null) {
                 for (MultipartFile image : images) {
                     // Resize images if they are large (max 1920x1080)
-                    String imageUrl = cloudinaryService.uploadImage(image, true, 1920, 1080);
+                    String imageUrl = cloudinaryService.uploadFile(image);
                     PostMedia postMedia = new PostMedia();
                     postMedia.setPost(post);
                     postMedia.setMediaUrl(imageUrl);
@@ -148,5 +155,176 @@ public class PostServiceImpl implements PostService {
         }
 
         return "Created post successfully";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(tokenUser.get().getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view pending posts");
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts = postRepository.findByHubIdAndStatus(fanHubId, "PENDING", paging);
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag) {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is a member of the FanHub
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                fanHubId, tokenUser.get().getId());
+        if (member.isEmpty()) {
+            // If fanHub is public, allow viewing posts
+            if (!fanHub.get().getIsPrivate()) {
+                // Continue - public fanHub, non-member can view approved posts
+            } else {
+                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
+            }
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts;
+        if (postHashtag != null && !postHashtag.isEmpty()) {
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtag(fanHubId, "APPROVED", postHashtag, paging);
+        } else {
+            pagedPosts = postRepository.findByHubIdAndStatus(fanHubId, "APPROVED", paging);
+        }
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public String reviewPost(Long postId, String status) {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        // Validate status parameter
+        String normalizedStatus = status.toUpperCase();
+        if (!List.of("APPROVED", "REJECTED").contains(normalizedStatus)) {
+            throw new IllegalArgumentException("Invalid status. Must be APPROVED or REJECTED");
+        }
+
+        Long fanHubId = post.get().getHub().getId();
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(tokenUser.get().getId()))
+                        .orElse(false);
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can review posts");
+        }
+
+        // Update post status
+        post.get().setStatus(normalizedStatus);
+        post.get().setUpdatedAt(Instant.now());
+        postRepository.save(post.get());
+
+        return "Post " + normalizedStatus.toLowerCase() + " successfully";
+    }
+
+    private PostResponse mapToPostResponse(Post post) {
+        PostResponse response = new PostResponse();
+        response.setPostId(post.getId());
+        response.setFanHubId(post.getHub().getId());
+        response.setFanHubName(post.getHub().getHubName());
+        response.setAuthorId(post.getUser().getId());
+        response.setAuthorUsername(post.getUser().getUsername());
+        response.setAuthorDisplayName(post.getUser().getDisplayName());
+        response.setAuthorAvatarUrl(post.getUser().getAvatarUrl());
+        response.setPostType(post.getPostType());
+        response.setTitle(post.getTitle());
+        response.setContent(post.getContent());
+        response.setStatus(post.getStatus());
+        response.setIsPinned(post.getIsPinned());
+        response.setCreatedAt(post.getCreatedAt());
+        response.setUpdatedAt(post.getUpdatedAt());
+
+        // Get media URLs
+        List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
+        List<String> mediaUrls = new ArrayList<>();
+        for (PostMedia media : mediaList) {
+            mediaUrls.add(media.getMediaUrl());
+        }
+        response.setMediaUrls(mediaUrls);
+
+        // Get hashtags
+        List<PostHashtag> hashtagList = postHashtagRepository.findByPostId(post.getId());
+        List<String> hashtags = new ArrayList<>();
+        for (PostHashtag hashtag : hashtagList) {
+            hashtags.add(hashtag.getHashtag());
+        }
+        response.setHashtags(hashtags);
+
+        return response;
     }
 }
