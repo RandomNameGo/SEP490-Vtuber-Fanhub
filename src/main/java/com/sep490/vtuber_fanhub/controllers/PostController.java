@@ -77,4 +77,16 @@ public class PostController {
                 .build()
         );
     }
+
+    @GetMapping("/review")
+    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    public ResponseEntity<?> reviewPost(
+            @RequestParam Long postId) {
+
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("nigga")
+                .build()
+        );
+    }
 }

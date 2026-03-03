@@ -4,12 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
-import com.sep490.vtuber_fanhub.models.FanHub;
-import com.sep490.vtuber_fanhub.models.FanHubMember;
-import com.sep490.vtuber_fanhub.models.Post;
-import com.sep490.vtuber_fanhub.models.PostHashtag;
-import com.sep490.vtuber_fanhub.models.PostMedia;
-import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import com.sep490.vtuber_fanhub.repositories.PostHashtagRepository;
@@ -120,7 +115,6 @@ public class PostServiceImpl implements PostService {
 
         postRepository.save(post);
 
-        // Upload media if needed
         try {
             if ("IMAGE".equals(postType) && images != null) {
                 for (MultipartFile image : images) {
@@ -290,6 +284,11 @@ public class PostServiceImpl implements PostService {
         postRepository.save(post.get());
 
         return "Post " + normalizedStatus.toLowerCase() + " successfully";
+    }
+
+    @Override
+    public Boolean AIValidate(Long postId) {
+        return null;
     }
 
     private PostResponse mapToPostResponse(Post post) {

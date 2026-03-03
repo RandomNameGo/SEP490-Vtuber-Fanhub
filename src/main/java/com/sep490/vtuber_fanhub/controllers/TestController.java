@@ -32,7 +32,7 @@ public class TestController {
                 APIResponse.<String>builder()
                         .message("nice")
                         .success(true)
-                        .data(sightEngineService.checkImage(file))
+                        .data(sightEngineService.checkImage(file).toString())
                         .build()
         );
     }

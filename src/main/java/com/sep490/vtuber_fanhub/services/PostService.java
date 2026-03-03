@@ -15,4 +15,6 @@ public interface PostService {
     List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag);
 
     String reviewPost(Long postId, String status);
+
+    Boolean AIValidate(Long postId);
 }

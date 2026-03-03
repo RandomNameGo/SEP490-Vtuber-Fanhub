@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -29,7 +30,7 @@ public class SightEngineServiceImpl implements SightEngineService{
     private String apiSecret;
 
     @Override
-    public String checkImage(MultipartFile file) {
+    public JsonNode checkImage(MultipartFile file) {
         String apiUrl = "https://api.sightengine.com/1.0/check-workflow.json";
 
         RestTemplate restTemplate = new RestTemplate();
@@ -50,7 +51,7 @@ public class SightEngineServiceImpl implements SightEngineService{
             });
 
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-            ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, requestEntity, String.class);
+            ResponseEntity<JsonNode> response = restTemplate.postForEntity(apiUrl, requestEntity, JsonNode.class);
             return response.getBody();
 
         } catch (IOException e) {
