@@ -66,7 +66,7 @@ public class PostController {
     }
 
     @PutMapping("/review")
-    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> reviewPost(
             @RequestParam Long postId,
             @RequestParam String status) {
@@ -86,6 +86,16 @@ public class PostController {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("nigga")
+    @GetMapping("/feed")
+    public ResponseEntity<?> getPersonalizedFeed(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getPersonalizedFeed(pageNo, pageSize, sortBy))
                 .build()
         );
     }
