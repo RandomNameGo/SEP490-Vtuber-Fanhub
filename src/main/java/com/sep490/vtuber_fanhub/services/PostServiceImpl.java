@@ -305,6 +305,8 @@ public class PostServiceImpl implements PostService {
     @Override
     public Boolean AIValidate(Long postId) {
         return null;
+    }
+
     public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy) {
         // Get current user from token (same pattern as other methods)
         String token = jwtService.getCurrentToken(httpServletRequest);
