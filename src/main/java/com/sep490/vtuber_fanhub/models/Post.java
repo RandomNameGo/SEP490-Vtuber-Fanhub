@@ -1,6 +1,8 @@
 package com.sep490.vtuber_fanhub.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -17,10 +19,12 @@ public class Post {
     @Column(name = "post_id", nullable = false)
     private Long id;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "hub_id", nullable = false)
     private FanHub hub;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -29,6 +33,7 @@ public class Post {
     @Column(name = "post_type")
     private String postType;
 
+    @Size(max = 255)
     @Column(name = "title")
     private String title;
 
@@ -50,5 +55,9 @@ public class Post {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @Lob
+    @Column(name = "ai_validation_comment")
+    private String aiValidationComment;
 
 }

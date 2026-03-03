@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
+import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.FanHubCategory;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
@@ -131,7 +132,6 @@ public class PostServiceImpl implements PostService {
 
         postRepository.save(post);
 
-        // Upload media if needed
         try {
             if ("IMAGE".equals(postType)) {
                 for (MultipartFile image : images) {
@@ -303,6 +303,8 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public Boolean AIValidate(Long postId) {
+        return null;
     public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy) {
         // Get current user from token (same pattern as other methods)
         String token = jwtService.getCurrentToken(httpServletRequest);
