@@ -5,11 +5,13 @@ import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
+import com.sep490.vtuber_fanhub.models.FanHubCategory;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.PostHashtag;
 import com.sep490.vtuber_fanhub.models.PostMedia;
 import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.repositories.FanHubCategoryRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import com.sep490.vtuber_fanhub.repositories.PostHashtagRepository;
@@ -30,8 +32,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +60,12 @@ public class PostServiceImpl implements PostService {
     private final HttpServletRequest httpServletRequest;
 
     private final CloudinaryService cloudinaryService;
+
+    private final FanHubCategoryRepository fanHubCategoryRepository;
+
+    // Ratio constants: 70% from followed hubs, 30% suggestions
+    private static final double FOLLOWED_RATIO = 0.7;
+    private static final double SUGGESTION_RATIO = 0.3;
 
     @Override
     @Transactional
@@ -122,9 +133,8 @@ public class PostServiceImpl implements PostService {
 
         // Upload media if needed
         try {
-            if ("IMAGE".equals(postType) && images != null) {
+            if ("IMAGE".equals(postType)) {
                 for (MultipartFile image : images) {
-                    // Resize images if they are large (max 1920x1080)
                     String imageUrl = cloudinaryService.uploadFile(image);
                     PostMedia postMedia = new PostMedia();
                     postMedia.setPost(post);
@@ -133,7 +143,7 @@ public class PostServiceImpl implements PostService {
                 }
             }
 
-            if ("VIDEO".equals(postType) && video != null) {
+            if ("VIDEO".equals(postType)) {
                 String videoUrl = cloudinaryService.uploadVideo(video);
                 PostMedia postMedia = new PostMedia();
                 postMedia.setPost(post);
@@ -290,6 +300,151 @@ public class PostServiceImpl implements PostService {
         postRepository.save(post.get());
 
         return "Post " + normalizedStatus.toLowerCase() + " successfully";
+    }
+
+    @Override
+    public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy) {
+        // Get current user from token (same pattern as other methods)
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername;
+        Optional<User> tokenUser = Optional.empty();
+        
+        if (token != null) {
+            try {
+                tokenUsername = jwtService.getUsernameFromToken(token);
+                tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+            } catch (Exception e) {
+                // Token is invalid or expired, treat as unauthenticated
+                tokenUser = Optional.empty();
+            }
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        // Case 1: Unauthenticated user - return public posts sorted by interactions
+        if (tokenUser.isEmpty()) {
+            Page<Post> publicPosts = postRepository.findPublicPostsOrderByInteractions(paging);
+            if (publicPosts.isEmpty()) {
+                return List.of();
+            }
+            return publicPosts.getContent().stream()
+                    .map(this::mapToPostResponse)
+                    .collect(Collectors.toList());
+        }
+
+        // Case 2: Authenticated user - get personalized feed with 70/30 ratio
+        User user = tokenUser.get();
+        Long userId = user.getId();
+
+        // Get all Fan Hubs the user has joined
+        List<FanHubMember> userMemberships = fanHubMemberRepository.findAllByUserId(userId);
+        List<Long> followedHubIds = userMemberships.stream()
+                .map(member -> member.getHub().getId())
+                .collect(Collectors.toList());
+
+        // If user hasn't joined any hubs, return public posts as suggestions
+        if (followedHubIds.isEmpty()) {
+            Page<Post> publicPosts = postRepository.findPublicPosts(Collections.emptyList(), paging);
+            if (publicPosts.isEmpty()) {
+                return List.of();
+            }
+            return publicPosts.getContent().stream()
+                    .map(this::mapToPostResponse)
+                    .collect(Collectors.toList());
+        }
+
+        // Calculate the number of posts for each category (70/30 split)
+        int followedPostsCount = (int) Math.ceil(pageSize * FOLLOWED_RATIO);
+        int suggestionPostsCount = pageSize - followedPostsCount;
+
+        // Fetch posts from followed hubs (70%)
+        Pageable followedPageable = PageRequest.of(0, followedPostsCount * 2, Sort.by(Sort.Direction.DESC, sortBy));
+        List<Post> followedPosts = postRepository.findByHubIdInAndStatusApproved(followedHubIds, followedPageable)
+                .getContent();
+
+        // Get categories from user's followed hubs for smart suggestions
+        List<String> followedCategories = postRepository.findCategoriesByHubIds(followedHubIds);
+
+        // Fetch suggestion posts (30%)
+        List<Post> suggestionPosts;
+        if (followedCategories.isEmpty()) {
+            // No categories found, get any public posts
+            Pageable suggestionPageable = PageRequest.of(0, suggestionPostsCount * 2, Sort.by(Sort.Direction.DESC, sortBy));
+            suggestionPosts = postRepository.findPublicPosts(followedHubIds, suggestionPageable).getContent();
+        } else {
+            // Get posts from public hubs with similar categories
+            Pageable suggestionPageable = PageRequest.of(0, suggestionPostsCount * 2, Sort.by(Sort.Direction.DESC, sortBy));
+            suggestionPosts = postRepository.findPublicPostsByCategories(followedHubIds, followedCategories, suggestionPageable)
+                    .getContent();
+        }
+
+        // Merge posts maintaining 70/30 ratio with interleaving
+        List<Post> mergedPosts = mergePostsByRatio(followedPosts, suggestionPosts, followedPostsCount, suggestionPostsCount);
+
+        // Apply pagination to merged results
+        int startIndex = pageNo * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, mergedPosts.size());
+
+        if (startIndex >= mergedPosts.size()) {
+            return List.of();
+        }
+
+        return mergedPosts.subList(startIndex, endIndex).stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
+
+
+    //Merge followed posts and suggestion posts maintaining the 70/30 ratio.
+    private List<Post> mergePostsByRatio(List<Post> followedPosts,
+                                          List<Post> suggestionPosts,
+                                          int followedCount,
+                                          int suggestionCount) {
+        List<Post> merged = new ArrayList<>();
+
+        // Limit posts to desired counts
+        List<Post> limitedFollowed = followedPosts.stream()
+                .limit(followedCount)
+                .toList();
+
+        List<Post> limitedSuggestions = suggestionPosts.stream()
+                .limit(suggestionCount)
+                .toList();
+
+        // Remove duplicates based on post ID
+        Set<Long> seenPostIds = new HashSet<>();
+
+        // Interleave posts: show 3 followed posts, then 1 suggestion
+        // Mimic natural distribution rather than blocking
+        int followedIndex = 0;
+        int suggestionIndex = 0;
+        int followedInCurrentBatch = 0;
+        final int BATCH_SIZE = 3;
+
+        while (followedIndex < limitedFollowed.size() || suggestionIndex < limitedSuggestions.size()) {
+            // Add followed posts in batches
+            while (followedInCurrentBatch < BATCH_SIZE && followedIndex < limitedFollowed.size()) {
+                Post post = limitedFollowed.get(followedIndex);
+                if (seenPostIds.add(post.getId())) {
+                    merged.add(post);
+                }
+                followedIndex++;
+                followedInCurrentBatch++;
+            }
+
+            // Add one suggestion post
+            if (suggestionIndex < limitedSuggestions.size()) {
+                Post post = limitedSuggestions.get(suggestionIndex);
+                if (seenPostIds.add(post.getId())) {
+                    merged.add(post);
+                }
+                suggestionIndex++;
+            }
+
+            followedInCurrentBatch = 0;
+        }
+
+        return merged;
     }
 
     private PostResponse mapToPostResponse(Post post) {
