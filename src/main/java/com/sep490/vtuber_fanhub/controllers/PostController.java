@@ -85,7 +85,10 @@ public class PostController {
 
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
-                .message("nigga")
+                .message("hello")
+                .build()
+        );
+    }
     @GetMapping("/feed")
     public ResponseEntity<?> getPersonalizedFeed(
             @RequestParam(defaultValue = "0") int pageNo,
