@@ -57,6 +57,10 @@ public class Post {
     private Instant updatedAt;
 
     @Lob
+    @Column(name = "ai_validation_status")
+    private String aiValidationStatus;
+
+    @Lob
     @Column(name = "ai_validation_comment")
     private String aiValidationComment;
 

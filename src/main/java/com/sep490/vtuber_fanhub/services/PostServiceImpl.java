@@ -51,6 +51,8 @@ public class PostServiceImpl implements PostService {
 
     private final CloudinaryService cloudinaryService;
 
+    private final PostValidationService postValidationService;
+
     @Override
     @Transactional
     public String createPost(CreatePostRequest request, List<MultipartFile> images, MultipartFile video) {
@@ -113,7 +115,7 @@ public class PostServiceImpl implements PostService {
         post.setCreatedAt(Instant.now());
         post.setUpdatedAt(Instant.now());
 
-        postRepository.save(post);
+        post = postRepository.save(post);
 
         try {
             if ("IMAGE".equals(postType) && images != null) {
@@ -147,6 +149,8 @@ public class PostServiceImpl implements PostService {
                 postHashtagRepository.save(postHashtag);
             }
         }
+
+        postValidationService.validatePost(post);
 
         return "Created post successfully";
     }

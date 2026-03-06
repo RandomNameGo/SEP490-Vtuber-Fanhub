@@ -4,5 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface SightEngineService {
-    JsonNode checkImage(MultipartFile file);
+    JsonNode checkMediaFile(MultipartFile file);
+    JsonNode checkMediaUrl(String url);
 }

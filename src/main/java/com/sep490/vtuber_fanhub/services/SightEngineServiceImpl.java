@@ -30,7 +30,7 @@ public class SightEngineServiceImpl implements SightEngineService{
     private String apiSecret;
 
     @Override
-    public JsonNode checkImage(MultipartFile file) {
+    public JsonNode checkMediaFile(MultipartFile file) {
         String apiUrl = "https://api.sightengine.com/1.0/check-workflow.json";
 
         RestTemplate restTemplate = new RestTemplate();
@@ -56,6 +56,33 @@ public class SightEngineServiceImpl implements SightEngineService{
 
         } catch (IOException e) {
             throw new RuntimeException("Error processing image upload", e);
+        }
+    }
+
+    @Override
+    public JsonNode checkMediaUrl(String url) {
+        String apiUrl = "https://api.sightengine.com/1.0/check-workflow.json";
+
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("workflow", workflowId);
+            body.add("api_user", apiUser);
+            body.add("api_secret", apiSecret);
+
+            body.add("url", url);
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            ResponseEntity<JsonNode> response = restTemplate.postForEntity(apiUrl, requestEntity, JsonNode.class);
+            return response.getBody();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+            throw new RuntimeException("Error processing image url upload", e);
         }
     }
 
