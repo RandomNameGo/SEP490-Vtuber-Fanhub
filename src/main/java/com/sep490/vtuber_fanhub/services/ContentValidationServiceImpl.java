@@ -71,7 +71,28 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             Example: This image is safe@AI_SAFE
             Example: this image is not safe. based on data received, this image is gore-y.@AI_UNSAFE
             
-            Text: "%s"
+            SightEngine Result: "%s"
+            
+            """, mediaValidationResult.toString());
+        return groqAIService.sendPrompt(intentPrompt).trim();
+    }
+
+    @Override
+    public String validateVideoUrl(String url) {
+        JsonNode mediaValidationResult = sightEngineService.checkMediaUrl(url, PostMediaType.VIDEO);
+        String intentPrompt = String.format("""
+            Your task is to provide your comment based on the following result of SightEngine
+            
+            
+            The respond Must Not be in quotes. Only text.
+            Keep your answer as short as possible, while maintaining all key points.
+            !!!IMPORTANT: Your answer must be in format: "comment@status"
+            !!!IMPORTANT: status must be either "AI_SAFE" or "AI_UNSAFE"
+            
+            Example: This video is safe@AI_SAFE
+            Example: this video is not safe. based on data received, this image is gore-y.@AI_UNSAFE
+            
+            SightEngine Result: "%s"
             
             """, mediaValidationResult.toString());
         return groqAIService.sendPrompt(intentPrompt).trim();

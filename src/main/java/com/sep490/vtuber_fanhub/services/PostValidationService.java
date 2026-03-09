@@ -34,10 +34,22 @@ public class PostValidationService {
             StringBuilder totalComments = new StringBuilder();
 
             boolean isSafe = true;
+
+            // Realistically, when user creates a VIDEO-type Post, it should only contain
+            // 1 video. BUT if bug happens and they are able to create one with multiple videos, we still
+            // are able to validate them, and should not throw an error. well mainly because mediaRepository
+            // always return a list of media and not just one.
+
             if(post.getPostType().equals("IMAGE") || post.getPostType().equals("VIDEO")) {
                 List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
+                boolean isVideo = post.getPostType().equals("VIDEO");
                 for(PostMedia postMedia : postMediaList) {
-                    String ai_validation = contentValidationService.validateImageUrl(postMedia.getMediaUrl());
+                    String ai_validation;
+                    if(isVideo){
+                        ai_validation = contentValidationService.validateVideoUrl(postMedia.getMediaUrl());
+                    }else{
+                        ai_validation = contentValidationService.validateImageUrl(postMedia.getMediaUrl());
+                    }
                     String[] media_validation_split = ai_validation.split("@");
                     if(media_validation_split.length<2){
                         throw new RuntimeException("AI returned incorrect form");

@@ -6,4 +6,5 @@ public interface ContentValidationService {
     String validateText(String text);
     String validateImageFile(MultipartFile file);
     String validateImageUrl(String url);
+    String validateVideoUrl(String url);
 }
