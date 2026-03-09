@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,8 +36,8 @@ public class ContentValidationServiceImpl implements ContentValidationService{
     }
 
     @Override
-    public String validateMediaFile(MultipartFile file) {
-        JsonNode mediaValidationResult = sightEngineService.checkMediaFile(file);
+    public String validateImageFile(MultipartFile file) {
+        JsonNode mediaValidationResult = sightEngineService.checkMediaFile(file, PostMediaType.IMAGE);
         String intentPrompt = String.format("""
             Your task is to provide your comment based on the following result of SightEngine
             
@@ -56,8 +57,8 @@ public class ContentValidationServiceImpl implements ContentValidationService{
     }
 
     @Override
-    public String validateMediaUrl(String url) {
-        JsonNode mediaValidationResult = sightEngineService.checkMediaUrl(url);
+    public String validateImageUrl(String url) {
+        JsonNode mediaValidationResult = sightEngineService.checkMediaUrl(url, PostMediaType.IMAGE);
         String intentPrompt = String.format("""
             Your task is to provide your comment based on the following result of SightEngine
             

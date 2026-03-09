@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.sql.SQLOutput;
 import java.util.List;
 
 @Service
@@ -25,18 +24,11 @@ public class PostValidationService {
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("Post not found"));
-
-        try {
-            // do something idk
-        } catch (Exception ermWhatTheSigma) {
-            ermWhatTheSigma.printStackTrace();
-        }
-
+        validatePost(post);
     }
 
     @Async("validationExecutor")
     public void validatePost(Post post) {
-        System.out.println("Validating post!");
 
         try {
             StringBuilder totalComments = new StringBuilder();
@@ -45,7 +37,7 @@ public class PostValidationService {
             if(post.getPostType().equals("IMAGE") || post.getPostType().equals("VIDEO")) {
                 List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
                 for(PostMedia postMedia : postMediaList) {
-                    String ai_validation = contentValidationService.validateMediaUrl(postMedia.getMediaUrl());
+                    String ai_validation = contentValidationService.validateImageUrl(postMedia.getMediaUrl());
                     String[] media_validation_split = ai_validation.split("@");
                     if(media_validation_split.length<2){
                         throw new RuntimeException("AI returned incorrect form");

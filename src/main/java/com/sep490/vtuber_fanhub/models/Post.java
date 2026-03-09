@@ -57,6 +57,7 @@ public class Post {
     private Instant updatedAt;
 
     @Lob
+    @ColumnDefault("'PENDING'")
     @Column(name = "ai_validation_status")
     private String aiValidationStatus;
 

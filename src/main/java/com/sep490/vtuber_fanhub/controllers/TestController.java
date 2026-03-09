@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
+import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
 import com.sep490.vtuber_fanhub.services.ContentValidationService;
 import com.sep490.vtuber_fanhub.services.GeminiAIService;
 import com.sep490.vtuber_fanhub.services.GroqAIService;
@@ -30,13 +31,24 @@ public class TestController {
         );
     }
 
-    @PostMapping("/sightEngine")
+    @PostMapping("/sightEngineImage")
     public ResponseEntity<APIResponse<String>> checkImage(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(
                 APIResponse.<String>builder()
                         .message("nice")
                         .success(true)
-                        .data(sightEngineService.checkMediaFile(file).toString())
+                        .data(sightEngineService.checkMediaFile(file, PostMediaType.IMAGE).toString())
+                        .build()
+        );
+    }
+
+    @PostMapping("/sightEngineVideo")
+    public ResponseEntity<APIResponse<String>> checkVideo(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(
+                APIResponse.<String>builder()
+                        .message("nice")
+                        .success(true)
+                        .data(sightEngineService.checkMediaFile(file, PostMediaType.VIDEO).toString())
                         .build()
         );
     }
@@ -47,7 +59,7 @@ public class TestController {
                 APIResponse.<String>builder()
                         .message("nice")
                         .success(true)
-                        .data(contentValidationService.validateMediaFile(file))
+                        .data(contentValidationService.validateImageFile(file))
                         .build()
         );
     }
@@ -58,7 +70,7 @@ public class TestController {
                 APIResponse.<String>builder()
                         .message("nice")
                         .success(true)
-                        .data(contentValidationService.validateMediaUrl(url))
+                        .data(contentValidationService.validateImageUrl(url))
                         .build()
         );
     }

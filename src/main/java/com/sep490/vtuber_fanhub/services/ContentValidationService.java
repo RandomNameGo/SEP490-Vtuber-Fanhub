@@ -4,6 +4,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface ContentValidationService {
     String validateText(String text);
-    String validateMediaFile(MultipartFile file);
-    String validateMediaUrl(String url);
+    String validateImageFile(MultipartFile file);
+    String validateImageUrl(String url);
 }
