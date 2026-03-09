@@ -64,6 +64,8 @@ public class PostServiceImpl implements PostService {
 
     private final FanHubCategoryRepository fanHubCategoryRepository;
 
+    private final PostValidationService postValidationService;
+
     // Ratio constants: 70% from followed hubs, 30% suggestions
     private static final double FOLLOWED_RATIO = 0.7;
     private static final double SUGGESTION_RATIO = 0.3;
@@ -130,7 +132,7 @@ public class PostServiceImpl implements PostService {
         post.setCreatedAt(Instant.now());
         post.setUpdatedAt(Instant.now());
 
-        postRepository.save(post);
+        post = postRepository.save(post);
 
         try {
             if ("IMAGE".equals(postType)) {
@@ -163,6 +165,8 @@ public class PostServiceImpl implements PostService {
                 postHashtagRepository.save(postHashtag);
             }
         }
+
+        postValidationService.validatePost(post);
 
         return "Created post successfully";
     }
@@ -305,6 +309,8 @@ public class PostServiceImpl implements PostService {
     @Override
     public Boolean AIValidate(Long postId) {
         return null;
+    }
+
     public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy) {
         // Get current user from token (same pattern as other methods)
         String token = jwtService.getCurrentToken(httpServletRequest);
