@@ -89,6 +89,7 @@ public class PostController {
                 .build()
         );
     }
+
     @GetMapping("/feed")
     public ResponseEntity<?> getPersonalizedFeed(
             @RequestParam(defaultValue = "0") int pageNo,
