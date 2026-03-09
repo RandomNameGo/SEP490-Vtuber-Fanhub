@@ -15,7 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GroqAIServiceImpl implements GroqAIService {
     @Value("${groq.api-key}")
-    private String groqApiKey;
+    private final String groqApiKey = "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";
 
     @Override
     public String test() {
