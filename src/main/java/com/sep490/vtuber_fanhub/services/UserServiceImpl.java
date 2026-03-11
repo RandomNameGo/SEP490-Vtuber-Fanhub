@@ -4,6 +4,8 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.models.UserDailyMission;
+import com.sep490.vtuber_fanhub.repositories.UserDailyMissionRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,8 @@ public class UserServiceImpl implements UserService{
     private final HttpServletRequest httpServletRequest;
 
     private final CloudinaryService cloudinaryService;
+
+    private final UserDailyMissionRepository userDailyMissionRepository;
 
     @Override
     @Transactional
@@ -57,6 +61,11 @@ public class UserServiceImpl implements UserService{
         user.setRole("USER");
 
         userRepository.save(user);
+
+        UserDailyMission userDailyMission = new UserDailyMission();
+        userDailyMission.setUser(user);
+        userDailyMission.setLikeAmount(0);
+        userDailyMissionRepository.save(userDailyMission);
 
         return "Created user successfully";
     }

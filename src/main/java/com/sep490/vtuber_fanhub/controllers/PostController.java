@@ -1,9 +1,13 @@
 package com.sep490.vtuber_fanhub.controllers;
 
+import com.sep490.vtuber_fanhub.dto.requests.CreatePostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
+import com.sep490.vtuber_fanhub.services.PostCommentService;
 import com.sep490.vtuber_fanhub.services.PostService;
+import com.sep490.vtuber_fanhub.services.UserBookmarkService;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +23,10 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+
+    private final UserBookmarkService userBookmarkService;
+
+    private final PostCommentService postCommentService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
@@ -100,6 +108,50 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postService.getPersonalizedFeed(pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @PostMapping("/like")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> likePost(@RequestParam Long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.likePost(postId))
+                .build()
+        );
+    }
+
+    @PostMapping("/unlike")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> unlikePost(@RequestParam Long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.unlikePost(postId))
+                .build()
+        );
+    }
+
+    @PostMapping("/bookmark")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> bookmarkPost(@RequestParam Long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(userBookmarkService.createUserBookmark(postId))
+                .build()
+        );
+    }
+
+    @PostMapping("/comment")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> commentPost(@RequestBody @Valid CreatePostCommentRequest createPostCommentRequest) {
+        return ResponseEntity.ok().body(APIResponse.<Boolean>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.createPostComment(createPostCommentRequest))
                 .build()
         );
     }

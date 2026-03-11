@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers("vhub/api/v1/auth/**").permitAll()
                         .requestMatchers("vhub/api/v1/user/verify").permitAll()
                         .requestMatchers("vhub/api/v1/user/register").permitAll()
+                        .requestMatchers("vhub/api/v1/posts/feed").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).

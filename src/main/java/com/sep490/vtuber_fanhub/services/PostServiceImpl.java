@@ -12,13 +12,7 @@ import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.PostHashtag;
 import com.sep490.vtuber_fanhub.models.PostMedia;
 import com.sep490.vtuber_fanhub.models.User;
-import com.sep490.vtuber_fanhub.repositories.FanHubCategoryRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
-import com.sep490.vtuber_fanhub.repositories.PostHashtagRepository;
-import com.sep490.vtuber_fanhub.repositories.PostMediaRepository;
-import com.sep490.vtuber_fanhub.repositories.PostRepository;
-import com.sep490.vtuber_fanhub.repositories.UserRepository;
+import com.sep490.vtuber_fanhub.repositories.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -50,6 +44,8 @@ public class PostServiceImpl implements PostService {
 
     private final PostMediaRepository postMediaRepository;
 
+    private final PostLikeRepository postLikeRepository;
+
     private final FanHubRepository fanHubRepository;
 
     private final FanHubMemberRepository fanHubMemberRepository;
@@ -66,7 +62,8 @@ public class PostServiceImpl implements PostService {
 
     private final PostValidationService postValidationService;
 
-    // Ratio constants: 70% from followed hubs, 30% suggestions
+    private final UserDailyMissionRepository userDailyMissionRepository;
+
     private static final double FOLLOWED_RATIO = 0.7;
     private static final double SUGGESTION_RATIO = 0.3;
 
@@ -129,6 +126,7 @@ public class PostServiceImpl implements PostService {
         post.setContent(request.getContent());
         post.setIsPinned(false);
         post.setStatus("PENDING"); // Default status is PENDING
+        post.setAiValidationStatus("PENDING");
         post.setCreatedAt(Instant.now());
         post.setUpdatedAt(Instant.now());
 
@@ -141,6 +139,7 @@ public class PostServiceImpl implements PostService {
                     PostMedia postMedia = new PostMedia();
                     postMedia.setPost(post);
                     postMedia.setMediaUrl(imageUrl);
+                    postMedia.setAiValidationStatus("PENDING");
                     postMediaRepository.save(postMedia);
                 }
             }
@@ -150,6 +149,7 @@ public class PostServiceImpl implements PostService {
                 PostMedia postMedia = new PostMedia();
                 postMedia.setPost(post);
                 postMedia.setMediaUrl(videoUrl);
+                postMedia.setAiValidationStatus("PENDING");
                 postMediaRepository.save(postMedia);
             }
         } catch (IOException e) {
@@ -275,7 +275,6 @@ public class PostServiceImpl implements PostService {
             throw new NotFoundException("Post not found");
         }
 
-        // Validate status parameter
         String normalizedStatus = status.toUpperCase();
         if (!List.of("APPROVED", "REJECTED").contains(normalizedStatus)) {
             throw new IllegalArgumentException("Invalid status. Must be APPROVED or REJECTED");
@@ -283,13 +282,11 @@ public class PostServiceImpl implements PostService {
 
         Long fanHubId = post.get().getHub().getId();
 
-        // Check if user is VTUBER and owns this FanHub
         boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
                 fanHubRepository.findById(fanHubId)
                         .map(hub -> hub.getOwnerUser().getId().equals(tokenUser.get().getId()))
                         .orElse(false);
 
-        // Check if user is a member with MODERATOR role
         boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
                 .map(member -> "MODERATOR".equals(member.getRoleInHub()))
                 .orElse(false);
@@ -298,10 +295,27 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can review posts");
         }
 
-        // Update post status
         post.get().setStatus(normalizedStatus);
         post.get().setUpdatedAt(Instant.now());
         postRepository.save(post.get());
+
+        // Award points when post is APPROVED
+        if ("APPROVED".equals(normalizedStatus)) {
+            User postAuthor = post.get().getUser();
+            
+            long currentPoints = postAuthor.getPoints() != null ? postAuthor.getPoints() : 0;
+            postAuthor.setPoints(currentPoints + 10);
+            userRepository.save(postAuthor);
+
+            Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                    fanHubId, postAuthor.getId());
+            if (member.isPresent()) {
+                FanHubMember fanHubMember = member.get();
+                int currentScore = fanHubMember.getFanHubScore() != null ? fanHubMember.getFanHubScore() : 0;
+                fanHubMember.setFanHubScore(currentScore + 10);
+                fanHubMemberRepository.save(fanHubMember);
+            }
+        }
 
         return "Post " + normalizedStatus.toLowerCase() + " successfully";
     }
@@ -488,6 +502,107 @@ public class PostServiceImpl implements PostService {
         }
         response.setHashtags(hashtags);
 
+        // Get like count
+        Long likeCount = postLikeRepository.countByPostId(post.getId());
+        response.setLikeCount(likeCount);
+
+        // Check if current user liked this post
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        if (token != null) {
+            try {
+                String tokenUsername = jwtService.getUsernameFromToken(token);
+                Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+                if (tokenUser.isPresent()) {
+                    Boolean isLiked = postLikeRepository.findByUserIdAndPostId(tokenUser.get().getId(), post.getId()).isPresent();
+                    response.setIsLikedByCurrentUser(isLiked);
+                } else {
+                    response.setIsLikedByCurrentUser(false);
+                }
+            } catch (Exception e) {
+                // Token is invalid or expired, set to false
+                response.setIsLikedByCurrentUser(false);
+            }
+        } else {
+            response.setIsLikedByCurrentUser(false);
+        }
+
         return response;
+    }
+
+    @Override
+    @Transactional
+    public String likePost(Long postId) {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        User user = tokenUser.get();
+        Long userId = user.getId();
+
+        // Check if user already liked this post
+        Optional<PostLike> existingLike = postLikeRepository.findByUserIdAndPostId(userId, postId);
+        if (existingLike.isPresent()) {
+            throw new IllegalArgumentException("You have already liked this post");
+        }
+
+        // Create and save the like
+        PostLike postLike = new PostLike();
+        postLike.setUser(user);
+        postLike.setPost(post.get());
+        postLike.setCreatedAt(Instant.now());
+        postLikeRepository.save(postLike);
+
+        Optional<UserDailyMission> userDailyMission = userDailyMissionRepository.findById(userId);
+        if (userDailyMission.isPresent()) {
+            userDailyMission.get().setLikeAmount(userDailyMission.get().getLikeAmount() + 1);
+            userDailyMissionRepository.save(userDailyMission.get());
+            if(userDailyMission.get().getLikeAmount() == 5) {
+                user.setPoints(user.getPoints() + 10);
+                userRepository.save(user);
+            }
+        } else {
+            throw new NotFoundException("User daily mission not found");
+        }
+
+        return "Post liked successfully!";
+    }
+
+    @Override
+    @Transactional
+    public String unlikePost(Long postId) {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        User user = tokenUser.get();
+        Long userId = user.getId();
+
+        Optional<PostLike> existingLike = postLikeRepository.findByUserIdAndPostId(userId, postId);
+        if (existingLike.isEmpty()) {
+            throw new IllegalArgumentException("You have not liked this post");
+        }
+
+        postLikeRepository.delete(existingLike.get());
+
+
+        return "Post unliked successfully. 10 points deducted.";
     }
 }

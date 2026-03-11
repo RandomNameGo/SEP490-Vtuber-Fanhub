@@ -17,5 +17,10 @@ public interface PostService {
     String reviewPost(Long postId, String status);
 
     Boolean AIValidate(Long postId);
+    
     List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy);
+
+    String likePost(Long postId);
+
+    String unlikePost(Long postId);
 }
