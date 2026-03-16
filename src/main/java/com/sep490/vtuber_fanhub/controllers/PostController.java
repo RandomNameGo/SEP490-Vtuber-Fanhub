@@ -2,12 +2,13 @@ package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
+import com.sep490.vtuber_fanhub.dto.requests.CreatePollPostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.services.PostCommentService;
 import com.sep490.vtuber_fanhub.services.PostService;
 import com.sep490.vtuber_fanhub.services.UserBookmarkService;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +40,17 @@ public class PostController {
                 .success(true)
                 .message("Post created successfully")
                 .data(postService.createPost(request, images, video))
+                .build()
+        );
+    }
+
+    @PostMapping("/poll")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> createPollPost(@RequestBody @Valid CreatePollPostRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Poll post created successfully")
+                .data(postService.createPollPost(request))
                 .build()
         );
     }
@@ -152,6 +164,38 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postCommentService.createPostComment(createPostCommentRequest))
+                .build()
+        );
+    }
+
+    @GetMapping("/{postId}/comments")
+    public ResponseEntity<?> getPostComments(@PathVariable Long postId) {
+        return ResponseEntity.ok().body(APIResponse.<List<PostCommentResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.getPostCommentsByPostId(postId))
+                .build()
+        );
+    }
+
+    @PostMapping("/vote")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> votePost(@RequestParam Long postId, @RequestParam Long optionId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.votePost(postId, optionId))
+                .build()
+        );
+    }
+
+    @PostMapping("/un-vote")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> unVotePost(@RequestParam Long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.unvotePost(postId))
                 .build()
         );
     }

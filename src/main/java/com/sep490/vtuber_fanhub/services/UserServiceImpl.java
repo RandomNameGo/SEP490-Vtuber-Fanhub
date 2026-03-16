@@ -2,7 +2,6 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
-import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.models.UserDailyMission;
 import com.sep490.vtuber_fanhub.repositories.UserDailyMissionRepository;
@@ -16,7 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,13 +24,13 @@ public class UserServiceImpl implements UserService{
 
     private final PasswordEncoder passwordEncoder;
 
-    private final JWTService jwtService;
-
     private final HttpServletRequest httpServletRequest;
 
     private final CloudinaryService cloudinaryService;
 
     private final UserDailyMissionRepository userDailyMissionRepository;
+
+    private final AuthService authService;
 
     @Override
     @Transactional
@@ -73,23 +71,15 @@ public class UserServiceImpl implements UserService{
     @Override
     @Transactional
     public String uploadAvatarFrame(MultipartFile avatarFile, MultipartFile frameFile) throws IOException {
-
-        String token = jwtService.getCurrentToken(httpServletRequest);
-
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         if(!avatarFile.isEmpty()){
             String avatarUrl = cloudinaryService.uploadFile(avatarFile);
-            tokenUser.get().setAvatarUrl(avatarUrl);
+            currentUser.setAvatarUrl(avatarUrl);
         }
         if(!frameFile.isEmpty()){
             String frameUrl = cloudinaryService.uploadFile(frameFile);
-            tokenUser.get().setFrameUrl(frameUrl);
+            currentUser.setFrameUrl(frameUrl);
         }
 
         return "Uploaded successfully";
@@ -99,16 +89,7 @@ public class UserServiceImpl implements UserService{
     @Transactional
     public String updateUser(UpdateUserRequest updateUserRequest) {
 
-        String token = jwtService.getCurrentToken(httpServletRequest);
-
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
-
-        User user = tokenUser.get();
+        User user = authService.getUserFromToken(httpServletRequest);
 
         if (updateUserRequest.getEmail() != null && !updateUserRequest.getEmail().isEmpty()) {
             if (!user.getEmail().equals(updateUserRequest.getEmail()) && userRepository.existsByEmail(updateUserRequest.getEmail())) {

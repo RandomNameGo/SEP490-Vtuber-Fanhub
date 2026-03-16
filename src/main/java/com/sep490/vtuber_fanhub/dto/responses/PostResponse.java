@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class PostResponse {
@@ -25,6 +26,10 @@ public class PostResponse {
 
     private List<String> mediaUrls;
     private List<String> hashtags;
+    private List<String> voteOptions;
+    private Map<Long, Long> voteCounts;
+    private Long totalVotes;
+    private Long userVotedOptionId;
 
     private Instant createdAt;
     private Instant updatedAt;

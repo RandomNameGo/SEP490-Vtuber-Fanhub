@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateFanHubRequest;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
@@ -11,6 +12,10 @@ import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,7 +23,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,27 +37,19 @@ public class FanHubServiceImpl implements FanHubService {
 
     private final HttpServletRequest httpServletRequest;
 
-    private final JWTService jwtService;
-
     private final FanHubCategoryRepository fanHubCategoryRepository;
 
     private final CloudinaryService cloudinaryService;
 
+    private final AuthService authService;
+
     @Override
     @Transactional
     public String createFanHub(CreateFanHubRequest request) {
-
-        String token = jwtService.getCurrentToken(httpServletRequest);
-
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         FanHub fanHub = new FanHub();
-        fanHub.setOwnerUser(tokenUser.get());
+        fanHub.setOwnerUser(currentUser);
         fanHub.setHubName(request.getHubName());
         fanHub.setSubdomain(request.getSubdomain());
         fanHub.setThemeColor(request.getThemeColor());
@@ -78,22 +77,14 @@ public class FanHubServiceImpl implements FanHubService {
     @Override
     @Transactional
     public String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, MultipartFile background, MultipartFile avatar) throws IOException {
-
-        String token = jwtService.getCurrentToken(httpServletRequest);
-
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
 
-        if (!fanHub.get().getOwnerUser().getId().equals(tokenUser.get().getId())) {
+        if (!fanHub.get().getOwnerUser().getId().equals(currentUser.getId())) {
             throw new AccessDeniedException("Access denied");
         }
 
@@ -115,5 +106,56 @@ public class FanHubServiceImpl implements FanHubService {
         fanHubRepository.save(fanHub.get());
 
         return "Uploaded FanHub images successfully";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, boolean includePrivate) {
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<FanHub> pagedFanHubs;
+        if (includePrivate) {
+            // Include private FanHubs (for authenticated users, e.g., VTUBER or MODERATOR)
+            pagedFanHubs = fanHubRepository.findAllActiveFanHubs(paging);
+        } else {
+            // Only public FanHubs
+            pagedFanHubs = fanHubRepository.findActivePublicFanHubs(paging);
+        }
+
+        if (pagedFanHubs.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedFanHubs.getContent().stream()
+                .map(this::mapToFanHubResponse)
+                .collect(Collectors.toList());
+    }
+
+    private FanHubResponse mapToFanHubResponse(FanHub fanHub) {
+        FanHubResponse response = new FanHubResponse();
+        response.setFanHubId(fanHub.getId());
+        response.setSubdomain(fanHub.getSubdomain());
+        response.setHubName(fanHub.getHubName());
+        response.setDescription(fanHub.getDescription());
+        response.setBannerUrl(fanHub.getBannerUrl());
+        response.setBackgroundUrl(fanHub.getBackgroundUrl());
+        response.setThemeColor(fanHub.getThemeColor());
+        response.setAvatarUrl(fanHub.getAvatarUrl());
+        response.setIsPrivate(fanHub.getIsPrivate());
+        response.setRequiresApproval(fanHub.getRequiresApproval());
+        response.setCreatedAt(fanHub.getCreatedAt());
+
+        User owner = fanHub.getOwnerUser();
+        response.setOwnerUserId(owner.getId());
+        response.setOwnerUsername(owner.getUsername());
+        response.setOwnerDisplayName(owner.getDisplayName());
+
+        List<String> categories = fanHubCategoryRepository.findByHubId(fanHub.getId())
+                .stream()
+                .map(FanHubCategory::getCategoryName)
+                .collect(Collectors.toList());
+        response.setCategories(categories);
+
+        return response;
     }
 }

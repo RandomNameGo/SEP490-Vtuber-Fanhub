@@ -34,20 +34,14 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     private final UserRepository userRepository;
 
-    private final JWTService jwtService;
-
     private final HttpServletRequest httpServletRequest;
+
+    private final AuthService authService;
 
     @Override
     @Transactional
     public String joinFanHubMember(long fanHubId) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
@@ -56,14 +50,14 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         // Check if user is already a member
         Optional<FanHubMember> existingMember = fanHubMemberRepository.findByHubIdAndUserId(
-                fanHubId, tokenUser.get().getId());
+                fanHubId, currentUser.getId());
         if (existingMember.isPresent()) {
             return "User is already a member of this FanHub";
         }
 
         FanHubMember member = new FanHubMember();
         member.setHub(fanHub.get());
-        member.setUser(tokenUser.get());
+        member.setUser(currentUser);
         member.setJoinedAt(Instant.now());
         member.setFanHubScore(0);
 
@@ -83,13 +77,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     @Override
     public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
@@ -97,11 +85,11 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         }
 
         // Check if user is VTUBER and owns this FanHub
-        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
-                fanHub.get().getOwnerUser().getId().equals(tokenUser.get().getId());
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
         // Check if user is a member with MODERATOR role
-        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
                 .map(member -> "MODERATOR".equals(member.getRoleInHub()))
                 .orElse(false);
 
@@ -124,13 +112,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     @Override
     public List<FanHubMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
@@ -138,11 +120,11 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         }
 
         // Check if user is VTUBER and owns this FanHub
-        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
-                fanHub.get().getOwnerUser().getId().equals(tokenUser.get().getId());
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
         // Check if user is a member with MODERATOR role
-        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
                 .map(member -> "MODERATOR".equals(member.getRoleInHub()))
                 .orElse(false);
 
@@ -167,21 +149,15 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
     @Transactional
     public String addModerator(long fanHubId, List<Long> fanHubMemberIds) {
 
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
 
-        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
-                fanHub.get().getOwnerUser().getId().equals(tokenUser.get().getId());
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
         if (!isOwner) {
             throw new AccessDeniedException("Access denied");
@@ -203,13 +179,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
     @Override
     @Transactional
     public String reviewFanHubMember(long fanHubMemberId, String status) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHubMember> member = fanHubMemberRepository.findById(fanHubMemberId);
         if (member.isEmpty()) {
@@ -225,13 +195,13 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         Long fanHubId = member.get().getHub().getId();
 
         // Check if user is VTUBER and owns this FanHub
-        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
                 fanHubRepository.findById(fanHubId)
-                        .map(hub -> hub.getOwnerUser().getId().equals(tokenUser.get().getId()))
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
                         .orElse(false);
 
         // Check if user is a member with MODERATOR role
-        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
                 .map(m -> "MODERATOR".equals(m.getRoleInHub()))
                 .orElse(false);
 

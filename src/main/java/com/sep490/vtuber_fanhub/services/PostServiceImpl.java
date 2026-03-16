@@ -1,8 +1,8 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.sep490.vtuber_fanhub.dto.requests.CreatePollPostRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
-import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.models.FanHub;
@@ -28,8 +28,10 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,8 +54,6 @@ public class PostServiceImpl implements PostService {
 
     private final UserRepository userRepository;
 
-    private final JWTService jwtService;
-
     private final HttpServletRequest httpServletRequest;
 
     private final CloudinaryService cloudinaryService;
@@ -64,30 +64,32 @@ public class PostServiceImpl implements PostService {
 
     private final UserDailyMissionRepository userDailyMissionRepository;
 
+    private final VoteOptionRepository voteOptionRepository;
+
+    private final AuthService authService;
+
+    private final PostVoteRepository postVoteRepository;
+
     private static final double FOLLOWED_RATIO = 0.7;
     private static final double SUGGESTION_RATIO = 0.3;
 
     @Override
     @Transactional
     public String createPost(CreatePostRequest request, List<MultipartFile> images, MultipartFile video) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(request.getFanHubId());
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
 
-        // Check if user is a member of the FanHub
+        boolean isOwner = fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
         Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
-                request.getFanHubId(), tokenUser.get().getId());
-        if (member.isEmpty()) {
-            throw new AccessDeniedException("You must be a member of this FanHub to create a post");
+                request.getFanHubId(), currentUser.getId());
+        
+        if (!isOwner && member.isEmpty()) {
+            throw new AccessDeniedException("You must be the owner (VTuber) or a member of this FanHub to create a post");
         }
 
         // Validate post type
@@ -120,7 +122,7 @@ public class PostServiceImpl implements PostService {
         // Create the post
         Post post = new Post();
         post.setHub(fanHub.get());
-        post.setUser(tokenUser.get());
+        post.setUser(currentUser);
         post.setPostType(postType);
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
@@ -172,15 +174,80 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
+    public String createPollPost(CreatePollPostRequest request) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(request.getFanHubId());
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        boolean isOwner = fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                request.getFanHubId(), currentUser.getId());
+        
+        if (!isOwner && member.isEmpty()) {
+            throw new AccessDeniedException("You must be the owner (VTuber) or a member of this FanHub to create a post");
+        }
+
+        List<String> options = request.getOptions();
+        if (options == null || options.size() < 2) {
+            throw new IllegalArgumentException("Poll must have at least 2 options");
+        }
+        if (options.size() > 4) {
+            throw new IllegalArgumentException("Poll cannot have more than 4 options");
+        }
+
+        // Check for duplicate options
+        Set<String> uniqueOptions = new HashSet<>(options);
+        if (uniqueOptions.size() != options.size()) {
+            throw new IllegalArgumentException("Poll options must be unique");
+        }
+
+        // Create the poll post
+        Post post = new Post();
+        post.setHub(fanHub.get());
+        post.setUser(currentUser);
+        post.setPostType("POLL");
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        post.setIsPinned(false);
+        post.setStatus("PENDING");
+        post.setAiValidationStatus("PENDING");
+        post.setCreatedAt(Instant.now());
+        post.setUpdatedAt(Instant.now());
+
+        post = postRepository.save(post);
+
+        // Save vote options
+        for (String optionText : options) {
+            VoteOption voteOption = new VoteOption();
+            voteOption.setPost(post);
+            voteOption.setOptionText(optionText);
+            voteOptionRepository.save(voteOption);
+        }
+
+        // Save hashtags if provided
+        if (request.getHashtags() != null && !request.getHashtags().isEmpty()) {
+            for (String hashtag : request.getHashtags()) {
+                PostHashtag postHashtag = new PostHashtag();
+                postHashtag.setPost(post);
+                postHashtag.setHashtag(hashtag);
+                postHashtagRepository.save(postHashtag);
+            }
+        }
+
+        postValidationService.validatePost(post);
+
+        return "Created poll post successfully";
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<PostResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
@@ -188,11 +255,11 @@ public class PostServiceImpl implements PostService {
         }
 
         // Check if user is VTUBER and owns this FanHub
-        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
-                fanHub.get().getOwnerUser().getId().equals(tokenUser.get().getId());
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
         // Check if user is a member with MODERATOR role
-        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
                 .map(member -> "MODERATOR".equals(member.getRoleInHub()))
                 .orElse(false);
 
@@ -216,13 +283,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
@@ -231,7 +292,7 @@ public class PostServiceImpl implements PostService {
 
         // Check if user is a member of the FanHub
         Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
-                fanHubId, tokenUser.get().getId());
+                fanHubId, currentUser.getId());
         if (member.isEmpty()) {
             // If fanHub is public, allow viewing posts
             if (!fanHub.get().getIsPrivate()) {
@@ -262,13 +323,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public String reviewPost(Long postId, String status) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<Post> post = postRepository.findById(postId);
         if (post.isEmpty()) {
@@ -282,12 +337,12 @@ public class PostServiceImpl implements PostService {
 
         Long fanHubId = post.get().getHub().getId();
 
-        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
                 fanHubRepository.findById(fanHubId)
-                        .map(hub -> hub.getOwnerUser().getId().equals(tokenUser.get().getId()))
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
                         .orElse(false);
 
-        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, tokenUser.get().getId())
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
                 .map(member -> "MODERATOR".equals(member.getRoleInHub()))
                 .orElse(false);
 
@@ -326,25 +381,19 @@ public class PostServiceImpl implements PostService {
     }
 
     public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy) {
-        // Get current user from token (same pattern as other methods)
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername;
-        Optional<User> tokenUser = Optional.empty();
-        
-        if (token != null) {
-            try {
-                tokenUsername = jwtService.getUsernameFromToken(token);
-                tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-            } catch (Exception e) {
-                // Token is invalid or expired, treat as unauthenticated
-                tokenUser = Optional.empty();
-            }
+        // Get current user from token
+        User currentUser = null;
+        try {
+            currentUser = authService.getUserFromToken(httpServletRequest);
+        } catch (Exception e) {
+            // Token is invalid or expired, treat as unauthenticated
+            currentUser = null;
         }
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
 
         // Case 1: Unauthenticated user - return public posts sorted by interactions
-        if (tokenUser.isEmpty()) {
+        if (currentUser == null) {
             Page<Post> publicPosts = postRepository.findPublicPostsOrderByInteractions(paging);
             if (publicPosts.isEmpty()) {
                 return List.of();
@@ -355,8 +404,7 @@ public class PostServiceImpl implements PostService {
         }
 
         // Case 2: Authenticated user - get personalized feed with 70/30 ratio
-        User user = tokenUser.get();
-        Long userId = user.getId();
+        Long userId = currentUser.getId();
 
         // Get all Fan Hubs the user has joined
         List<FanHubMember> userMemberships = fanHubMemberRepository.findAllByUserId(userId);
@@ -486,7 +534,7 @@ public class PostServiceImpl implements PostService {
         response.setCreatedAt(post.getCreatedAt());
         response.setUpdatedAt(post.getUpdatedAt());
 
-        // Get media URLs
+        //Media URLs
         List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
         List<String> mediaUrls = new ArrayList<>();
         for (PostMedia media : mediaList) {
@@ -494,7 +542,7 @@ public class PostServiceImpl implements PostService {
         }
         response.setMediaUrls(mediaUrls);
 
-        // Get hashtags
+        //Hashtags
         List<PostHashtag> hashtagList = postHashtagRepository.findByPostId(post.getId());
         List<String> hashtags = new ArrayList<>();
         for (PostHashtag hashtag : hashtagList) {
@@ -502,27 +550,50 @@ public class PostServiceImpl implements PostService {
         }
         response.setHashtags(hashtags);
 
-        // Get like count
+        //Vote option
+        if ("POLL".equals(post.getPostType())) {
+            List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(post.getId());
+            List<String> optionTexts = new ArrayList<>();
+            Map<Long, Long> voteCounts = new HashMap<>();
+            Long totalVotes = 0L;
+            
+            for (VoteOption option : voteOptions) {
+                optionTexts.add(option.getOptionText());
+                Long optionVoteCount = postVoteRepository.countByOptionId(option.getId());
+                voteCounts.put(option.getId(), optionVoteCount != null ? optionVoteCount : 0L);
+                totalVotes += optionVoteCount != null ? optionVoteCount : 0L;
+            }
+            response.setVoteOptions(optionTexts);
+            response.setVoteCounts(voteCounts);
+            response.setTotalVotes(totalVotes);
+            
+            // Check if current user voted on this post
+            try {
+                User currentUser = authService.getUserFromToken(httpServletRequest);
+                Long userVotedOptionId = null;
+                for (VoteOption option : voteOptions) {
+                    Optional<PostVote> userVote = postVoteRepository.findByUserIdAndOptionId(currentUser.getId(), option.getId());
+                    if (userVote.isPresent()) {
+                        userVotedOptionId = option.getId();
+                        break;
+                    }
+                }
+                response.setUserVotedOptionId(userVotedOptionId);
+            } catch (Exception e) {
+                response.setUserVotedOptionId(null);
+            }
+        }
+
+        //Count like
         Long likeCount = postLikeRepository.countByPostId(post.getId());
         response.setLikeCount(likeCount);
 
         // Check if current user liked this post
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        if (token != null) {
-            try {
-                String tokenUsername = jwtService.getUsernameFromToken(token);
-                Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-                if (tokenUser.isPresent()) {
-                    Boolean isLiked = postLikeRepository.findByUserIdAndPostId(tokenUser.get().getId(), post.getId()).isPresent();
-                    response.setIsLikedByCurrentUser(isLiked);
-                } else {
-                    response.setIsLikedByCurrentUser(false);
-                }
-            } catch (Exception e) {
-                // Token is invalid or expired, set to false
-                response.setIsLikedByCurrentUser(false);
-            }
-        } else {
+        try {
+            User currentUser = authService.getUserFromToken(httpServletRequest);
+            Boolean isLiked = postLikeRepository.findByUserIdAndPostId(currentUser.getId(), post.getId()).isPresent();
+            response.setIsLikedByCurrentUser(isLiked);
+        } catch (Exception e) {
             response.setIsLikedByCurrentUser(false);
         }
 
@@ -532,21 +603,14 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public String likePost(Long postId) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<Post> post = postRepository.findById(postId);
         if (post.isEmpty()) {
             throw new NotFoundException("Post not found");
         }
 
-        User user = tokenUser.get();
-        Long userId = user.getId();
+        Long userId = currentUser.getId();
 
         // Check if user already liked this post
         Optional<PostLike> existingLike = postLikeRepository.findByUserIdAndPostId(userId, postId);
@@ -556,7 +620,7 @@ public class PostServiceImpl implements PostService {
 
         // Create and save the like
         PostLike postLike = new PostLike();
-        postLike.setUser(user);
+        postLike.setUser(currentUser);
         postLike.setPost(post.get());
         postLike.setCreatedAt(Instant.now());
         postLikeRepository.save(postLike);
@@ -566,8 +630,8 @@ public class PostServiceImpl implements PostService {
             userDailyMission.get().setLikeAmount(userDailyMission.get().getLikeAmount() + 1);
             userDailyMissionRepository.save(userDailyMission.get());
             if(userDailyMission.get().getLikeAmount() == 5) {
-                user.setPoints(user.getPoints() + 10);
-                userRepository.save(user);
+                currentUser.setPoints(currentUser.getPoints() + 10);
+                userRepository.save(currentUser);
             }
         } else {
             throw new NotFoundException("User daily mission not found");
@@ -579,21 +643,14 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public String unlikePost(Long postId) {
-        String token = jwtService.getCurrentToken(httpServletRequest);
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<Post> post = postRepository.findById(postId);
         if (post.isEmpty()) {
             throw new NotFoundException("Post not found");
         }
 
-        User user = tokenUser.get();
-        Long userId = user.getId();
+        Long userId = currentUser.getId();
 
         Optional<PostLike> existingLike = postLikeRepository.findByUserIdAndPostId(userId, postId);
         if (existingLike.isEmpty()) {
@@ -604,5 +661,85 @@ public class PostServiceImpl implements PostService {
 
 
         return "Post unliked successfully. 10 points deducted.";
+    }
+
+    @Override
+    @Transactional
+    public String votePost(Long postId, Long optionId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        if (!"POLL".equals(post.get().getPostType())) {
+            throw new IllegalArgumentException("This post is not a poll");
+        }
+
+        Optional<VoteOption> option = voteOptionRepository.findById(optionId);
+        if (option.isEmpty()) {
+            throw new NotFoundException("Vote option not found");
+        }
+
+        if (!option.get().getPost().getId().equals(postId)) {
+            throw new IllegalArgumentException("Vote option does not belong to this post");
+        }
+
+        Long userId = currentUser.getId();
+
+        // Check if user already voted on this post (any option)
+        List<VoteOption> allOptions = voteOptionRepository.findAllByPostId(postId);
+        for (VoteOption opt : allOptions) {
+            Optional<PostVote> existingVote = postVoteRepository.findByUserIdAndOptionId(userId, opt.getId());
+            if (existingVote.isPresent()) {
+                throw new IllegalArgumentException("You have already voted on this poll");
+            }
+        }
+
+        // Create and save the vote
+        PostVote postVote = new PostVote();
+        postVote.setUser(currentUser);
+        postVote.setOption(option.get());
+        postVote.setVotedAt(Instant.now());
+        postVoteRepository.save(postVote);
+
+        return "Vote submitted successfully!";
+    }
+
+    @Override
+    @Transactional
+    public String unvotePost(Long postId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        if (!"POLL".equals(post.get().getPostType())) {
+            throw new IllegalArgumentException("This post is not a poll");
+        }
+
+        Long userId = currentUser.getId();
+
+        // Find user's vote on this post
+        List<VoteOption> allOptions = voteOptionRepository.findAllByPostId(postId);
+        PostVote existingVote = null;
+        for (VoteOption option : allOptions) {
+            Optional<PostVote> vote = postVoteRepository.findByUserIdAndOptionId(userId, option.getId());
+            if (vote.isPresent()) {
+                existingVote = vote.get();
+                break;
+            }
+        }
+
+        if (existingVote == null) {
+            throw new IllegalArgumentException("You have not voted on this post");
+        }
+
+        postVoteRepository.delete(existingVote);
+
+        return "Vote removed successfully!";
     }
 }
