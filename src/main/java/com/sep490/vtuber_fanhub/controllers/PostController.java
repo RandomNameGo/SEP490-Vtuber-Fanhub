@@ -57,7 +57,7 @@ public class PostController {
 
     @GetMapping("/fan-hub/{fanHubId}/pending")
     @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
-    public ResponseEntity<?> getPendingPosts(@PathVariable Long fanHubId,
+    public ResponseEntity<?> getPendingPosts(@PathVariable long fanHubId,
                                              @RequestParam(defaultValue = "0") int pageNo,
                                              @RequestParam(defaultValue = "10") int pageSize,
                                              @RequestParam(defaultValue = "createdAt") String sortBy) {
@@ -71,7 +71,7 @@ public class PostController {
     }
 
     @GetMapping("/fan-hub/{fanHubId}")
-    public ResponseEntity<?> getPosts(@PathVariable Long fanHubId,
+    public ResponseEntity<?> getPosts(@PathVariable long fanHubId,
                                       @RequestParam(defaultValue = "0") int pageNo,
                                       @RequestParam(defaultValue = "10") int pageSize,
                                       @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -126,7 +126,7 @@ public class PostController {
 
     @PostMapping("/like")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> likePost(@RequestParam Long postId) {
+    public ResponseEntity<?> likePost(@RequestParam long postId) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
@@ -137,7 +137,7 @@ public class PostController {
 
     @PostMapping("/unlike")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> unlikePost(@RequestParam Long postId) {
+    public ResponseEntity<?> unlikePost(@RequestParam long postId) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
@@ -148,7 +148,7 @@ public class PostController {
 
     @PostMapping("/bookmark")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> bookmarkPost(@RequestParam Long postId) {
+    public ResponseEntity<?> bookmarkPost(@RequestParam long postId) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
@@ -169,7 +169,7 @@ public class PostController {
     }
 
     @GetMapping("/{postId}/comments")
-    public ResponseEntity<?> getPostComments(@PathVariable Long postId) {
+    public ResponseEntity<?> getPostComments(@PathVariable long postId) {
         return ResponseEntity.ok().body(APIResponse.<List<PostCommentResponse>>builder()
                 .success(true)
                 .message("Success")
@@ -178,9 +178,42 @@ public class PostController {
         );
     }
 
+    @PostMapping("/comment/like/{commentId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> likeComment(@PathVariable long commentId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.likeComment(commentId))
+                .build()
+        );
+    }
+
+    @PostMapping("/comment/unlike/{commentId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> unlikeComment(@PathVariable long commentId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.unlikeComment(commentId))
+                .build()
+        );
+    }
+
+    @PostMapping("/comment/gift/{commentId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> sendCommentGift(@PathVariable Long commentId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.sendCommentGift(commentId))
+                .build()
+        );
+    }
+
     @PostMapping("/vote")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> votePost(@RequestParam Long postId, @RequestParam Long optionId) {
+    public ResponseEntity<?> votePost(@RequestParam long postId, @RequestParam long optionId) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
@@ -191,11 +224,11 @@ public class PostController {
 
     @PostMapping("/un-vote")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> unVotePost(@RequestParam Long postId) {
+    public ResponseEntity<?> unVotePost(@RequestParam long postId) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.unvotePost(postId))
+                .data(postService.unVotePost(postId))
                 .build()
         );
     }

@@ -12,4 +12,10 @@ public interface PostCommentService {
 
     List<PostCommentResponse> getPostCommentsByPostId(Long postId);
 
+    String likeComment(Long commentId);
+
+    String unlikeComment(Long commentId);
+
+    String sendCommentGift(Long commentId);
+
 }

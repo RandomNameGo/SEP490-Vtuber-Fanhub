@@ -709,7 +709,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public String unvotePost(Long postId) {
+    public String unVotePost(Long postId) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<Post> post = postRepository.findById(postId);

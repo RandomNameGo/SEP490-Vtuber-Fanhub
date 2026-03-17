@@ -29,5 +29,5 @@ public interface PostService {
 
     String votePost(Long postId, Long optionId);
 
-    String unvotePost(Long postId);
+    String unVotePost(Long postId);
 }
