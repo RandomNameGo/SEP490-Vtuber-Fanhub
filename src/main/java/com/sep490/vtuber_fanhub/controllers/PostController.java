@@ -3,11 +3,13 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePollPostRequest;
+import com.sep490.vtuber_fanhub.dto.requests.CreateReportPostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.services.PostCommentService;
 import com.sep490.vtuber_fanhub.services.PostService;
+import com.sep490.vtuber_fanhub.services.ReportPostService;
 import com.sep490.vtuber_fanhub.services.UserBookmarkService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ public class PostController {
     private final UserBookmarkService userBookmarkService;
 
     private final PostCommentService postCommentService;
+
+    private final ReportPostService reportPostService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
@@ -229,6 +233,17 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postService.unVotePost(postId))
+                .build()
+        );
+    }
+
+    @PostMapping("/report")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> reportPost(@RequestBody CreateReportPostRequest createReportPostRequest) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.createReportPost(createReportPostRequest))
                 .build()
         );
     }
