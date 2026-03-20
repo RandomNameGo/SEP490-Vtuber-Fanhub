@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.validator.constraints.UniqueElements;
 
 @Getter
 @Setter
@@ -34,5 +35,9 @@ public class PostMedia {
     @Size(max = 500)
     @Column(name = "ai_validation_comment", length = 500)
     private String aiValidationComment;
+
+    @Size(max = 45)
+    @Column(name = "sight_engine_media_id", length = 45, unique = true, nullable = true)
+    private String sightEngineMediaId;
 
 }
