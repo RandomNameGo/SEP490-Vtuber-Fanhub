@@ -2,8 +2,12 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
+import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
+import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.models.UserBadge;
 import com.sep490.vtuber_fanhub.models.UserDailyMission;
+import com.sep490.vtuber_fanhub.repositories.UserBadgeRepository;
 import com.sep490.vtuber_fanhub.repositories.UserDailyMissionRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +37,8 @@ public class UserServiceImpl implements UserService{
     private final UserDailyMissionRepository userDailyMissionRepository;
 
     private final AuthService authService;
+
+    private final UserBadgeRepository userBadgeRepository;
 
     @Override
     @Transactional
@@ -115,5 +123,53 @@ public class UserServiceImpl implements UserService{
         userRepository.save(user);
 
         return "Updated user successfully";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getUserDetailWithBadge(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
+
+        List<UserBadge> userBadges = userBadgeRepository.findByUserId(userId);
+
+        return mapToUserResponse(user, userBadges);
+    }
+
+    private UserResponse mapToUserResponse(User user, List<UserBadge> userBadges) {
+        UserResponse response = new UserResponse();
+
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setDisplayName(user.getDisplayName());
+        response.setAvatarUrl(user.getAvatarUrl());
+        response.setFrameUrl(user.getFrameUrl());
+        response.setBio(user.getBio());
+        response.setRole(user.getRole());
+        response.setPoints(user.getPoints());
+        response.setPaidPoints(user.getPaidPoints());
+        response.setTranslateLanguage(user.getTranslateLanguage());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+        response.setIsActive(user.getIsActive());
+
+        if (userBadges != null && !userBadges.isEmpty()) {
+            List<UserResponse.UserBadgeResponse> badgeResponses = new ArrayList<>();
+            for (UserBadge userBadge : userBadges) {
+                UserResponse.UserBadgeResponse badgeResponse = new UserResponse.UserBadgeResponse();
+                badgeResponse.setUserBadgeId(userBadge.getId());
+                badgeResponse.setBadgeId(userBadge.getBadge().getId());
+                badgeResponse.setBadgeName(userBadge.getBadge().getBadgeName());
+                badgeResponse.setDescription(userBadge.getBadge().getDescription());
+                badgeResponse.setIconUrl(userBadge.getBadge().getIconUrl());
+                badgeResponse.setRequirement(userBadge.getBadge().getRequirement());
+                badgeResponse.setAcquiredAt(userBadge.getAcquiredAt());
+                badgeResponses.add(badgeResponse);
+            }
+            response.setBadges(badgeResponses);
+        }
+
+        return response;
     }
 }

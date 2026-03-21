@@ -19,10 +19,12 @@ public class FanHubResponse {
     private Boolean isPrivate;
     private Boolean requiresApproval;
     private Instant createdAt;
-    
+
     private Long ownerUserId;
     private String ownerUsername;
     private String ownerDisplayName;
-    
+
     private List<String> categories;
+
+    private Long memberCount;
 }

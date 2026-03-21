@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
+import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.services.EmailService;
 import com.sep490.vtuber_fanhub.services.OtpService;
 import com.sep490.vtuber_fanhub.services.UserService;
@@ -72,6 +73,16 @@ public class UserController {
                 .success(true)
                 .message("Success")
                 .data(userService.updateUser(request))
+                .build()
+        );
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<?> getUserDetailWithBadge(@PathVariable Long userId) {
+        return ResponseEntity.ok().body(APIResponse.<UserResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(userService.getUserDetailWithBadge(userId))
                 .build()
         );
     }

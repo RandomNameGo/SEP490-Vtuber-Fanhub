@@ -15,4 +15,6 @@ public interface FanHubService {
     String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, MultipartFile background ,MultipartFile avatar) throws IOException;
 
     List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, boolean includePrivate);
+
+    List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize);
 }

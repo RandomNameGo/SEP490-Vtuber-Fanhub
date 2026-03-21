@@ -6,8 +6,10 @@ import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.FanHubCategory;
+import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.FanHubCategoryRepository;
+import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,6 +44,8 @@ public class FanHubServiceImpl implements FanHubService {
     private final CloudinaryService cloudinaryService;
 
     private final AuthService authService;
+
+    private final FanHubMemberRepository fanHubMemberRepository;
 
     @Override
     @Transactional
@@ -131,6 +135,22 @@ public class FanHubServiceImpl implements FanHubService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize) {
+        Pageable paging = PageRequest.of(pageNo, pageSize);
+
+        List<FanHub> fanHubs = fanHubRepository.findTopFanHubsByMemberCount(paging);
+
+        if (fanHubs.isEmpty()) {
+            return List.of();
+        }
+
+        return fanHubs.stream()
+                .map(this::mapToFanHubResponseWithMemberCount)
+                .collect(Collectors.toList());
+    }
+
     private FanHubResponse mapToFanHubResponse(FanHub fanHub) {
         FanHubResponse response = new FanHubResponse();
         response.setFanHubId(fanHub.getId());
@@ -155,6 +175,16 @@ public class FanHubServiceImpl implements FanHubService {
                 .map(FanHubCategory::getCategoryName)
                 .collect(Collectors.toList());
         response.setCategories(categories);
+
+        return response;
+    }
+
+    private FanHubResponse mapToFanHubResponseWithMemberCount(FanHub fanHub) {
+        FanHubResponse response = mapToFanHubResponse(fanHub);
+        
+        long memberCount = fanHubMemberRepository.findByHubIdAndStatus(fanHub.getId(), "JOINED", Pageable.unpaged())
+                .getTotalElements();
+        response.setMemberCount(memberCount);
 
         return response;
     }
