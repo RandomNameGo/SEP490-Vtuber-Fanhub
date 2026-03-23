@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -12,10 +13,10 @@ public class GeminiAIServiceImpl implements  GeminiAIService{
     @Value("${google.api-key}")
     private String googleApiKey;
 
+    private final String modelUrl = "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite#gemini-25-flash-lite:generateContent?key=";
+
     @Override
     public String test() {
-        String url = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=" + googleApiKey;
-
         RestTemplate restTemplate = new RestTemplate();
 
         Map<String, Object> requestBody = Map.of(
@@ -27,7 +28,7 @@ public class GeminiAIServiceImpl implements  GeminiAIService{
         );
         String outputText = "";
         try{
-            Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
+            Map<String, Object> response = restTemplate.postForObject(modelUrl + googleApiKey, requestBody, Map.class);
             outputText = extractTextFromResponse(response);
         }catch(Exception ermWhatTheSigma){
             ermWhatTheSigma.printStackTrace();
@@ -37,8 +38,6 @@ public class GeminiAIServiceImpl implements  GeminiAIService{
 
     @Override
     public String sendPrompt(String prompt) {
-        String url = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=" + googleApiKey;
-
         RestTemplate restTemplate = new RestTemplate();
 
         Map<String, Object> requestBody = Map.of(
@@ -50,24 +49,23 @@ public class GeminiAIServiceImpl implements  GeminiAIService{
         );
         String outputText = "";
         try{
-            Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
+            Map<String, Object> response = restTemplate.postForObject(modelUrl + googleApiKey, requestBody, Map.class);
             outputText = extractTextFromResponse(response);
         }catch(Exception ermWhatTheSigma){
             ermWhatTheSigma.printStackTrace();
+            throw new RuntimeException("gemini: Error sending prompt");
         }
         return outputText;
     }
 
     @Override
-    public String listModels() {
-        String url = "https://generativelanguage.googleapis.com/v1/models?key=" + googleApiKey;
-
+    public JsonNode listModels() {
         RestTemplate restTemplate = new RestTemplate();
 
         try {
-            return restTemplate.getForObject(url, String.class);
+            return restTemplate.getForObject("https://generativelanguage.googleapis.com/v1beta/models?key=" + googleApiKey, JsonNode.class);
         } catch (Exception e) {
-            return "Error listing models: " + e.getMessage();
+            throw new RuntimeException("Error while fetching models: " + e.getMessage());
         }
     }
 

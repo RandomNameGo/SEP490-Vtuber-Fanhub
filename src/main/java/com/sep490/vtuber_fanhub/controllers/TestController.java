@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
 import com.sep490.vtuber_fanhub.services.ContentValidationService;
@@ -27,6 +28,17 @@ public class TestController {
                         .message("Test Gemini Success")
                         .success(true)
                         .data(geminiAIService.test())
+                        .build()
+        );
+    }
+
+    @GetMapping("/gemini/models")
+    public ResponseEntity<APIResponse<JsonNode>> getModels(){
+        return ResponseEntity.ok(
+                APIResponse.<JsonNode>builder()
+                        .message("Test Gemini Success")
+                        .success(true)
+                        .data(geminiAIService.listModels())
                         .build()
         );
     }
@@ -96,4 +108,5 @@ public class TestController {
                         .build()
         );
     }
+
 }
