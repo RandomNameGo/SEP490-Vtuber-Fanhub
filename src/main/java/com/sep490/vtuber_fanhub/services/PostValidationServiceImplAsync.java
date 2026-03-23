@@ -26,6 +26,7 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     @Async("validationExecutor")
     public void validatePost(Post post) {
         try {
+            System.out.println("Validating video with Asynchronous approach.");
             // validate text first
             String textValidation = contentValidationService.validateText(post.getContent());
             String[] text_validation_split = textValidation.split("@");

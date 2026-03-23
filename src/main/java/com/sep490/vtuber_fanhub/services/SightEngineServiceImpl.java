@@ -99,21 +99,36 @@ public class SightEngineServiceImpl implements SightEngineService{
 
                 HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
                 ResponseEntity<JsonNode> response = restTemplate.postForEntity(apiUrl, requestEntity, JsonNode.class);
+                System.out.println("SightEngineServiceImpl: response:");
+                System.out.println(response);
                 return response.getBody();
 
             } else if (mediaType.equals(PostMediaType.VIDEO)) {
+//                System.out.println("Calling SightEngine for Video");
+//                String apiUrl = "https://api.sightengine.com/1.0/video/check-workflow-sync.json";
+//
+//                UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiUrl)
+//                        .queryParam("stream_url", url)
+//                        .queryParam("workflow", videoWorkflowId)
+//                        .queryParam("api_user", apiUser)
+//                        .queryParam("api_secret", apiSecret);
+//
+//                ResponseEntity<JsonNode> response = restTemplate.getForEntity(builder.toUriString(), JsonNode.class);
+//                return response.getBody();
                 System.out.println("Calling SightEngine for Video");
                 String apiUrl = "https://api.sightengine.com/1.0/video/check-workflow-sync.json";
 
-                UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiUrl)
-                        .queryParam("stream_url", url)
-                        .queryParam("workflow", videoWorkflowId)
-                        .queryParam("api_user", apiUser)
-                        .queryParam("api_secret", apiSecret);
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+                MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+                body.add("api_user", apiUser);
+                body.add("api_secret", apiSecret);
+                body.add("workflow", videoWorkflowId);
+                body.add("stream_url", url);
 
-                ResponseEntity<JsonNode> response = restTemplate.getForEntity(builder.toUriString(), JsonNode.class);
+                HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+                ResponseEntity<JsonNode> response = restTemplate.postForEntity(apiUrl, requestEntity, JsonNode.class);
                 return response.getBody();
-
             } else {
                 throw new RuntimeException("Invalid Media Type");
             }

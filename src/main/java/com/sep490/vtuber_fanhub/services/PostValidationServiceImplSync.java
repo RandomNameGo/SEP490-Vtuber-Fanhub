@@ -30,6 +30,7 @@ public class PostValidationServiceImplSync implements PostValidationService {
     @Async("validationExecutor")
     public void validatePost(Post post) {
 
+        System.out.println("Validating video with Synchronous approach.");
         try {
             StringBuilder totalComments = new StringBuilder();
 
