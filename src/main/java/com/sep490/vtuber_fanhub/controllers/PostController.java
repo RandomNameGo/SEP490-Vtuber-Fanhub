@@ -7,6 +7,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateReportPostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.ReportPostResponse;
 import com.sep490.vtuber_fanhub.services.PostCommentService;
 import com.sep490.vtuber_fanhub.services.PostService;
 import com.sep490.vtuber_fanhub.services.ReportPostService;
@@ -244,6 +245,22 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(reportPostService.createReportPost(createReportPostRequest))
+                .build()
+        );
+    }
+
+    @GetMapping("/reports/posts/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getReportPostsByFanHubId(
+            @PathVariable Long fanHubId,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<ReportPostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.getReportPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))
                 .build()
         );
     }
