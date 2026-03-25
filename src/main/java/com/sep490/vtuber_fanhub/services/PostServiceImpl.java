@@ -2,11 +2,13 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreatePollPostRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
+import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
+import com.sep490.vtuber_fanhub.exceptions.CooldownException;
+import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
-import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.models.FanHub;
-import com.sep490.vtuber_fanhub.models.FanHubCategory;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.PostHashtag;
@@ -60,7 +62,8 @@ public class PostServiceImpl implements PostService {
 
     private final FanHubCategoryRepository fanHubCategoryRepository;
 
-    private final PostValidationService postValidationService;
+    // To switch implementations, rename the variable to the implementation that you want in camelCase.
+    private final PostValidationService postValidationServiceImplSync;
 
     private final UserDailyMissionRepository userDailyMissionRepository;
 
@@ -72,6 +75,8 @@ public class PostServiceImpl implements PostService {
 
     private static final double FOLLOWED_RATIO = 0.7;
     private static final double SUGGESTION_RATIO = 0.3;
+    private final long AI_VALIDATION_COOLDOWN_MINUTES = 20;
+    private final GeminiAIServiceImpl geminiAIServiceImpl;
 
     @Override
     @Transactional
@@ -168,7 +173,9 @@ public class PostServiceImpl implements PostService {
             }
         }
 
-        postValidationService.validatePost(post);
+        postValidationServiceImplSync.validatePost(post);
+        post.setAiValidationLastSentAt(Instant.now());
+        postRepository.save(post);
 
         return "Created post successfully";
     }
@@ -448,8 +455,52 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Boolean AIValidate(Long postId) {
-        return null;
+    @Transactional
+    public String sendAiValidate(Long postId) {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        Long fanHubId = post.getHub().getId();
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(tokenUser.get().getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(tokenUser.get().getId()))
+                        .orElse(false);
+
+        // Check if user is a member with MODERATOR role
+        FanHubMember memberShip = fanHubMemberRepository.findByHub_IdAndUser_Id(fanHubId, tokenUser.get().getId())
+                .orElseThrow(() -> new NotFoundException("User is not member of this fanhub"));
+        boolean isModerator = memberShip.getRoleInHub().equals("MODERATOR");
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can send ai validation job " +
+                    "to post of the Same Hub.");
+        }
+
+
+        Instant lastExecutedTime = post.getAiValidationLastSentAt();
+        if(lastExecutedTime!=null){
+            Instant cooldownEndTime = lastExecutedTime.plus(AI_VALIDATION_COOLDOWN_MINUTES, ChronoUnit.MINUTES);
+            if(cooldownEndTime.isBefore(Instant.now())) {
+                Duration remaining = Duration.between(cooldownEndTime, Instant.now());
+                throw new CooldownException("AI Validation cooldown: " + String.format("%02d:%02d", remaining.toMinutes(), remaining.toSecondsPart()));
+            }
+        }
+
+        postValidationServiceImplSync.validatePost(post);
+        post.setAiValidationLastSentAt(Instant.now());
+        postRepository.save(post);
+
+        return "Job sent successfully!";
     }
 
     public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy) {
@@ -534,6 +585,50 @@ public class PostServiceImpl implements PostService {
         return mergedPosts.subList(startIndex, endIndex).stream()
                 .map(this::mapToPostResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public TranslatePostResponse translatePost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+        String translatingLanguage = "English";
+        boolean userHasSetLanguage = false;
+
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername;
+        Optional<User> tokenUser = Optional.empty();
+        if (token != null) {
+            try {
+                tokenUsername = jwtService.getUsernameFromToken(token);
+                tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+            } catch (Exception e) {
+                // Token is invalid or expired, treat as unauthenticated
+                tokenUser = Optional.empty();
+            }
+        }
+
+        if(tokenUser.isPresent()){
+            String userSetLanguage = tokenUser.get().getTranslateLanguage();
+            if(userSetLanguage != null){
+                translatingLanguage = userSetLanguage;
+                userHasSetLanguage = true;
+            }
+        }
+
+        return TranslatePostResponse.builder()
+                .translatedText(geminiAIServiceImpl.translateText(post.getContent(), translatingLanguage))
+                .translate_language_set(userHasSetLanguage)
+                    .extraComment(!userHasSetLanguage ? "Set your preferred language in the settings!" : null)
+                .build();
+    }
+
+    @Override
+    public SummarizePostResponse summarizePost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+        return SummarizePostResponse.builder()
+                .summarizeResult(geminiAIServiceImpl.summarizeText(post.getContent()))
+                .build();
     }
 
 

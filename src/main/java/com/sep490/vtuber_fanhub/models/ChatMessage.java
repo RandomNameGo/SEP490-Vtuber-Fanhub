@@ -12,6 +12,7 @@ import java.time.Instant;
 @Table(name = "chat_message")
 public class ChatMessage {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "message_id", nullable = false)
     private Long id;
 
@@ -22,6 +23,10 @@ public class ChatMessage {
     @Lob
     @Column(name = "content")
     private String content;
+
+    @Lob
+    @Column(name = "thought")
+    private String thought;
 
     @Column(name = "created_at")
     private Instant createdAt;
