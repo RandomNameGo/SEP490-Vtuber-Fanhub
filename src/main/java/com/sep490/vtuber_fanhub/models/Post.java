@@ -65,4 +65,10 @@ public class Post {
     @Column(name = "ai_validation_comment")
     private String aiValidationComment;
 
+    // Since Moderators can send ai validation requests for post, we must prevent them from spamming the request.
+    @Lob
+    @Column(name = "ai_validation_last_sent_at")
+    private Instant aiValidationLastSentAt;
+
+
 }

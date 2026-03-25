@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -16,6 +17,9 @@ public interface PostService {
 
     String reviewPost(Long postId, String status);
 
-    Boolean AIValidate(Long postId);
+    String sendAiValidate(Long postId);
+
     List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy);
+
+    TranslatePostResponse translatePost(Long postId);
 }

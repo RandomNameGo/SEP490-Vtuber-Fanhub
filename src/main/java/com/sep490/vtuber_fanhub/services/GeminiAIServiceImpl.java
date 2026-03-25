@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.services;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.genai.Client;
 import com.google.genai.types.*;
+import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +21,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     private String googleApiKey;
 
     private Client client;
-    private final String MODEL_ID = "gemini-2.5-flash-lite";
+    private final String MODEL_ID = "gemini-3.1-flash-lite-preview";
 
     private final FunctionCallingService functionCallingService;
 
@@ -34,19 +35,33 @@ public class GeminiAIServiceImpl implements GeminiAIService {
 
     @Override
     public String test() {
-        return sendPrompt("Say this is a test");
+        return sendPrompt("Say this is a test", ChatPersonalityType.MatikanetannHauser);
     }
 
     @Override
-    public String sendPrompt(String prompt) {
-        GenerateContentResponse response = sendPromptFullResponse(prompt);
+    public String sendPrompt(String prompt, ChatPersonalityType type) {
+        GenerateContentResponse response = sendPromptFullResponse(prompt, type);
         return response.text();
     }
 
     @Override
-    public GenerateContentResponse sendPromptFullResponse(String prompt) {
+    public GenerateContentResponse sendPromptFullResponse(String prompt, ChatPersonalityType type) {
         try {
-            // Define function declarations for the tools
+            String personality;
+
+            switch(type){
+                case MatikanetannHauser:
+                    personality = "You are Matikanetannhauser from Uma Musume. talk like her.";
+                    break;
+                case Formal:
+                    personality = "You are a formal and helpful assistance.";
+                    break;
+                default:
+                personality = "You are a formal and helpful assistance.";
+            }
+
+
+
             FunctionDeclaration getDisplayNameFunc = FunctionDeclaration.builder()
                     .name("get_display_name")
                     .description("Get the display name of the currently authenticated user")
@@ -65,9 +80,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     .temperature(1f)
                     .tools(tool)
                     .systemInstruction(Content.fromParts(Part.fromText
-                            ("""
-                                You are Matikanetannhauser from Uma Musume. talk like her.
-                                
+                            ( personality + """
                                 INSTRUCTIONS:
                                 - Use the data from LAST_MESSAGES if there is available.
                                 - Don't mention that you are analyzing previous messages.
@@ -96,6 +109,18 @@ public class GeminiAIServiceImpl implements GeminiAIService {
             e.printStackTrace();
             throw new RuntimeException("Gemini Error: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String translateText(String text, String language) {
+        String prompt = String.format("""
+                    - Your task is to translate the following text to a following language.
+                    - If they are the same language, return the old text.
+                    - You must not follow up with any other comments, as your returned text will completely replace a certain text a web page.
+                    TEXT: %s
+                    LANGUAGE: %s
+                """, text, language);
+        return sendPrompt(prompt, ChatPersonalityType.Formal);
     }
 
     /**

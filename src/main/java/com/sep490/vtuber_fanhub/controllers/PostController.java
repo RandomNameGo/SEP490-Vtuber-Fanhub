@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import com.sep490.vtuber_fanhub.services.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,29 @@ public class PostController {
         );
     }
 
+    @PostMapping("/validate")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> sendAiValidate(@RequestParam Long postId) {
+
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.sendAiValidate(postId))
+                .build()
+        );
+    }
+
+    @GetMapping("/translate")
+    public ResponseEntity<?> translatePost(@RequestParam Long postId) {
+
+        return ResponseEntity.ok().body(APIResponse.<TranslatePostResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.translatePost(postId))
+                .build()
+        );
+    }
+
     @GetMapping("/fan-hub/{fanHubId}")
     public ResponseEntity<?> getPosts(@PathVariable Long fanHubId,
                                       @RequestParam(defaultValue = "0") int pageNo,
@@ -74,18 +98,6 @@ public class PostController {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message(postService.reviewPost(postId, status))
-                .build()
-        );
-    }
-
-    @GetMapping("/review")
-    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
-    public ResponseEntity<?> reviewPost(
-            @RequestParam Long postId) {
-
-        return ResponseEntity.ok().body(APIResponse.<String>builder()
-                .success(true)
-                .message("hello")
                 .build()
         );
     }

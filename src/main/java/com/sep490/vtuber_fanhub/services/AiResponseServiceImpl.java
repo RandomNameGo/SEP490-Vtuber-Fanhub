@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.services;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.ChatMessage;
 import com.sep490.vtuber_fanhub.models.ChatSession;
+import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.ChatMessageRepository;
 import com.sep490.vtuber_fanhub.repositories.ChatSessionRepository;
@@ -21,6 +22,7 @@ public class AiResponseServiceImpl implements AiResponseService{
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final GeminiAIService geminiAIService;
+    private final ChatPersonalityType AI_CHATBOT_RESPONSE_PERSONALITY_TYPE = ChatPersonalityType.MatikanetannHauser;
 
 
     @Override
@@ -44,10 +46,10 @@ public class AiResponseServiceImpl implements AiResponseService{
     public String smartChat(String userPrompt, Long userId, Long sessionId) {
         List<ChatMessage> lastMessages = chatMessageRepository.findTop20BySession_Id(sessionId);
 
-        return generateResponse(userPrompt, convertToPromptContext(lastMessages));
+        return generateResponse(userPrompt, convertToPromptContext(lastMessages), AI_CHATBOT_RESPONSE_PERSONALITY_TYPE);
     }
 
-    private String generateResponse(String userPrompt, String lastMessages) {
+    private String generateResponse(String userPrompt, String lastMessages, ChatPersonalityType personalityType) {
         String fullPrompt = String.format(""" 
             USER PROMPT: %s
             
@@ -55,7 +57,7 @@ public class AiResponseServiceImpl implements AiResponseService{
             
             """, userPrompt, lastMessages);
 
-        return geminiAIService.sendPrompt(fullPrompt);
+        return geminiAIService.sendPrompt(fullPrompt, personalityType);
     }
 
     public String convertToPromptContext(List<ChatMessage> messages) {
