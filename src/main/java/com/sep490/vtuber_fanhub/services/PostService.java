@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
+import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,4 +23,6 @@ public interface PostService {
     List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy);
 
     TranslatePostResponse translatePost(Long postId);
+
+    SummarizePostResponse summarizePost(Long postId);
 }

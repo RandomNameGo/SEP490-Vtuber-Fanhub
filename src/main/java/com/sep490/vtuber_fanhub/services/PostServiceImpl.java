@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
+import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import com.sep490.vtuber_fanhub.exceptions.CooldownException;
@@ -486,6 +487,15 @@ public class PostServiceImpl implements PostService {
                 .translatedText(geminiAIServiceImpl.translateText(post.getContent(), translatingLanguage))
                 .translate_language_set(userHasSetLanguage)
                     .extraComment(!userHasSetLanguage ? "Set your preferred language in the settings!" : null)
+                .build();
+    }
+
+    @Override
+    public SummarizePostResponse summarizePost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+        return SummarizePostResponse.builder()
+                .summarizeResult(geminiAIServiceImpl.summarizeText(post.getContent()))
                 .build();
     }
 

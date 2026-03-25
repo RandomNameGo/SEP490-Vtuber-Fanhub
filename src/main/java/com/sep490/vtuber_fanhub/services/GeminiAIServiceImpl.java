@@ -123,6 +123,17 @@ public class GeminiAIServiceImpl implements GeminiAIService {
         return sendPrompt(prompt, ChatPersonalityType.Formal);
     }
 
+    @Override
+    public String summarizeText(String text) {
+        String prompt = String.format("""
+                    - Your task is to summarize the following text.
+                    - To add more background, the text is the content of a post (like a facebook post / reddit post)
+                    - You must not follow up with any other comments, as your returned text will completely replace a certain text a web page.
+                    TEXT: %s
+                """, text);
+        return sendPrompt(prompt, ChatPersonalityType.Formal);
+    }
+
     /**
      * Handle function calls from the model response
      * This method processes any function calls and sends the results back to the model

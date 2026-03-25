@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import com.sep490.vtuber_fanhub.services.PostService;
 import jakarta.validation.Valid;
@@ -70,6 +71,17 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postService.translatePost(postId))
+                .build()
+        );
+    }
+
+    @GetMapping("/summarize")
+    public ResponseEntity<?> summarizePost(@RequestParam Long postId) {
+
+        return ResponseEntity.ok().body(APIResponse.<SummarizePostResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.summarizePost(postId))
                 .build()
         );
     }

@@ -10,5 +10,5 @@ public interface GeminiAIService {
     JsonNode listModels();
     GenerateContentResponse sendPromptFullResponse(String prompt, ChatPersonalityType type);
     String translateText(String text, String language);
-
+    String summarizeText(String text);
 }
