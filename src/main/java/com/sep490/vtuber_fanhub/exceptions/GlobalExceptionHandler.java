@@ -81,4 +81,14 @@ public class GlobalExceptionHandler {
                 .build());
     }
 
+    @ExceptionHandler(CooldownException.class)
+    public ResponseEntity<APIResponse<String>> handleCooldownException(CooldownException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.<String>builder()
+                .success(false)
+                .message("Sending AI Validation request for this post is on cooldown.")
+                .data(e.getMessage())
+                .error("400")
+                .build());
+    }
+
 }
