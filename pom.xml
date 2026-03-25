@@ -59,7 +59,8 @@
 		<dependency>
 			<groupId>com.google.genai</groupId>
 			<artifactId>google-genai</artifactId>
-			<version>0.8.0</version>
+			<version>1.44.0</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
@@ -108,6 +109,9 @@
 							<artifactId>lombok</artifactId>
 						</path>
 					</annotationProcessorPaths>
+					<compilerArgs>
+						<arg>-parameters</arg>
+					</compilerArgs>
 				</configuration>
 			</plugin>
 			<plugin>
