@@ -6,6 +6,7 @@ import com.sep490.vtuber_fanhub.models.SystemAccount;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.SystemAccountRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -65,6 +66,25 @@ public class AuthServiceImpl implements AuthService {
             throw new CustomAuthenticationException("Invalid username or password");
         }
 
+    }
+
+    @Override
+    public User getUserFromToken(HttpServletRequest httpServletRequest) {
+
+        String token = jwtService.getCurrentToken(httpServletRequest);
+
+        if (token == null) {
+            throw new CustomAuthenticationException("Invalid token");
+        }
+
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+        if (tokenUser.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        return tokenUser.get();
     }
 
 

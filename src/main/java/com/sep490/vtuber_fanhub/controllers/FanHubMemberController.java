@@ -1,8 +1,13 @@
 package com.sep490.vtuber_fanhub.controllers;
 
+import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
+import com.sep490.vtuber_fanhub.dto.requests.CreateReportMemberRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
+import com.sep490.vtuber_fanhub.services.BanMemberService;
 import com.sep490.vtuber_fanhub.services.FanHubMemberService;
+import com.sep490.vtuber_fanhub.services.ReportMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +21,10 @@ import java.util.List;
 public class FanHubMemberController {
 
     private final FanHubMemberService fanHubMemberService;
+
+    private final ReportMemberService reportMemberService;
+
+    private final BanMemberService banMemberService;
 
     @PostMapping("/join/{fanHubId}")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
@@ -78,6 +87,44 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(fanHubMemberService.reviewFanHubMember(fanHubMemberId, status))
+                .build()
+        );
+    }
+
+    @PostMapping("/report")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> reportMember(@RequestBody CreateReportMemberRequest createReportMemberRequest) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.createReportMember(createReportMemberRequest))
+                .build()
+        );
+    }
+
+    @GetMapping("/reports/members/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getReportMembersByFanHubId(
+            @PathVariable Long fanHubId,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<ReportMemberResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.getReportMembersByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @PostMapping("/ban")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> banMember(@RequestBody CreateBanMemberRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(banMemberService.banFanHubMember(request))
                 .build()
         );
     }

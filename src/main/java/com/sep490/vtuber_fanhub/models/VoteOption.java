@@ -1,6 +1,8 @@
 package com.sep490.vtuber_fanhub.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,6 +20,8 @@ public class VoteOption {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
+    @NotBlank(message = "Option text must not be blank")
+    @Size(max = 255, message = "Option text must not exceed 255 characters")
     @Column(name = "option_text")
     private String optionText;
 

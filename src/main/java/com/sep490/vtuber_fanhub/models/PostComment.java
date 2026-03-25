@@ -12,6 +12,7 @@ import java.time.Instant;
 @Table(name = "post_comments")
 public class PostComment {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "comment_id", nullable = false)
     private Long id;
 

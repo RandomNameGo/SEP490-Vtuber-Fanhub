@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
+import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -13,4 +14,6 @@ public interface UserService {
     String updateUser(UpdateUserRequest updateUserRequest);
 
     String uploadAvatarFrame(MultipartFile avatarFile, MultipartFile frameFile) throws IOException;
+
+    UserResponse getUserDetailWithBadge(Long userId);
 }

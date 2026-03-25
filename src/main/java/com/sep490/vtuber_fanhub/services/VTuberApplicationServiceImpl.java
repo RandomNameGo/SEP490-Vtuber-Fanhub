@@ -35,30 +35,23 @@ public class VTuberApplicationServiceImpl implements VTuberApplicationService {
 
     private final HttpServletRequest httpServletRequest;
 
-    private final JWTService jwtService;
-
     private final SystemAccountRepository systemAccountRepository;
+
+    private final AuthService authService;
+
+    private final JWTService jwtService;
 
     @Override
     @Transactional
     public String createVTuberApplication(CreateVTuberApplication request) {
-
-
-        String token = jwtService.getCurrentToken(httpServletRequest);
-
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new NotFoundException("User not found");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<User> user = userRepository.findById(request.getUserId());
         if (user.isEmpty()) {
             throw new NotFoundException("User not found");
         }
 
-        if(!Objects.equals(tokenUser.get().getId(), request.getUserId())) {
+        if(!Objects.equals(currentUser.getId(), request.getUserId())) {
             throw new CustomAuthenticationException("Wrong credentials");
         }
 

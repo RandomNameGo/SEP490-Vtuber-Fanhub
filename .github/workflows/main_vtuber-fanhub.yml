@@ -25,6 +25,8 @@ jobs:
           distribution: 'microsoft'
 
       - name: Build with Maven
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: mvn clean install
 
       - name: Rename executable JAR to app.jar
@@ -64,3 +66,4 @@ jobs:
           app-name: 'vtuber-fanhub'
           slot-name: 'Production'
           package: 'app.jar'
+

@@ -2,8 +2,13 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
-import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
+import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
+import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.models.UserBadge;
+import com.sep490.vtuber_fanhub.models.UserDailyMission;
+import com.sep490.vtuber_fanhub.repositories.UserBadgeRepository;
+import com.sep490.vtuber_fanhub.repositories.UserDailyMissionRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,11 +30,15 @@ public class UserServiceImpl implements UserService{
 
     private final PasswordEncoder passwordEncoder;
 
-    private final JWTService jwtService;
-
     private final HttpServletRequest httpServletRequest;
 
     private final CloudinaryService cloudinaryService;
+
+    private final UserDailyMissionRepository userDailyMissionRepository;
+
+    private final AuthService authService;
+
+    private final UserBadgeRepository userBadgeRepository;
 
     @Override
     @Transactional
@@ -58,29 +68,26 @@ public class UserServiceImpl implements UserService{
 
         userRepository.save(user);
 
+        UserDailyMission userDailyMission = new UserDailyMission();
+        userDailyMission.setUser(user);
+        userDailyMission.setLikeAmount(0);
+        userDailyMissionRepository.save(userDailyMission);
+
         return "Created user successfully";
     }
 
     @Override
     @Transactional
     public String uploadAvatarFrame(MultipartFile avatarFile, MultipartFile frameFile) throws IOException {
-
-        String token = jwtService.getCurrentToken(httpServletRequest);
-
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
+        User currentUser = authService.getUserFromToken(httpServletRequest);
 
         if(!avatarFile.isEmpty()){
             String avatarUrl = cloudinaryService.uploadFile(avatarFile);
-            tokenUser.get().setAvatarUrl(avatarUrl);
+            currentUser.setAvatarUrl(avatarUrl);
         }
         if(!frameFile.isEmpty()){
             String frameUrl = cloudinaryService.uploadFile(frameFile);
-            tokenUser.get().setFrameUrl(frameUrl);
+            currentUser.setFrameUrl(frameUrl);
         }
 
         return "Uploaded successfully";
@@ -90,16 +97,7 @@ public class UserServiceImpl implements UserService{
     @Transactional
     public String updateUser(UpdateUserRequest updateUserRequest) {
 
-        String token = jwtService.getCurrentToken(httpServletRequest);
-
-        String tokenUsername = jwtService.getUsernameFromToken(token);
-
-        Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
-        if (tokenUser.isEmpty()) {
-            throw new CustomAuthenticationException("Authentication failed");
-        }
-
-        User user = tokenUser.get();
+        User user = authService.getUserFromToken(httpServletRequest);
 
         if (updateUserRequest.getEmail() != null && !updateUserRequest.getEmail().isEmpty()) {
             if (!user.getEmail().equals(updateUserRequest.getEmail()) && userRepository.existsByEmail(updateUserRequest.getEmail())) {
@@ -125,5 +123,53 @@ public class UserServiceImpl implements UserService{
         userRepository.save(user);
 
         return "Updated user successfully";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getUserDetailWithBadge(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
+
+        List<UserBadge> userBadges = userBadgeRepository.findByUserId(userId);
+
+        return mapToUserResponse(user, userBadges);
+    }
+
+    private UserResponse mapToUserResponse(User user, List<UserBadge> userBadges) {
+        UserResponse response = new UserResponse();
+
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setDisplayName(user.getDisplayName());
+        response.setAvatarUrl(user.getAvatarUrl());
+        response.setFrameUrl(user.getFrameUrl());
+        response.setBio(user.getBio());
+        response.setRole(user.getRole());
+        response.setPoints(user.getPoints());
+        response.setPaidPoints(user.getPaidPoints());
+        response.setTranslateLanguage(user.getTranslateLanguage());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+        response.setIsActive(user.getIsActive());
+
+        if (userBadges != null && !userBadges.isEmpty()) {
+            List<UserResponse.UserBadgeResponse> badgeResponses = new ArrayList<>();
+            for (UserBadge userBadge : userBadges) {
+                UserResponse.UserBadgeResponse badgeResponse = new UserResponse.UserBadgeResponse();
+                badgeResponse.setUserBadgeId(userBadge.getId());
+                badgeResponse.setBadgeId(userBadge.getBadge().getId());
+                badgeResponse.setBadgeName(userBadge.getBadge().getBadgeName());
+                badgeResponse.setDescription(userBadge.getBadge().getDescription());
+                badgeResponse.setIconUrl(userBadge.getBadge().getIconUrl());
+                badgeResponse.setRequirement(userBadge.getBadge().getRequirement());
+                badgeResponse.setAcquiredAt(userBadge.getAcquiredAt());
+                badgeResponses.add(badgeResponse);
+            }
+            response.setBadges(badgeResponses);
+        }
+
+        return response;
     }
 }
