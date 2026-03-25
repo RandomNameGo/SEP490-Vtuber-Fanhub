@@ -8,12 +8,7 @@ import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import com.sep490.vtuber_fanhub.exceptions.CooldownException;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
-import com.sep490.vtuber_fanhub.models.FanHub;
-import com.sep490.vtuber_fanhub.models.FanHubMember;
-import com.sep490.vtuber_fanhub.models.Post;
-import com.sep490.vtuber_fanhub.models.PostHashtag;
-import com.sep490.vtuber_fanhub.models.PostMedia;
-import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.repositories.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,6 +69,8 @@ public class PostServiceImpl implements PostService {
     private final AuthService authService;
 
     private final PostVoteRepository postVoteRepository;
+
+    private final JWTService jwtService;
 
     private static final double FOLLOWED_RATIO = 0.7;
     private static final double SUGGESTION_RATIO = 0.3;
@@ -246,7 +245,7 @@ public class PostServiceImpl implements PostService {
             }
         }
 
-        postValidationService.validatePost(post);
+        postValidationServiceImplSync.validatePost(post);
 
         return "Created poll post successfully";
     }
@@ -452,6 +451,11 @@ public class PostServiceImpl implements PostService {
         postRepository.save(post.get());
 
         return "Post rejected successfully";
+    }
+
+    @Override
+    public Boolean AIValidate(Long postId) {
+        return null;
     }
 
     @Override

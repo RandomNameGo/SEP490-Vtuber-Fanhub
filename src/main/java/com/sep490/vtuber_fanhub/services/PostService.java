@@ -34,8 +34,6 @@ public interface PostService {
 
     Boolean AIValidate(Long postId);
 
-    List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy);
-
     String likePost(Long postId);
 
     String unlikePost(Long postId);
