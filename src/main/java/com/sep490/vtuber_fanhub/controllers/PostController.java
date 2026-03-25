@@ -90,6 +90,20 @@ public class PostController {
         );
     }
 
+    @GetMapping("/fan-hub/{fanHubId}/announcements-events")
+    public ResponseEntity<?> getAnnouncementAndEventPosts(@PathVariable long fanHubId,
+                                                          @RequestParam(defaultValue = "0") int pageNo,
+                                                          @RequestParam(defaultValue = "10") int pageSize,
+                                                          @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getAnnouncementAndEventPosts(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
     @PutMapping("/review")
     @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> reviewPost(

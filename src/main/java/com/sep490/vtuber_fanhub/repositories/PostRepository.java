@@ -23,6 +23,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             String hashtag,
             Pageable pageable);
 
+    @Query("select p from Post p " +
+            "where p.hub.id = :fanHubId " +
+            "and p.status = :status " +
+            "and p.postType in :postTypes")
+    Page<Post> findByHubIdAndStatusAndPostTypes(
+            Long fanHubId,
+            String status,
+            List<String> postTypes,
+            Pageable pageable);
+
     //Find posts from specific hub IDs (user's followed hubs)
     @Query("select p from Post p " +
             "where p.hub.id in :hubIds " +

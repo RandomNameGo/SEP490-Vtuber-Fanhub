@@ -17,6 +17,8 @@ public interface PostService {
 
     List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag);
 
+    List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
+
     String reviewPost(Long postId, String status);
 
     Boolean AIValidate(Long postId);

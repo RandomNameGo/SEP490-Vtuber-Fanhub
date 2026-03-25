@@ -321,6 +321,43 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is a member of the FanHub
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                fanHubId, currentUser.getId());
+        if (member.isEmpty()) {
+            // If fanHub is public, allow viewing posts
+            if (!fanHub.get().getIsPrivate()) {
+                // Continue - public fanHub, non-member can view approved posts
+            } else {
+                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
+            }
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        List<String> postTypes = List.of("ANNOUNCEMENT", "EVENT_SCHEDULE");
+        Page<Post> pagedPosts = postRepository.findByHubIdAndStatusAndPostTypes(
+                fanHubId, "APPROVED", postTypes, paging);
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public String reviewPost(Long postId, String status) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
