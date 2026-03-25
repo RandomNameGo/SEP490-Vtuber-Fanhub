@@ -137,10 +137,15 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize) {
+    public List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category) {
         Pageable paging = PageRequest.of(pageNo, pageSize);
 
-        List<FanHub> fanHubs = fanHubRepository.findTopFanHubsByMemberCount(paging);
+        List<FanHub> fanHubs;
+        if (category == null || category.isEmpty()) {
+            fanHubs = fanHubRepository.findTopFanHubsByMemberCount(paging);
+        } else {
+            fanHubs = fanHubRepository.findTopFanHubsByMemberCountAndCategory(category, paging);
+        }
 
         if (fanHubs.isEmpty()) {
             return List.of();

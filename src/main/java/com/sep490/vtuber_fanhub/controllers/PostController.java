@@ -165,6 +165,29 @@ public class PostController {
         );
     }
 
+    @PutMapping("/{postId}/pin")
+    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    public ResponseEntity<?> pinPost(@PathVariable long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.pinPost(postId))
+                .build()
+        );
+    }
+
+    @PutMapping("/{postId}/reject")
+    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    public ResponseEntity<?> rejectPost(@PathVariable long postId,
+                                        @RequestParam(required = false) String reason) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.rejectPost(postId, reason))
+                .build()
+        );
+    }
+
     @PostMapping("/bookmark")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> bookmarkPost(@RequestParam long postId) {
