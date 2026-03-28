@@ -52,6 +52,10 @@ public class FanHubServiceImpl implements FanHubService {
     public String createFanHub(CreateFanHubRequest request) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
+        if(currentUser.getRole() != "VTUBER") {
+            throw new CustomAuthenticationException("You are not allowed to create a fan hub");
+        }
+
         FanHub fanHub = new FanHub();
         fanHub.setOwnerUser(currentUser);
         fanHub.setHubName(request.getHubName());
