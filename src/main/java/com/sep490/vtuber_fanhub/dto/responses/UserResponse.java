@@ -34,5 +34,6 @@ public class UserResponse {
         private String iconUrl;
         private String requirement;
         private Instant acquiredAt;
+        private Boolean isDisplay;
     }
 }

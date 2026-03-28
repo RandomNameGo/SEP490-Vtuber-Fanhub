@@ -131,7 +131,7 @@ public class UserServiceImpl implements UserService{
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
 
-        List<UserBadge> userBadges = userBadgeRepository.findByUserId(userId);
+        List<UserBadge> userBadges = userBadgeRepository.findByUserIdAndIsDisplayTrue(userId);
 
         return mapToUserResponse(user, userBadges);
     }
@@ -165,6 +165,7 @@ public class UserServiceImpl implements UserService{
                 badgeResponse.setIconUrl(userBadge.getBadge().getIconUrl());
                 badgeResponse.setRequirement(userBadge.getBadge().getRequirement());
                 badgeResponse.setAcquiredAt(userBadge.getAcquiredAt());
+                badgeResponse.setIsDisplay(userBadge.getIsDisplay());
                 badgeResponses.add(badgeResponse);
             }
             response.setBadges(badgeResponses);
