@@ -28,6 +28,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configure(http))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**"
@@ -39,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/vhub/api/v1/posts/feed").permitAll()
                         .requestMatchers("/vhub/api/v1/user/user-name/*").permitAll()
                         .requestMatchers("/vhub/api/v1/fan-hub/top").permitAll()
+                        // WebSocket endpoints
                         .requestMatchers("/ws-chat/**").permitAll()
                         .anyRequest().authenticated()
                 )
