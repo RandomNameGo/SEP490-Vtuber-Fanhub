@@ -31,11 +31,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**"
                         ).permitAll()
-                        .requestMatchers("vhub/api/v1/auth/**").permitAll()
-                        .requestMatchers("vhub/api/v1/user/verify").permitAll()
-                        .requestMatchers("vhub/api/v1/user/register").permitAll()
-                        .requestMatchers("vhub/api/v1/posts/feed").permitAll()
-                        .requestMatchers("vhub/api/v1/fan-hub/top").permitAll()
+                        .requestMatchers("/vhub/api/v1/auth/**").permitAll()
+                        .requestMatchers("/vhub/api/v1/user/verify").permitAll()
+                        .requestMatchers("/vhub/api/v1/user/register").permitAll()
+                        .requestMatchers("/vhub/api/v1/user/{id}").permitAll()
+                        .requestMatchers("/vhub/api/v1/posts/feed").permitAll()
+                        .requestMatchers("/vhub/api/v1/fan-hub/top").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).
