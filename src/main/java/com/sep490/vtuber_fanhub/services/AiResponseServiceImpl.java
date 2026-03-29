@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.sep490.vtuber_fanhub.dto.responses.MessageResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.ChatMessage;
 import com.sep490.vtuber_fanhub.models.ChatSession;
@@ -8,6 +9,7 @@ import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.ChatMessageRepository;
 import com.sep490.vtuber_fanhub.repositories.ChatSessionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ public class AiResponseServiceImpl implements AiResponseService{
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final GeminiAIService geminiAIService;
+    private final SimpMessageSendingOperations messagingTemplate;
     private final ChatPersonalityType AI_CHATBOT_RESPONSE_PERSONALITY_TYPE = ChatPersonalityType.MatikanetannHauser;
 
 
@@ -39,7 +42,20 @@ public class AiResponseServiceImpl implements AiResponseService{
         chatMessage.setCreatedAt(Instant.now());
         chatMessage.setContent(aiResponse);
         chatMessage.setSession(chatSession);
-        chatMessageRepository.save(chatMessage);
+        chatMessage = chatMessageRepository.save(chatMessage);
+
+        // Send AI response via WebSocket to /user/queue/reply
+        // Use /user prefix to target the specific user's queue
+        MessageResponse response = MessageResponse.builder()
+                        .id(chatMessage.getId())
+                        .createdAt(chatMessage.getCreatedAt())
+                        .content(chatMessage.getContent())
+                        .senderRole("AI")
+                        .build();
+        messagingTemplate.convertAndSendToUser(sender.getUsername(), "/queue/reply", response);
+        
+        // Also try sending directly to the queue without user prefix
+        messagingTemplate.convertAndSend("/queue/reply", response);
     }
 
     @Override

@@ -17,7 +17,7 @@ public class CORSConfig {
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .exposedHeaders("*")
-                        .allowCredentials(false)
+                        .allowCredentials(true)
                         .maxAge(3600);
             }
         };

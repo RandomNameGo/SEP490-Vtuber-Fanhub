@@ -18,7 +18,7 @@ import java.util.List;
 // The reason why i made two separate files is that it gets kinda tricky to solve the logic
 // Where the Image API is synchronous, while the Video API is asynchronous.
 // This could work as a backup if the asynchronous implementation is not working well.
-@Service
+@Service("postValidationServiceImplSync")
 @RequiredArgsConstructor
 public class PostValidationServiceImplSync implements PostValidationService {
 

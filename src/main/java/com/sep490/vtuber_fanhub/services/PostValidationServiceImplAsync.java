@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @RequiredArgsConstructor
-@Service
+@Service("postValidationServiceImplAsync")
 public class PostValidationServiceImplAsync implements PostValidationService {
 
     private final PostMediaRepository mediaRepository;

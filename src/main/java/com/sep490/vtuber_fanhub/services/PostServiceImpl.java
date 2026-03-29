@@ -20,6 +20,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -60,6 +61,7 @@ public class PostServiceImpl implements PostService {
     private final FanHubCategoryRepository fanHubCategoryRepository;
 
     // To switch implementations, rename the variable to the implementation that you want in camelCase.
+    @Qualifier("postValidationServiceImplSync")
     private final PostValidationService postValidationServiceImplSync;
 
     private final UserDailyMissionRepository userDailyMissionRepository;
