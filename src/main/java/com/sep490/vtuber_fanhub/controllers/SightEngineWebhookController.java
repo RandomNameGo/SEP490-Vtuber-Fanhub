@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.sep490.vtuber_fanhub.services.PostValidationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SightEngineWebhookController {
 
+    @Qualifier("postValidationServiceImplAsync")
     private final PostValidationService postValidationServiceImplAsync;
 
     @PostMapping("/video-result")

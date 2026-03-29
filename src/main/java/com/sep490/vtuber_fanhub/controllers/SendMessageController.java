@@ -20,11 +20,11 @@ public class SendMessageController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> createPost(@RequestBody @Valid SendMessageRequest sendMessageRequest){
+    public ResponseEntity<?> sendMessage(@RequestBody @Valid SendMessageRequest sendMessageRequest){
 
         return ResponseEntity.ok().body(APIResponse.<SendMessageResponse>builder()
                 .success(true)
-                .message("Post created successfully")
+                .message("Message sent successfully")
                 .data(chatMessageService.sendMessage(sendMessageRequest))
                 .build()
         );

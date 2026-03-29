@@ -30,9 +30,6 @@ public interface PostService {
     TranslatePostResponse translatePost(Long postId);
 
     SummarizePostResponse summarizePost(Long postId);
-    Boolean AIValidate(Long postId);
-
-    List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy);
 
     String likePost(Long postId);
 

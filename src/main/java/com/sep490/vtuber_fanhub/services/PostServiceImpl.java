@@ -8,12 +8,7 @@ import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import com.sep490.vtuber_fanhub.exceptions.CooldownException;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
-import com.sep490.vtuber_fanhub.models.FanHub;
-import com.sep490.vtuber_fanhub.models.FanHubMember;
-import com.sep490.vtuber_fanhub.models.Post;
-import com.sep490.vtuber_fanhub.models.PostHashtag;
-import com.sep490.vtuber_fanhub.models.PostMedia;
-import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.repositories.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +20,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -65,6 +61,7 @@ public class PostServiceImpl implements PostService {
     private final FanHubCategoryRepository fanHubCategoryRepository;
 
     // To switch implementations, rename the variable to the implementation that you want in camelCase.
+    @Qualifier("postValidationServiceImplSync")
     private final PostValidationService postValidationServiceImplSync;
 
     private final UserDailyMissionRepository userDailyMissionRepository;
@@ -74,6 +71,8 @@ public class PostServiceImpl implements PostService {
     private final AuthService authService;
 
     private final PostVoteRepository postVoteRepository;
+
+    private final JWTService jwtService;
 
     private static final double FOLLOWED_RATIO = 0.7;
     private static final double SUGGESTION_RATIO = 0.3;
@@ -248,7 +247,7 @@ public class PostServiceImpl implements PostService {
             }
         }
 
-        postValidationService.validatePost(post);
+        postValidationServiceImplSync.validatePost(post);
 
         return "Created poll post successfully";
     }
