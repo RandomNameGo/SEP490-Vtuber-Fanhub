@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/vhub/api/v1/user/register").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/user/*").permitAll()
                         .requestMatchers("/vhub/api/v1/posts/feed").permitAll()
+                        .requestMatchers("/vhub/api/v1/user/user-name/*").permitAll()
                         .requestMatchers("/vhub/api/v1/fan-hub/top").permitAll()
                         .anyRequest().authenticated()
                 )
