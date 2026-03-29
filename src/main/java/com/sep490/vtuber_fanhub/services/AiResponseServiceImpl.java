@@ -1,6 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
-import com.sep490.vtuber_fanhub.dto.responses.WebSocketChatMessageResponse;
+import com.sep490.vtuber_fanhub.dto.responses.MessageResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.ChatMessage;
 import com.sep490.vtuber_fanhub.models.ChatSession;
@@ -44,16 +44,18 @@ public class AiResponseServiceImpl implements AiResponseService{
         chatMessage.setSession(chatSession);
         chatMessage = chatMessageRepository.save(chatMessage);
 
-        // Send AI response via WebSocket to /topic/chat/{sessionId}
-        WebSocketChatMessageResponse response = WebSocketChatMessageResponse.builder()
-                .id(chatMessage.getId())
-                .senderRole(chatMessage.getSenderRole())
-                .content(chatMessage.getContent())
-                .createdAt(chatMessage.getCreatedAt())
-                .sessionId(chatSession.getId())
-                .build();
-
-        messagingTemplate.convertAndSend("/topic/chat", response);
+        // Send AI response via WebSocket to /user/queue/reply
+        // Use /user prefix to target the specific user's queue
+        MessageResponse response = MessageResponse.builder()
+                        .id(chatMessage.getId())
+                        .createdAt(chatMessage.getCreatedAt())
+                        .content(chatMessage.getContent())
+                        .senderRole("AI")
+                        .build();
+        messagingTemplate.convertAndSendToUser(sender.getUsername(), "/queue/reply", response);
+        
+        // Also try sending directly to the queue without user prefix
+        messagingTemplate.convertAndSend("/queue/reply", response);
     }
 
     @Override
