@@ -79,15 +79,15 @@ public class UserController {
         );
     }
 
-//    @GetMapping("/{userId}")
-//    public ResponseEntity<?> getUserDetailWithBadge(@PathVariable Long userId) {
-//        return ResponseEntity.ok().body(APIResponse.<UserResponse>builder()
-//                .success(true)
-//                .message("Success")
-//                .data(userService.getUserDetailWithBadge(userId))
-//                .build()
-//        );
-//    }
+    @GetMapping("/{userId}")
+    public ResponseEntity<?> getUserDetailWithBadge(@PathVariable Long userId) {
+        return ResponseEntity.ok().body(APIResponse.<UserResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(userService.getUserDetailWithBadge(userId))
+                .build()
+        );
+    }
 
     @GetMapping("/{userId}/badges")
     public ResponseEntity<?> getAllUserBadges(@PathVariable Long userId) {
@@ -110,7 +110,7 @@ public class UserController {
         );
     }
 
-    @GetMapping("/{userName}")
+    @GetMapping("/user-name/{userName}")
     public ResponseEntity<?> getUserDetailWithBadgeByUserName(@PathVariable String userName) {
         return ResponseEntity.ok().body(APIResponse.<UserResponse>builder()
                 .success(true)
