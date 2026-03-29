@@ -45,6 +45,8 @@ public class PostCommentServiceImpl implements PostCommentService {
 
     private final UserRepository userRepository;
 
+    private final UserTrackService userTrackService;
+
     @Override
     @Transactional
     public boolean createPostComment(CreatePostCommentRequest createPostCommentRequest) {
@@ -68,6 +70,10 @@ public class PostCommentServiceImpl implements PostCommentService {
         }
 
         postCommentRepository.save(postComment);
+
+        // Update user track
+        userTrackService.updateOnComment(currentUser);
+
         return true;
     }
 
@@ -148,6 +154,9 @@ public class PostCommentServiceImpl implements PostCommentService {
         postCommentLike.setComment(comment.get());
         postCommentLike.setCreatedAt(Instant.now());
         postCommentLikeRepository.save(postCommentLike);
+
+        // Update user track
+        userTrackService.updateOnLike(currentUser);
 
         Optional<UserDailyMission> userDailyMission = userDailyMissionRepository.findById(userId);
         if (userDailyMission.isPresent()) {

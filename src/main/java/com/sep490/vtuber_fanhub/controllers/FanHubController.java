@@ -35,12 +35,12 @@ public class FanHubController {
     @PreAuthorize("hasRole('VTUBER')")
     public ResponseEntity<?> uploadFanHubBannerBackgroundAvatar(@PathVariable Long fanHubId,
                                                                 @RequestParam(value = "banner", required = false) MultipartFile banner,
-                                                                @RequestParam(value = "background", required = false) MultipartFile background,
+                                                                @RequestParam(value = "backgrounds", required = false) List<MultipartFile> backgrounds,
                                                                 @RequestParam(value = "avatar", required = false) MultipartFile avatar) throws Exception {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubService.uploadFanHubBannerBackGroundAvatar(fanHubId, banner, background, avatar))
+                .data(fanHubService.uploadFanHubBannerBackGroundAvatar(fanHubId, banner, backgrounds, avatar))
                 .build()
         );
     }

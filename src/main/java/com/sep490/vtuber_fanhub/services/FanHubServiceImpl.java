@@ -5,9 +5,11 @@ import com.sep490.vtuber_fanhub.dto.responses.FanHubResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
+import com.sep490.vtuber_fanhub.models.FanHubBackground;
 import com.sep490.vtuber_fanhub.models.FanHubCategory;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.repositories.FanHubBackgroundRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubCategoryRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
@@ -48,6 +50,8 @@ public class FanHubServiceImpl implements FanHubService {
 
     private final FanHubMemberRepository fanHubMemberRepository;
 
+    private final FanHubBackgroundRepository fanHubBackgroundRepository;
+
     @Override
     @Transactional
     public String createFanHub(CreateFanHubRequest request) {
@@ -82,7 +86,7 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional
-    public String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, MultipartFile background, MultipartFile avatar) throws IOException {
+    public String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, List<MultipartFile> backgrounds, MultipartFile avatar) throws IOException {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -99,9 +103,23 @@ public class FanHubServiceImpl implements FanHubService {
             fanHub.get().setBannerUrl(bannerUrl);
         }
 
-        if (background != null && !background.isEmpty()) {
-            String backgroundUrl = cloudinaryService.uploadFile(background);
-            fanHub.get().setBackgroundUrl(backgroundUrl);
+        if (backgrounds != null && !backgrounds.isEmpty()) {
+            if (backgrounds.size() > 4) {
+                throw new IllegalArgumentException("Maximum 4 background images are allowed");
+            }
+            
+            fanHubBackgroundRepository.deleteByHubId(fanHubId);
+            
+            for (MultipartFile background : backgrounds) {
+                if (background != null && !background.isEmpty()) {
+                    String backgroundUrl = cloudinaryService.uploadFile(background);
+                    
+                    FanHubBackground fanHubBackground = new FanHubBackground();
+                    fanHubBackground.setHub(fanHub.get());
+                    fanHubBackground.setImageUrl(backgroundUrl);
+                    fanHubBackgroundRepository.save(fanHubBackground);
+                }
+            }
         }
 
         if (avatar != null && !avatar.isEmpty()) {
@@ -165,7 +183,13 @@ public class FanHubServiceImpl implements FanHubService {
         response.setHubName(fanHub.getHubName());
         response.setDescription(fanHub.getDescription());
         response.setBannerUrl(fanHub.getBannerUrl());
-        response.setBackgroundUrl(fanHub.getBackgroundUrl());
+        
+        List<String> backgroundUrls = fanHubBackgroundRepository.findByHubId(fanHub.getId())
+                .stream()
+                .map(FanHubBackground::getImageUrl)
+                .collect(Collectors.toList());
+        response.setBackgroundUrls(backgroundUrls);
+        
         response.setThemeColor(fanHub.getThemeColor());
         response.setAvatarUrl(fanHub.getAvatarUrl());
         response.setIsPrivate(fanHub.getIsPrivate());

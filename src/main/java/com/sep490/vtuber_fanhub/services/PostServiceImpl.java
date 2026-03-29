@@ -77,6 +77,8 @@ public class PostServiceImpl implements PostService {
     private final long AI_VALIDATION_COOLDOWN_MINUTES = 20;
     private final GeminiAIServiceImpl geminiAIServiceImpl;
 
+    private final UserTrackService userTrackService;
+
     @Override
     @Transactional
     public String createPost(CreatePostRequest request, List<MultipartFile> images, MultipartFile video) {
@@ -795,6 +797,9 @@ public class PostServiceImpl implements PostService {
         postLike.setPost(post.get());
         postLike.setCreatedAt(Instant.now());
         postLikeRepository.save(postLike);
+
+        // Update user track
+        userTrackService.updateOnLike(currentUser);
 
         Optional<UserDailyMission> userDailyMission = userDailyMissionRepository.findById(userId);
         if (userDailyMission.isPresent()) {
