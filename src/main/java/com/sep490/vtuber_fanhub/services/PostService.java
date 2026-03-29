@@ -30,10 +30,15 @@ public interface PostService {
     TranslatePostResponse translatePost(Long postId);
 
     SummarizePostResponse summarizePost(Long postId);
+    String rejectPost(Long postId, String reason);
+
+    Boolean AIValidate(Long postId);
 
     String likePost(Long postId);
 
     String unlikePost(Long postId);
+
+    String pinPost(Long postId);
 
     String votePost(Long postId, Long optionId);
 

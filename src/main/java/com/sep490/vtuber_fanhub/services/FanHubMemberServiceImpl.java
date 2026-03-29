@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
@@ -225,6 +226,31 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         return "Membership request " + normalizedStatus.toLowerCase() + " successfully";
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public MemberDetailResponse getMemberDetail(long fanHubMemberId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHubMember> member = fanHubMemberRepository.findById(fanHubMemberId);
+        if (member.isEmpty()) {
+            throw new NotFoundException("FanHub member not found");
+        }
+
+        Long fanHubId = member.get().getHub().getId();
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        if (!isOwner) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view member details");
+        }
+
+        return mapToMemberDetailResponse(member.get());
+    }
+
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {
         FanHubMemberResponse response = new FanHubMemberResponse();
 
@@ -246,6 +272,37 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         response.setFanHubScore(entity.getFanHubScore());
         response.setJoinedAt(entity.getJoinedAt());
         response.setTitle(entity.getTitle());
+
+        return response;
+    }
+
+    private MemberDetailResponse mapToMemberDetailResponse(FanHubMember entity) {
+        MemberDetailResponse response = new MemberDetailResponse();
+
+        // FanHubMember fields
+        response.setMemberId(entity.getId());
+
+        if (entity.getHub() != null) {
+            response.setHubId(entity.getHub().getId());
+            response.setHubName(entity.getHub().getHubName());
+        }
+
+        response.setRoleInHub(entity.getRoleInHub());
+        response.setStatus(entity.getStatus());
+        response.setFanHubScore(entity.getFanHubScore());
+        response.setJoinedAt(entity.getJoinedAt());
+        response.setTitle(entity.getTitle());
+
+        // User fields
+        if (entity.getUser() != null) {
+            User user = entity.getUser();
+            response.setUserId(user.getId());
+            response.setUsername(user.getUsername());
+            response.setEmail(user.getEmail());
+            response.setDisplayName(user.getDisplayName());
+            response.setAvatarUrl(user.getAvatarUrl());
+            response.setFrameUrl(user.getFrameUrl());
+        }
 
         return response;
     }

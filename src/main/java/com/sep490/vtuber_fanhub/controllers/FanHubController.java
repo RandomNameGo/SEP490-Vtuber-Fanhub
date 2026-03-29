@@ -63,12 +63,13 @@ public class FanHubController {
     @GetMapping("/top")
     public ResponseEntity<?> getTopFanHubs(
             @RequestParam(defaultValue = "0") int pageNo,
-            @RequestParam(defaultValue = "10") int pageSize) {
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) String category) {
 
         return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubService.getTopFanHubs(pageNo, pageSize))
+                .data(fanHubService.getTopFanHubs(pageNo, pageSize, category))
                 .build()
         );
     }

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -51,6 +52,7 @@ public class FanHubServiceImpl implements FanHubService {
     @Transactional
     public String createFanHub(CreateFanHubRequest request) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
+
 
         FanHub fanHub = new FanHub();
         fanHub.setOwnerUser(currentUser);
@@ -137,10 +139,15 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize) {
+    public List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category) {
         Pageable paging = PageRequest.of(pageNo, pageSize);
 
-        List<FanHub> fanHubs = fanHubRepository.findTopFanHubsByMemberCount(paging);
+        List<FanHub> fanHubs;
+        if (category == null || category.isEmpty()) {
+            fanHubs = fanHubRepository.findTopFanHubsByMemberCount(paging);
+        } else {
+            fanHubs = fanHubRepository.findTopFanHubsByMemberCountAndCategory(category, paging);
+        }
 
         if (fanHubs.isEmpty()) {
             return List.of();

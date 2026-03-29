@@ -16,5 +16,5 @@ public interface FanHubService {
 
     List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, boolean includePrivate);
 
-    List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize);
+    List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category);
 }

@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.models;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 
@@ -26,5 +27,9 @@ public class UserBadge {
 
     @Column(name = "acquired_at")
     private Instant acquiredAt;
+
+    @ColumnDefault("0")
+    @Column(name = "is_display")
+    private Boolean isDisplay;
 
 }

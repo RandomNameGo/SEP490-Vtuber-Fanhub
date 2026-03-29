@@ -24,6 +24,13 @@ public interface FanHubRepository extends JpaRepository<FanHub, Long> {
            "ORDER BY (SELECT COUNT(m) FROM FanHubMember m WHERE m.hub = fh AND m.status = 'JOINED') DESC")
     List<FanHub> findTopFanHubsByMemberCount(Pageable pageable);
 
+    @Query("SELECT fh FROM FanHub fh WHERE fh.isActive = true AND fh.isPrivate = false " +
+           "AND fh.id IN (SELECT fch.hub.id FROM FanHubCategory fch WHERE fch.categoryName = :categoryName) " +
+           "ORDER BY (SELECT COUNT(m) FROM FanHubMember m WHERE m.hub = fh AND m.status = 'JOINED') DESC")
+    List<FanHub> findTopFanHubsByMemberCountAndCategory(
+            @Param("categoryName") String categoryName,
+            Pageable pageable);
+
     @Query("SELECT fh FROM FanHub fh WHERE fh.isActive = true AND fh.isPrivate = false")
     List<FanHub> findPublicActiveFanHubs(Pageable pageable);
 }

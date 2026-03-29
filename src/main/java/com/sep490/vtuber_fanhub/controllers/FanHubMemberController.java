@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportMemberRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
 import com.sep490.vtuber_fanhub.services.BanMemberService;
 import com.sep490.vtuber_fanhub.services.FanHubMemberService;
@@ -129,4 +130,14 @@ public class FanHubMemberController {
         );
     }
 
+    @GetMapping("/members/{fanHubMemberId}/detail")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> getMemberDetail(@PathVariable long fanHubMemberId) {
+        return ResponseEntity.ok().body(APIResponse.<MemberDetailResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.getMemberDetail(fanHubMemberId))
+                .build()
+        );
+    }
 }

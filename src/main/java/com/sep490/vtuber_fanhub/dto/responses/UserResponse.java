@@ -23,10 +23,17 @@ public class UserResponse {
     private Instant updatedAt;
     private Boolean isActive;
 
-    private List<UserBadgeResponse> badges;
+    private Long totalBadges;
+    private Long totalFanHubs;
+    private Long totalReceivedGifts;
+
+    private List<UserDisplayBadgeResponse> displayBadges;
+
+    private List<UserAllBadgeResponse> allBadges;
+
 
     @Data
-    public static class UserBadgeResponse {
+    public static class UserDisplayBadgeResponse {
         private Long userBadgeId;
         private Long badgeId;
         private String badgeName;
@@ -34,5 +41,18 @@ public class UserResponse {
         private String iconUrl;
         private String requirement;
         private Instant acquiredAt;
+        private Boolean isDisplay;
+    }
+
+    @Data
+    public static class UserAllBadgeResponse {
+        private Long userBadgeId;
+        private Long badgeId;
+        private String badgeName;
+        private String description;
+        private String iconUrl;
+        private String requirement;
+        private Instant acquiredAt;
+        private Boolean isDisplay;
     }
 }

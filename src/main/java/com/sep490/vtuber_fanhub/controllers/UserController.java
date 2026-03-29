@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
+import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("vhub/api/v1/user")
@@ -77,12 +79,43 @@ public class UserController {
         );
     }
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<?> getUserDetailWithBadge(@PathVariable Long userId) {
+//    @GetMapping("/{userId}")
+//    public ResponseEntity<?> getUserDetailWithBadge(@PathVariable Long userId) {
+//        return ResponseEntity.ok().body(APIResponse.<UserResponse>builder()
+//                .success(true)
+//                .message("Success")
+//                .data(userService.getUserDetailWithBadge(userId))
+//                .build()
+//        );
+//    }
+
+    @GetMapping("/{userId}/badges")
+    public ResponseEntity<?> getAllUserBadges(@PathVariable Long userId) {
+        List<UserResponse.UserAllBadgeResponse> badges = userService.getAllUserBadges(userId);
+        return ResponseEntity.ok().body(APIResponse.<List<UserResponse.UserAllBadgeResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(badges)
+                .build()
+        );
+    }
+
+    @PostMapping("/badges/select-display")
+    public ResponseEntity<?> selectDisplayBadges(@RequestBody SelectUserBadgeRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(userService.updateUserBadgeDisplay(request))
+                .build()
+        );
+    }
+
+    @GetMapping("/{userName}")
+    public ResponseEntity<?> getUserDetailWithBadgeByUserName(@PathVariable String userName) {
         return ResponseEntity.ok().body(APIResponse.<UserResponse>builder()
                 .success(true)
                 .message("Success")
-                .data(userService.getUserDetailWithBadge(userId))
+                .data(userService.getUserDetailWithBadgeByUserName(userName))
                 .build()
         );
     }

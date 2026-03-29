@@ -13,4 +13,6 @@ public interface PostCommentGiftRepository extends JpaRepository<PostCommentGift
     List<PostCommentGift> findByComment(PostComment comment);
 
     Optional<PostCommentGift> findBySenderAndComment(User sender, PostComment comment);
+
+    long countByReceiverId(Long receiverId);
 }

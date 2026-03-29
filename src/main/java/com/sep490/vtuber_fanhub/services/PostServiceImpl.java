@@ -422,6 +422,46 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
+    public String rejectPost(Long postId, String reason) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        Long fanHubId = post.get().getHub().getId();
+
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can reject posts");
+        }
+
+        post.get().setStatus("REJECTED");
+        post.get().setUpdatedAt(Instant.now());
+        if (reason != null && !reason.isEmpty()) {
+            post.get().setAiValidationComment(reason);
+        }
+        postRepository.save(post.get());
+
+        return "Post rejected successfully";
+    }
+
+    @Override
+    public Boolean AIValidate(Long postId) {
+        return null;
+    }
+
+    @Override
+    @Transactional
     public String sendAiValidate(Long postId) {
         String token = jwtService.getCurrentToken(httpServletRequest);
         String tokenUsername = jwtService.getUsernameFromToken(token);
@@ -794,6 +834,38 @@ public class PostServiceImpl implements PostService {
 
 
         return "Post unliked successfully. 10 points deducted.";
+    }
+
+    @Override
+    @Transactional
+    public String pinPost(Long postId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        Long fanHubId = post.get().getHub().getId();
+
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can pin posts");
+        }
+
+        post.get().setIsPinned(true);
+        post.get().setUpdatedAt(Instant.now());
+        postRepository.save(post.get());
+
+        return "Post pinned successfully";
     }
 
     @Override

@@ -1,12 +1,15 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
+import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.models.UserBadge;
 import com.sep490.vtuber_fanhub.models.UserDailyMission;
+import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
+import com.sep490.vtuber_fanhub.repositories.PostCommentGiftRepository;
 import com.sep490.vtuber_fanhub.repositories.UserBadgeRepository;
 import com.sep490.vtuber_fanhub.repositories.UserDailyMissionRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +43,10 @@ public class UserServiceImpl implements UserService{
     private final AuthService authService;
 
     private final UserBadgeRepository userBadgeRepository;
+
+    private final FanHubMemberRepository fanHubMemberRepository;
+
+    private final PostCommentGiftRepository postCommentGiftRepository;
 
     @Override
     @Transactional
@@ -131,12 +139,27 @@ public class UserServiceImpl implements UserService{
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
 
-        List<UserBadge> userBadges = userBadgeRepository.findByUserId(userId);
+        List<UserBadge> displayBadges = userBadgeRepository.findByUserIdAndIsDisplayTrue(userId);
+        List<UserBadge> allBadges = userBadgeRepository.findByUserId(userId);
 
-        return mapToUserResponse(user, userBadges);
+        return mapToUserResponse(user, displayBadges, allBadges, userId);
     }
 
-    private UserResponse mapToUserResponse(User user, List<UserBadge> userBadges) {
+    @Override
+    public UserResponse getUserDetailWithBadgeByUserName(String userName) {
+        Optional<User> user = userRepository.findByUsernameAndIsActive(userName);
+
+        if (user.isEmpty()){
+            throw new NotFoundException("User not found with name: " + userName);
+        }
+
+        List<UserBadge> displayBadges = userBadgeRepository.findByUserIdAndIsDisplayTrue(user.get().getId());
+        List<UserBadge> allBadges = userBadgeRepository.findByUserId(user.get().getId());
+
+        return mapToUserResponse(user.get(), displayBadges, allBadges, user.get().getId());
+    }
+
+    private UserResponse mapToUserResponse(User user, List<UserBadge> displayBadges, List<UserBadge> allBadges, Long userId) {
         UserResponse response = new UserResponse();
 
         response.setUserId(user.getId());
@@ -154,10 +177,14 @@ public class UserServiceImpl implements UserService{
         response.setUpdatedAt(user.getUpdatedAt());
         response.setIsActive(user.getIsActive());
 
-        if (userBadges != null && !userBadges.isEmpty()) {
-            List<UserResponse.UserBadgeResponse> badgeResponses = new ArrayList<>();
-            for (UserBadge userBadge : userBadges) {
-                UserResponse.UserBadgeResponse badgeResponse = new UserResponse.UserBadgeResponse();
+        response.setTotalBadges(userBadgeRepository.countByUserId(userId));
+        response.setTotalFanHubs(fanHubMemberRepository.countByUserId(userId));
+        response.setTotalReceivedGifts(postCommentGiftRepository.countByReceiverId(userId));
+
+        if (displayBadges != null && !displayBadges.isEmpty()) {
+            List<UserResponse.UserDisplayBadgeResponse> displayBadgeResponses = new ArrayList<>();
+            for (UserBadge userBadge : displayBadges) {
+                UserResponse.UserDisplayBadgeResponse badgeResponse = new UserResponse.UserDisplayBadgeResponse();
                 badgeResponse.setUserBadgeId(userBadge.getId());
                 badgeResponse.setBadgeId(userBadge.getBadge().getId());
                 badgeResponse.setBadgeName(userBadge.getBadge().getBadgeName());
@@ -165,11 +192,85 @@ public class UserServiceImpl implements UserService{
                 badgeResponse.setIconUrl(userBadge.getBadge().getIconUrl());
                 badgeResponse.setRequirement(userBadge.getBadge().getRequirement());
                 badgeResponse.setAcquiredAt(userBadge.getAcquiredAt());
-                badgeResponses.add(badgeResponse);
+                badgeResponse.setIsDisplay(userBadge.getIsDisplay());
+                displayBadgeResponses.add(badgeResponse);
             }
-            response.setBadges(badgeResponses);
+            response.setDisplayBadges(displayBadgeResponses);
+        }
+
+        if (allBadges != null && !allBadges.isEmpty()) {
+            List<UserResponse.UserAllBadgeResponse> allBadgeResponses = new ArrayList<>();
+            for (UserBadge userBadge : allBadges) {
+                UserResponse.UserAllBadgeResponse badgeResponse = new UserResponse.UserAllBadgeResponse();
+                badgeResponse.setUserBadgeId(userBadge.getId());
+                badgeResponse.setBadgeId(userBadge.getBadge().getId());
+                badgeResponse.setBadgeName(userBadge.getBadge().getBadgeName());
+                badgeResponse.setDescription(userBadge.getBadge().getDescription());
+                badgeResponse.setIconUrl(userBadge.getBadge().getIconUrl());
+                badgeResponse.setRequirement(userBadge.getBadge().getRequirement());
+                badgeResponse.setAcquiredAt(userBadge.getAcquiredAt());
+                badgeResponse.setIsDisplay(userBadge.getIsDisplay());
+                allBadgeResponses.add(badgeResponse);
+            }
+            response.setAllBadges(allBadgeResponses);
         }
 
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserResponse.UserAllBadgeResponse> getAllUserBadges(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
+
+        List<UserBadge> userBadges = userBadgeRepository.findByUserId(userId);
+
+        List<UserResponse.UserAllBadgeResponse> badgeResponses = new ArrayList<>();
+        for (UserBadge userBadge : userBadges) {
+            UserResponse.UserAllBadgeResponse badgeResponse = new UserResponse.UserAllBadgeResponse();
+            badgeResponse.setUserBadgeId(userBadge.getId());
+            badgeResponse.setBadgeId(userBadge.getBadge().getId());
+            badgeResponse.setBadgeName(userBadge.getBadge().getBadgeName());
+            badgeResponse.setDescription(userBadge.getBadge().getDescription());
+            badgeResponse.setIconUrl(userBadge.getBadge().getIconUrl());
+            badgeResponse.setRequirement(userBadge.getBadge().getRequirement());
+            badgeResponse.setAcquiredAt(userBadge.getAcquiredAt());
+            badgeResponse.setIsDisplay(userBadge.getIsDisplay());
+            badgeResponses.add(badgeResponse);
+        }
+
+        return badgeResponses;
+    }
+
+
+    @Override
+    @Transactional
+    public String updateUserBadgeDisplay(SelectUserBadgeRequest request) {
+        User user = authService.getUserFromToken(httpServletRequest);
+
+        List<Long> selectedBadgeIds = request.getUserBadgeIds();
+
+        if (selectedBadgeIds == null) {
+            selectedBadgeIds = new ArrayList<>();
+        }
+
+        if (selectedBadgeIds.size() > 3) {
+            return "Maximum 3 badges can be displayed";
+        }
+
+        List<UserBadge> allUserBadges = userBadgeRepository.findByUserId(user.getId());
+
+        for (UserBadge userBadge : allUserBadges) {
+            if (selectedBadgeIds.contains(userBadge.getId())) {
+                userBadge.setIsDisplay(true);
+            } else {
+                userBadge.setIsDisplay(false);
+            }
+        }
+
+        userBadgeRepository.saveAll(allUserBadges);
+
+        return "Updated badge display successfully";
     }
 }
