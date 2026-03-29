@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/user/*").permitAll()
                         .requestMatchers("/vhub/api/v1/posts/feed").permitAll()
                         .requestMatchers("/vhub/api/v1/fan-hub/top").permitAll()
+                        .requestMatchers("/ws-chat/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).
