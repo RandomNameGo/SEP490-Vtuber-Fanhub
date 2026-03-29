@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -142,6 +143,20 @@ public class UserServiceImpl implements UserService{
         List<UserBadge> allBadges = userBadgeRepository.findByUserId(userId);
 
         return mapToUserResponse(user, displayBadges, allBadges, userId);
+    }
+
+    @Override
+    public UserResponse getUserDetailWithBadgeByUserName(String userName) {
+        Optional<User> user = userRepository.findByUsernameAndIsActive(userName);
+
+        if (user.isEmpty()){
+            throw new NotFoundException("User not found with name: " + userName);
+        }
+
+        List<UserBadge> displayBadges = userBadgeRepository.findByUserIdAndIsDisplayTrue(user.get().getId());
+        List<UserBadge> allBadges = userBadgeRepository.findByUserId(user.get().getId());
+
+        return mapToUserResponse(user.get(), displayBadges, allBadges, user.get().getId());
     }
 
     private UserResponse mapToUserResponse(User user, List<UserBadge> displayBadges, List<UserBadge> allBadges, Long userId) {

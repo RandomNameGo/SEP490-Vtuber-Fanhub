@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.configurations;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,7 +35,7 @@ public class SecurityConfig {
                         .requestMatchers("/vhub/api/v1/auth/**").permitAll()
                         .requestMatchers("/vhub/api/v1/user/verify").permitAll()
                         .requestMatchers("/vhub/api/v1/user/register").permitAll()
-                        .requestMatchers("/vhub/api/v1/user/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/user/*").permitAll()
                         .requestMatchers("/vhub/api/v1/posts/feed").permitAll()
                         .requestMatchers("/vhub/api/v1/fan-hub/top").permitAll()
                         .anyRequest().authenticated()

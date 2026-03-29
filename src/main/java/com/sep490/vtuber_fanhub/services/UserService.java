@@ -19,6 +19,8 @@ public interface UserService {
 
     UserResponse getUserDetailWithBadge(Long userId);
 
+    UserResponse getUserDetailWithBadgeByUserName(String userName);
+
     List<UserResponse.UserAllBadgeResponse> getAllUserBadges(Long userId);
 
     String updateUserBadgeDisplay(SelectUserBadgeRequest request);
