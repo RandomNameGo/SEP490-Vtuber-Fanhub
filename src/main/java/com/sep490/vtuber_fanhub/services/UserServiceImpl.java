@@ -5,6 +5,7 @@ import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
+import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.models.UserBadge;
 import com.sep490.vtuber_fanhub.models.UserDailyMission;
@@ -213,6 +214,21 @@ public class UserServiceImpl implements UserService{
                 allBadgeResponses.add(badgeResponse);
             }
             response.setAllBadges(allBadgeResponses);
+        }
+
+        List<FanHubMember> fanHubMembers = fanHubMemberRepository.findAllByUserId(userId);
+        if (fanHubMembers != null && !fanHubMembers.isEmpty()) {
+            List<UserResponse.UserHubJoinedResponse> hubJoinedResponses = new ArrayList<>();
+            for (FanHubMember member : fanHubMembers) {
+                UserResponse.UserHubJoinedResponse hubResponse = new UserResponse.UserHubJoinedResponse();
+                hubResponse.setFanHubId(member.getHub().getId());
+                hubResponse.setSubdomain(member.getHub().getSubdomain());
+                hubResponse.setHubName(member.getHub().getHubName());
+                hubResponse.setThemeColor(member.getHub().getThemeColor());
+                hubResponse.setAvatarUrl(member.getHub().getAvatarUrl());
+                hubJoinedResponses.add(hubResponse);
+            }
+            response.setFanHubsJoined(hubJoinedResponses);
         }
 
         return response;

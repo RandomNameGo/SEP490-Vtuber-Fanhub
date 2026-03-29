@@ -31,6 +31,8 @@ public class UserResponse {
 
     private List<UserAllBadgeResponse> allBadges;
 
+    private List<UserHubJoinedResponse> fanHubsJoined;
+
 
     @Data
     public static class UserDisplayBadgeResponse {
@@ -54,5 +56,14 @@ public class UserResponse {
         private String requirement;
         private Instant acquiredAt;
         private Boolean isDisplay;
+    }
+
+    @Data
+    public static class UserHubJoinedResponse {
+        private Long fanHubId;
+        private String subdomain;
+        private String hubName;
+        private String themeColor;
+        private String avatarUrl;
     }
 }
