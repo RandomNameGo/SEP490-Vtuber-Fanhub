@@ -151,7 +151,7 @@ public class FanHubServiceImpl implements FanHubService {
         }
 
         return pagedFanHubs.getContent().stream()
-                .map(this::mapToFanHubResponse)
+                .map(this::mapToFanHubResponseWithMemberCount)
                 .collect(Collectors.toList());
     }
 
