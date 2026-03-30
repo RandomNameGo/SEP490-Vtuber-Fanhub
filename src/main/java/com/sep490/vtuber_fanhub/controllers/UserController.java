@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
+import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
@@ -116,6 +117,16 @@ public class UserController {
                 .success(true)
                 .message("Success")
                 .data(userService.getUserDetailWithBadgeByUserName(userName))
+                .build()
+        );
+    }
+
+    @PutMapping("/set-oshi")
+    public ResponseEntity<?> setOshi(@RequestBody @Valid SetOshiRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(userService.setOshi(request))
                 .build()
         );
     }

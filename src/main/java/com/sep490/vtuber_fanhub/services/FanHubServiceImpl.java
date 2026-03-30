@@ -86,7 +86,7 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional
-    public String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, List<MultipartFile> backgrounds, MultipartFile avatar) throws IOException {
+    public String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, List<MultipartFile> highlight, MultipartFile avatar) throws IOException {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -103,14 +103,14 @@ public class FanHubServiceImpl implements FanHubService {
             fanHub.get().setBannerUrl(bannerUrl);
         }
 
-        if (backgrounds != null && !backgrounds.isEmpty()) {
-            if (backgrounds.size() > 4) {
+        if (highlight != null && !highlight.isEmpty()) {
+            if (highlight.size() > 4) {
                 throw new IllegalArgumentException("Maximum 4 background images are allowed");
             }
             
             fanHubBackgroundRepository.deleteByHubId(fanHubId);
             
-            for (MultipartFile background : backgrounds) {
+            for (MultipartFile background : highlight) {
                 if (background != null && !background.isEmpty()) {
                     String backgroundUrl = cloudinaryService.uploadFile(background);
                     
@@ -176,6 +176,15 @@ public class FanHubServiceImpl implements FanHubService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public FanHubResponse getFanHubBySubdomain(String subdomain) {
+        FanHub fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true)
+                .orElseThrow(() -> new NotFoundException("FanHub not found with subdomain: " + subdomain));
+
+        return mapToFanHubResponseWithMemberCount(fanHub);
+    }
+
     private FanHubResponse mapToFanHubResponse(FanHub fanHub) {
         FanHubResponse response = new FanHubResponse();
         response.setFanHubId(fanHub.getId());
@@ -188,7 +197,8 @@ public class FanHubServiceImpl implements FanHubService {
                 .stream()
                 .map(FanHubBackground::getImageUrl)
                 .collect(Collectors.toList());
-        response.setBackgroundUrls(backgroundUrls);
+        response.setHighlightImgUrls(backgroundUrls);
+        response.setBackgroundUrl(fanHub.getBackgroundUrl());
         
         response.setThemeColor(fanHub.getThemeColor());
         response.setAvatarUrl(fanHub.getAvatarUrl());

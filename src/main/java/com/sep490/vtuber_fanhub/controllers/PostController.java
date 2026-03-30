@@ -63,7 +63,7 @@ public class PostController {
     }
 
     @GetMapping("/fan-hub/{fanHubId}/pending")
-    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> getPendingPosts(@PathVariable long fanHubId,
                                              @RequestParam(defaultValue = "0") int pageNo,
                                              @RequestParam(defaultValue = "10") int pageSize,
@@ -322,6 +322,36 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(reportPostService.getReportPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @GetMapping("/fan-hub/subdomain/{subdomain}")
+    public ResponseEntity<?> getPostsBySubDomain(@PathVariable String subdomain,
+                                      @RequestParam(defaultValue = "0") int pageNo,
+                                      @RequestParam(defaultValue = "10") int pageSize,
+                                      @RequestParam(defaultValue = "createdAt") String sortBy,
+                                      @RequestParam(required = false) String postHashtag) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, postHashtag))
+                .build()
+        );
+    }
+
+    @GetMapping("/fan-hub/subdomain/{subdomain}/pending")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> getPendingPostsBySubdomain(@PathVariable String subdomain,
+                                             @RequestParam(defaultValue = "0") int pageNo,
+                                             @RequestParam(defaultValue = "10") int pageSize,
+                                             @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getPendingPostsBySubdomain(subdomain, pageNo, pageSize, sortBy))
                 .build()
         );
     }

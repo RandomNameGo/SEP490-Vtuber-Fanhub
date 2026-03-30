@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
+import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
@@ -49,6 +50,8 @@ public class UserServiceImpl implements UserService{
 
     private final PostCommentGiftRepository postCommentGiftRepository;
 
+    private final UserBadgeService userBadgeService;
+
     @Override
     @Transactional
     public String createUser(CreateUserRequest createUserRequest) {
@@ -81,6 +84,9 @@ public class UserServiceImpl implements UserService{
         userDailyMission.setUser(user);
         userDailyMission.setLikeAmount(0);
         userDailyMissionRepository.save(userDailyMission);
+
+        // Award badge ID 6 for successful registration
+        userBadgeService.awardBadge(user, 6L);
 
         return "Created user successfully";
     }
@@ -288,5 +294,24 @@ public class UserServiceImpl implements UserService{
         userBadgeRepository.saveAll(allUserBadges);
 
         return "Updated badge display successfully";
+    }
+
+    @Override
+    @Transactional
+    public String setOshi(SetOshiRequest request) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        User oshiUser = userRepository.findByUsernameAndIsActive(request.getOshiUsername())
+                .orElseThrow(() -> new NotFoundException("VTuber not found with username: " + request.getOshiUsername()));
+
+        if (!"VTUBER".equals(oshiUser.getRole())) {
+            return "User with username '" + request.getOshiUsername() + "' is not a VTUBER";
+        }
+
+        currentUser.setOshiUser(oshiUser);
+        currentUser.setUpdatedAt(Instant.now());
+        userRepository.save(currentUser);
+
+        return "Set oshi successfully";
     }
 }

@@ -73,4 +73,14 @@ public class FanHubController {
                 .build()
         );
     }
+
+    @GetMapping("/subdomain/{subdomain}")
+    public ResponseEntity<?> getFanHubBySubdomain(@PathVariable String subdomain) {
+        return ResponseEntity.ok().body(APIResponse.<FanHubResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.getFanHubBySubdomain(subdomain))
+                .build()
+        );
+    }
 }

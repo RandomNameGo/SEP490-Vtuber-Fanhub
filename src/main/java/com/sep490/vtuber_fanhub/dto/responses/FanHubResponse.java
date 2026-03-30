@@ -13,7 +13,8 @@ public class FanHubResponse {
     private String hubName;
     private String description;
     private String bannerUrl;
-    private List<String> backgroundUrls;
+    private List<String> highlightImgUrls;
+    private String backgroundUrl;
     private String themeColor;
     private String avatarUrl;
     private Boolean isPrivate;

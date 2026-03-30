@@ -331,6 +331,81 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is a member of the FanHub
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                fanHub.get().getId(), currentUser.getId());
+        if (member.isEmpty()) {
+            // If fanHub is public, allow viewing posts
+            if (!fanHub.get().getIsPrivate()) {
+                // Continue - public fanHub, non-member can view approved posts
+            } else {
+                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
+            }
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts;
+        if (postHashtag != null && !postHashtag.isEmpty()) {
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtag(fanHub.get().getId(), "APPROVED", postHashtag, paging);
+        } else {
+            pagedPosts = postRepository.findByHubIdAndStatus(fanHub.get().getId(), "APPROVED", paging);
+        }
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+
+    }
+
+    @Override
+    public List<PostResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHub.get().getId(), currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view pending posts");
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts = postRepository.findByHubIdAndStatus(fanHub.get().getId(), "PENDING", paging);
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
@@ -697,6 +772,7 @@ public class PostServiceImpl implements PostService {
         response.setPostId(post.getId());
         response.setFanHubId(post.getHub().getId());
         response.setFanHubName(post.getHub().getHubName());
+        response.setFanHubSubdomain(post.getHub().getSubdomain());
         response.setAuthorId(post.getUser().getId());
         response.setAuthorUsername(post.getUser().getUsername());
         response.setAuthorDisplayName(post.getUser().getDisplayName());

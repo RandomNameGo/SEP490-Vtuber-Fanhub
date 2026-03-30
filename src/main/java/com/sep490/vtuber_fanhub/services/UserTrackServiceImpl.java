@@ -14,16 +14,19 @@ import java.util.Optional;
 public class UserTrackServiceImpl implements UserTrackService {
 
     private final UserTrackRepository userTrackRepository;
+    private final UserBadgeService userBadgeService;
 
     @Override
     @Transactional
     public void updateOnLike(User user) {
         Optional<UserTrack> existingTrack = userTrackRepository.findByUserId(user.getId());
 
+        Long newMaxLikes;
         if (existingTrack.isPresent()) {
             UserTrack track = existingTrack.get();
             Long currentMaxLikes = track.getMaxLikes() != null ? track.getMaxLikes() : 0L;
-            track.setMaxLikes(currentMaxLikes + 1);
+            newMaxLikes = currentMaxLikes + 1;
+            track.setMaxLikes(newMaxLikes);
             userTrackRepository.save(track);
         } else {
             UserTrack track = new UserTrack();
@@ -31,6 +34,16 @@ public class UserTrackServiceImpl implements UserTrackService {
             track.setMaxLikes(1L);
             track.setMaxComments(0L);
             userTrackRepository.save(track);
+            newMaxLikes = 1L;
+        }
+
+        // Award badge ID 7 for first like (max likes = 1)
+        if (newMaxLikes == 1) {
+            userBadgeService.awardBadge(user, 7L);
+        }
+        // Award badge ID 8 for reaching 100 likes (max likes = 100)
+        else if (newMaxLikes == 100) {
+            userBadgeService.awardBadge(user, 8L);
         }
     }
 

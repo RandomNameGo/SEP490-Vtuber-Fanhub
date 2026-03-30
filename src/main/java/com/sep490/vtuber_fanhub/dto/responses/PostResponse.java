@@ -12,6 +12,7 @@ public class PostResponse {
     private Long postId;
     private Long fanHubId;
     private String fanHubName;
+    private String fanHubSubdomain;
 
     private Long authorId;
     private String authorUsername;

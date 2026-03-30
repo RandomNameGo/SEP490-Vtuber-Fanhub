@@ -19,6 +19,10 @@ public interface PostService {
 
     List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag);
 
+    List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag);
+
+    List<PostResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
+
     List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     String reviewPost(Long postId, String status);
