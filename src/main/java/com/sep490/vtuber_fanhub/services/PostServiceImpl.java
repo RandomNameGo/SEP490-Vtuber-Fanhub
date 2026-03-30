@@ -1031,18 +1031,18 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getPostsByUsername(String username, int pageNo, int pageSize, String sortBy) {
+    public List<PostResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         // Find user by username
-        Optional<User> user = userRepository.findByUsernameAndIsActive(username);
+        Optional<User> user = userRepository.findByUsernameAndIsActive(currentUser.getUsername());
         if (user.isEmpty()) {
             throw new NotFoundException("User not found");
         }
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
 
-        Page<Post> pagedPosts = postRepository.findByUsername(username, paging);
+        Page<Post> pagedPosts = postRepository.findByUsername(currentUser.getUsername(), paging);
 
         if (pagedPosts.isEmpty()) {
             return List.of();

@@ -48,5 +48,5 @@ public interface PostService {
 
     String unVotePost(Long postId);
 
-    List<PostResponse> getPostsByUsername(String username, int pageNo, int pageSize, String sortBy);
+    List<PostResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy);
 }
