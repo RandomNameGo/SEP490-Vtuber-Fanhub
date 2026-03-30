@@ -355,4 +355,18 @@ public class PostController {
                 .build()
         );
     }
+
+    @GetMapping("/user/{username}")
+    public ResponseEntity<?> getPostsByUsername(@PathVariable String username,
+                                                @RequestParam(defaultValue = "0") int pageNo,
+                                                @RequestParam(defaultValue = "10") int pageSize,
+                                                @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getPostsByUsername(username, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
 }

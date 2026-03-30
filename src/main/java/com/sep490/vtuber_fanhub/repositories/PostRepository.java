@@ -78,4 +78,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("select distinct fc.categoryName from FanHubCategory fc " +
             "where fc.hub.id in :hubIds")
     List<String> findCategoriesByHubIds(List<Long> hubIds);
+
+    //Find posts by username with pagination
+    @Query("select p from Post p " +
+            "where p.user.username = :username " +
+            "order by p.createdAt desc")
+    Page<Post> findByUsername(String username, Pageable pageable);
 }
