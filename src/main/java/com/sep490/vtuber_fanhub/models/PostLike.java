@@ -12,6 +12,7 @@ import java.time.Instant;
 @Table(name = "post_likes")
 public class PostLike {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "like_id", nullable = false)
     private Long id;
 
