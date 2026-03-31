@@ -5,6 +5,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PostWithMediaResponse;
 import com.sep490.vtuber_fanhub.exceptions.CooldownException;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
@@ -256,7 +257,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -286,7 +287,7 @@ public class PostServiceImpl implements PostService {
         }
 
         return pagedPosts.getContent().stream()
-                .map(this::mapToPostResponse)
+                .map(this::mapToPostWithMediaResponse)
                 .collect(Collectors.toList());
     }
 
@@ -371,7 +372,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
@@ -401,7 +402,7 @@ public class PostServiceImpl implements PostService {
         }
 
         return pagedPosts.getContent().stream()
-                .map(this::mapToPostResponse)
+                .map(this::mapToPostWithMediaResponse)
                 .collect(Collectors.toList());
     }
 
@@ -851,6 +852,99 @@ public class PostServiceImpl implements PostService {
         return response;
     }
 
+    private PostWithMediaResponse mapToPostWithMediaResponse(Post post) {
+        PostWithMediaResponse response = new PostWithMediaResponse();
+        response.setPostId(post.getId());
+        response.setFanHubId(post.getHub().getId());
+        response.setFanHubName(post.getHub().getHubName());
+        response.setFanHubSubdomain(post.getHub().getSubdomain());
+        response.setAuthorId(post.getUser().getId());
+        response.setAuthorUsername(post.getUser().getUsername());
+        response.setAuthorDisplayName(post.getUser().getDisplayName());
+        response.setAuthorAvatarUrl(post.getUser().getAvatarUrl());
+        response.setPostType(post.getPostType());
+        response.setTitle(post.getTitle());
+        response.setContent(post.getContent());
+        response.setStatus(post.getStatus());
+        response.setIsPinned(post.getIsPinned());
+        response.setCreatedAt(post.getCreatedAt());
+        response.setUpdatedAt(post.getUpdatedAt());
+
+        // Media with AI validation fields
+        List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
+        List<PostWithMediaResponse.PostMediaItem> mediaItems = new ArrayList<>();
+        for (PostMedia media : mediaList) {
+            PostWithMediaResponse.PostMediaItem mediaItem = new PostWithMediaResponse.PostMediaItem();
+            mediaItem.setMediaId(media.getId());
+            mediaItem.setMediaUrl(media.getMediaUrl());
+            mediaItem.setAiValidationStatus(media.getAiValidationStatus());
+            mediaItem.setAiValidationComment(media.getAiValidationComment());
+            mediaItems.add(mediaItem);
+        }
+        response.setMedia(mediaItems);
+
+        // Hashtags
+        List<PostHashtag> hashtagList = postHashtagRepository.findByPostId(post.getId());
+        List<String> hashtags = new ArrayList<>();
+        for (PostHashtag hashtag : hashtagList) {
+            hashtags.add(hashtag.getHashtag());
+        }
+        response.setHashtags(hashtags);
+
+        // Vote option
+        if ("POLL".equals(post.getPostType())) {
+            List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(post.getId());
+            List<String> optionTexts = new ArrayList<>();
+            Map<Long, Long> voteCounts = new HashMap<>();
+            Long totalVotes = 0L;
+
+            for (VoteOption option : voteOptions) {
+                optionTexts.add(option.getOptionText());
+                Long optionVoteCount = postVoteRepository.countByOptionId(option.getId());
+                voteCounts.put(option.getId(), optionVoteCount != null ? optionVoteCount : 0L);
+                totalVotes += optionVoteCount != null ? optionVoteCount : 0L;
+            }
+            response.setVoteOptions(optionTexts);
+            response.setVoteCounts(voteCounts);
+            response.setTotalVotes(totalVotes);
+
+            // Check if current user voted on this post
+            try {
+                User currentUser = authService.getUserFromToken(httpServletRequest);
+                Long userVotedOptionId = null;
+                for (VoteOption option : voteOptions) {
+                    Optional<PostVote> userVote = postVoteRepository.findByUserIdAndOptionId(currentUser.getId(), option.getId());
+                    if (userVote.isPresent()) {
+                        userVotedOptionId = option.getId();
+                        break;
+                    }
+                }
+                response.setUserVotedOptionId(userVotedOptionId);
+            } catch (Exception e) {
+                response.setUserVotedOptionId(null);
+            }
+        }
+
+        // Count like
+        Long likeCount = postLikeRepository.countByPostId(post.getId());
+        response.setLikeCount(likeCount);
+
+        // Check if current user liked this post
+        try {
+            User currentUser = authService.getUserFromToken(httpServletRequest);
+            Boolean isLiked = postLikeRepository.findByUserIdAndPostId(currentUser.getId(), post.getId()).isPresent();
+            response.setIsLikedByCurrentUser(isLiked);
+        } catch (Exception e) {
+            response.setIsLikedByCurrentUser(false);
+        }
+
+        // AI Validation fields (Post level)
+        response.setAiValidationStatus(post.getAiValidationStatus());
+        response.setAiValidationComment(post.getAiValidationComment());
+
+        return response;
+    }
+
     @Override
     @Transactional
     public String likePost(Long postId) {
@@ -1031,7 +1125,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         // Find user by username
@@ -1049,7 +1143,7 @@ public class PostServiceImpl implements PostService {
         }
 
         return pagedPosts.getContent().stream()
-                .map(this::mapToPostResponse)
+                .map(this::mapToPostWithMediaResponse)
                 .collect(Collectors.toList());
     }
 }

@@ -5,6 +5,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PostWithMediaResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -15,13 +16,13 @@ public interface PostService {
 
     String createPollPost(CreatePollPostRequest request);
 
-    List<PostResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag);
 
     List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag);
 
-    List<PostResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
 
     List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
@@ -48,5 +49,5 @@ public interface PostService {
 
     String unVotePost(Long postId);
 
-    List<PostResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy);
 }

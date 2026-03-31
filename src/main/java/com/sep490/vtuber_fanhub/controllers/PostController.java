@@ -7,6 +7,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateReportPostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PostWithMediaResponse;
 import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ReportPostResponse;
@@ -69,7 +70,7 @@ public class PostController {
                                              @RequestParam(defaultValue = "10") int pageSize,
                                              @RequestParam(defaultValue = "createdAt") String sortBy) {
 
-        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+        return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
                 .data(postService.getPendingPosts(fanHubId, pageNo, pageSize, sortBy))
@@ -348,7 +349,7 @@ public class PostController {
                                              @RequestParam(defaultValue = "10") int pageSize,
                                              @RequestParam(defaultValue = "createdAt") String sortBy) {
 
-        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+        return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
                 .data(postService.getPendingPostsBySubdomain(subdomain, pageNo, pageSize, sortBy))
@@ -362,7 +363,7 @@ public class PostController {
                                                 @RequestParam(defaultValue = "10") int pageSize,
                                                 @RequestParam(defaultValue = "createdAt") String sortBy) {
 
-        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+        return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
                 .data(postService.getPostsByUsername(pageNo, pageSize, sortBy))
