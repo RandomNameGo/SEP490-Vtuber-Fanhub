@@ -17,6 +17,7 @@ import com.sep490.vtuber_fanhub.repositories.UserDailyMissionRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,8 +26,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for Post Comment management
+ * Handles comment creation, likes, and gifts
+ * Sends SSE notifications for new comments on posts
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PostCommentServiceImpl implements PostCommentService {
 
     private final PostCommentRepository postCommentRepository;
@@ -46,6 +53,9 @@ public class PostCommentServiceImpl implements PostCommentService {
     private final UserRepository userRepository;
 
     private final UserTrackService userTrackService;
+
+    //SSE
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -73,6 +83,25 @@ public class PostCommentServiceImpl implements PostCommentService {
 
         // Update user track
         userTrackService.updateOnComment(currentUser);
+
+        // Send SSE notification to post author about the new comment
+        // Only send if the commenter is not the post author themselves
+        // Also persists notification to database
+        User postAuthor = post.get().getUser();
+        if (!postAuthor.getId().equals(currentUser.getId())) {
+            notificationService.sendPostCommentNotification(
+                    postAuthor.getId(),
+                    currentUser.getId(),
+                    currentUser.getUsername(),
+                    currentUser.getAvatarUrl(),
+                    post.get().getId(),
+                    post.get().getTitle(),
+                    post.get().getHub().getId(),
+                    post.get().getHub().getHubName()
+            );
+            log.info("Sent SSE notification to post author {} for comment from user {}", 
+                    postAuthor.getId(), currentUser.getId());
+        }
 
         return true;
     }

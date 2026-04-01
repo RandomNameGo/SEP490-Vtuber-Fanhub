@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.responses.LoginResponse;
+import com.sep490.vtuber_fanhub.dto.responses.TokenValidationResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.models.SystemAccount;
 import com.sep490.vtuber_fanhub.models.User;
@@ -12,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -27,6 +30,8 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenService refreshTokenService;
 
     private final SystemAccountRepository systemAccountRepository;
+
+    private final HttpServletRequest httpServletRequest;
 
     @Override
     public LoginResponse login(String username, String password) {
@@ -85,6 +90,41 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return tokenUser.get();
+    }
+
+    @Override
+    public TokenValidationResponse validateToken() {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+
+        if (token == null) {
+            return TokenValidationResponse.builder()
+                    .valid(false)
+                    .expired(true)
+                    .build();
+        }
+
+        boolean isValid = jwtService.isTokenValid(token);
+        Date expirationTime = jwtService.getExpirationTimeFromToken(token);
+
+        TokenValidationResponse.TokenValidationResponseBuilder builder = TokenValidationResponse.builder()
+                .valid(isValid)
+                .expired(!isValid)
+                .expiresAt(expirationTime != null ? expirationTime.toInstant() : null);
+
+        if (isValid) {
+            try {
+                String username = jwtService.getUsernameFromToken(token);
+                Optional<User> user = userRepository.findByUsernameAndIsActive(username);
+                user.ifPresent(u -> {
+                    builder.userId(u.getId());
+                    builder.username(u.getUsername());
+                    builder.role(u.getRole());
+                });
+            } catch (Exception e) {
+            }
+        }
+
+        return builder.build();
     }
 
 

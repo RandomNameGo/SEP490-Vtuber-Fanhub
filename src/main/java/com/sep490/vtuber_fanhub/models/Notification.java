@@ -7,6 +7,10 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 
+/**
+ * Notification entity for storing user notifications in database
+ * Notifications are created for important events and can be sent via SSE
+ */
 @Getter
 @Setter
 @Entity
@@ -44,5 +48,13 @@ public class Notification {
 
     @Column(name = "created_at")
     private Instant createdAt;
+
+    /**
+     * User who triggered this notification (e.g., who liked/commented)
+     * Used for displaying the trigger user's info in the notification
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "triggered_by_user_id")
+    private User triggeredBy;
 
 }

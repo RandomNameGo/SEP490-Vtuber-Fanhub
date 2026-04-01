@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.sep490.vtuber_fanhub.models.SystemAccount;
@@ -101,5 +102,37 @@ public class JWTService {
             return authHeader.substring(7);
         }
         return null;
+    }
+
+    public boolean isTokenValid(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+            
+            if (expirationTime == null) {
+                return false;
+            }
+            
+            // Check if token is expired
+            if (expirationTime.before(new Date())) {
+                return false;
+            }
+            
+            // Verify signature
+            JWSVerifier verifier = new MACVerifier(getSecretKey());
+            return signedJWT.verify(verifier);
+            
+        } catch (ParseException | JOSEException e) {
+            return false;
+        }
+    }
+
+    public Date getExpirationTimeFromToken(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            return signedJWT.getJWTClaimsSet().getExpirationTime();
+        } catch (ParseException e) {
+            return null;
+        }
     }
 }

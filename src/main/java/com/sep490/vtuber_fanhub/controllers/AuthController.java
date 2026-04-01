@@ -3,11 +3,13 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.LoginRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.LoginResponse;
+import com.sep490.vtuber_fanhub.dto.responses.TokenValidationResponse;
 import com.sep490.vtuber_fanhub.services.AuthService;
 import com.sep490.vtuber_fanhub.services.RefreshTokenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +51,18 @@ public class AuthController {
                 .success(true)
                 .message("Success")
                 .data(authService.SystemAccountLogin(request.getUsername(), request.getPassword()))
+                .build()
+        );
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser() {
+        TokenValidationResponse validationResponse = authService.validateToken();
+
+        return ResponseEntity.ok().body(APIResponse.<TokenValidationResponse>builder()
+                .success(true)
+                .message("Token validation successful")
+                .data(validationResponse)
                 .build()
         );
     }

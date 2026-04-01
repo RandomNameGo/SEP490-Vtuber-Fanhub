@@ -13,6 +13,7 @@ import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.repositories.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,8 +38,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for Post management
+ * Handles post creation, validation, likes, comments
+ * Sends SSE notifications for post interactions (likes, comments)
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
@@ -70,6 +77,10 @@ public class PostServiceImpl implements PostService {
     private final VoteOptionRepository voteOptionRepository;
 
     private final AuthService authService;
+
+    // SSE notification service for sending real-time updates to users
+    // Note: Using NotificationService which handles both DB persistence and SSE delivery
+    private final NotificationService notificationService;
 
     private final PostVoteRepository postVoteRepository;
 
@@ -983,6 +994,25 @@ public class PostServiceImpl implements PostService {
             }
         } else {
             throw new NotFoundException("User daily mission not found");
+        }
+
+        // Send SSE notification to post author about the new like
+        // Only send if the liker is not the post author themselves
+        // Also persists notification to database
+        User postAuthor = post.get().getUser();
+        if (!postAuthor.getId().equals(currentUser.getId())) {
+            notificationService.sendPostLikeNotification(
+                    postAuthor.getId(),
+                    currentUser.getId(),
+                    currentUser.getUsername(),
+                    currentUser.getAvatarUrl(),
+                    postId,
+                    post.get().getTitle(),
+                    post.get().getHub().getId(),
+                    post.get().getHub().getHubName()
+            );
+            log.info("Sent SSE notification to post author {} for like from user {}", 
+                    postAuthor.getId(), currentUser.getId());
         }
 
         return "Post liked successfully!";

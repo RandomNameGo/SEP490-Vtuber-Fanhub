@@ -12,6 +12,7 @@ import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import com.sep490.vtuber_fanhub.repositories.VTuberApplicationRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,8 +26,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for VTuber application management
+ * Handles application submission, review, and approval/rejection
+ * Sends SSE notifications when application is reviewed
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class VTuberApplicationServiceImpl implements VTuberApplicationService {
 
     private final VTuberApplicationRepository vTuberApplicationRepository;
@@ -40,6 +47,10 @@ public class VTuberApplicationServiceImpl implements VTuberApplicationService {
     private final AuthService authService;
 
     private final JWTService jwtService;
+
+    // SSE notification service for sending real-time updates to users
+    // Note: Using NotificationService which handles both DB persistence and SSE delivery
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -113,9 +124,24 @@ public class VTuberApplicationServiceImpl implements VTuberApplicationService {
                 throw new NotFoundException("User not found");
             }
             user.get().setRole("VTUBER");
+            userRepository.save(user.get());
+            
+            // Send SSE notification to user about application approval
+            // Also persists notification to database
+            Long userId = user.get().getId();
+            notificationService.sendVtuberApplicationNotification(userId, status, reason);
+            log.info("Sent SSE notification to user {} for VTuber application approval", userId);
+            
             return "Application accepted";
+        } else {
+            // Send SSE notification to user about application rejection
+            // Also persists notification to database
+            Long userId = vTuberApplication.get().getUser().getId();
+            notificationService.sendVtuberApplicationNotification(userId, status, reason);
+            log.info("Sent SSE notification to user {} for VTuber application rejection", userId);
+            
+            return "Application rejected";
         }
-        return "Application rejected";
     }
 
     private VTuberApplicationResponse mapToResponse(VTuberApplication entity) {
