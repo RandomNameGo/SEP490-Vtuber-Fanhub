@@ -68,7 +68,6 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                     .build();
         }
         catch(Exception e){
-            e.printStackTrace();
             throw new RuntimeException("Error while sending message");
         }
     }
@@ -101,7 +100,6 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             return chatMessageResponses;
 
         }catch(Exception e){
-            e.printStackTrace();
             System.out.println("Error while getting all messages");
             return null;
         }

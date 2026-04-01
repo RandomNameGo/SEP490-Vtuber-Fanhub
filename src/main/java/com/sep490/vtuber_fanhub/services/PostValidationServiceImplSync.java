@@ -7,15 +7,16 @@ import com.sep490.vtuber_fanhub.repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 // This is the Synchronous implementation of PostValidationService
-// By synchronous, i mean for AI Video Validation, I use the Synchronous Approach.
+// By synchronous, I meant for AI Video Validation, I use the Synchronous Approach.
 // But we can only validate short videos, which are under 60s
 // To validate longer videos, we must use the Asynchronous Approach,
-// which i made the Asynchronous implementation for
-// The reason why i made two separate files is that it gets kinda tricky to solve the logic
+// which I made the Asynchronous implementation for
+// The reason why I made two separate files is that it gets kinda tricky to solve the logic
 // Where the Image API is synchronous, while the Video API is asynchronous.
 // This could work as a backup if the asynchronous implementation is not working well.
 @Service("postValidationServiceImplSync")
@@ -37,13 +38,16 @@ public class PostValidationServiceImplSync implements PostValidationService {
             boolean isSafe = true;
 
             if(post.getPostType().equals("IMAGE") || post.getPostType().equals("VIDEO")) {
+                System.out.println("Post contains media. performing media ai validation");
                 List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
                 boolean isVideo = post.getPostType().equals("VIDEO");
                 for(PostMedia postMedia : postMediaList) {
                     String ai_validation;
                     if(isVideo){
+                        System.out.println("This post is a video-type");
                         ai_validation = contentValidationService.validateVideoUrl(postMedia.getMediaUrl());
                     }else{
+                        System.out.println("This post is image-type");
                         ai_validation = contentValidationService.validateImageUrl(postMedia.getMediaUrl());
                     }
                     String[] media_validation_split = ai_validation.split("@");
@@ -58,6 +62,8 @@ public class PostValidationServiceImplSync implements PostValidationService {
                 if(!isSafe){
                     totalComments.append("Some medias are found not safe.");
                 }else totalComments.append("All medias are found safe.");
+            }else{
+                throw new RuntimeException("Unknown post validation type: " + post.getPostType());
             }
 
             String textValidation = contentValidationService.validateText(post.getContent());
@@ -76,8 +82,7 @@ public class PostValidationServiceImplSync implements PostValidationService {
             postRepository.save(post);
 
         } catch (Exception ermWhatTheSigma) {
-            System.out.println("Error while validation post");
-            ermWhatTheSigma.printStackTrace();
+            throw new RuntimeException("AI Validation error", ermWhatTheSigma);
         }
 
     }

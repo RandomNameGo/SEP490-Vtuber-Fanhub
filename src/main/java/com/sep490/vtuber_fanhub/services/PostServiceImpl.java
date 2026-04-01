@@ -6,6 +6,7 @@ import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostWithMediaResponse;
+import com.sep490.vtuber_fanhub.events.PostCreatedEvent;
 import com.sep490.vtuber_fanhub.exceptions.CooldownException;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -61,9 +63,7 @@ public class PostServiceImpl implements PostService {
 
     private final FanHubCategoryRepository fanHubCategoryRepository;
 
-    // To switch implementations, rename the variable to the implementation that you want in camelCase.
-    @Qualifier("postValidationServiceImplSync")
-    private final PostValidationService postValidationServiceImplSync;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final UserDailyMissionRepository userDailyMissionRepository;
 
@@ -177,9 +177,8 @@ public class PostServiceImpl implements PostService {
             }
         }
 
-        postValidationServiceImplSync.validatePost(post);
-        post.setAiValidationLastSentAt(Instant.now());
-        postRepository.save(post);
+        // Publish event to trigger validation after transaction commits
+        eventPublisher.publishEvent(new PostCreatedEvent(post));
 
         return "Created post successfully";
     }
@@ -250,7 +249,8 @@ public class PostServiceImpl implements PostService {
             }
         }
 
-        postValidationServiceImplSync.validatePost(post);
+        // Publish event to trigger validation after transaction commits
+        eventPublisher.publishEvent(new PostCreatedEvent(post));
 
         return "Created poll post successfully";
     }
@@ -580,9 +580,11 @@ public class PostServiceImpl implements PostService {
             }
         }
 
-        postValidationServiceImplSync.validatePost(post);
         post.setAiValidationLastSentAt(Instant.now());
         postRepository.save(post);
+        
+        // Trigger validation asynchronously (post already exists, so media is committed)
+        eventPublisher.publishEvent(new PostCreatedEvent(post));
 
         return "Job sent successfully!";
     }

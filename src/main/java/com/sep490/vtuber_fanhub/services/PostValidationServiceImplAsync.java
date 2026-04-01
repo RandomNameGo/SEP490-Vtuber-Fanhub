@@ -35,7 +35,9 @@ public class PostValidationServiceImplAsync implements PostValidationService {
             }
             if(text_validation_split[1].equals("AI_UNSAFE")){
                 post.setAiValidationStatus("AI_UNSAFE");
-            }else if(text_validation_split[1].equals("AI_SAFE")){}
+            }else if(text_validation_split[1].equals("AI_SAFE")){
+                post.setAiValidationStatus("AI_SAFE");
+            }
             else throw new RuntimeException("AI returned incorrect form");
 
             post.setAiValidationComment(textValidation);

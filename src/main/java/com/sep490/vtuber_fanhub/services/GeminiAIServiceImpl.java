@@ -13,8 +13,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,18 +53,10 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     @Override
     public GenerateContentResponse sendPromptFullResponse(String prompt, ChatPersonalityType type) {
         try {
-            String personality;
-
-            switch(type){
-                case MatikanetannHauser:
-                    personality = "You are Matikanetannhauser from Uma Musume. talk like her.";
-                    break;
-                case Formal:
-                    personality = "You are a formal and helpful assistance.";
-                    break;
-                default:
-                personality = "You are a formal and helpful assistance.";
-            }
+            String personality = switch (type) {
+                case MatikanetannHauser -> "You are Matikanetannhauser from Uma Musume. talk like her.";
+                case Formal -> "You are a formal and helpful assistance.";
+            };
 
 
             GenerateContentConfig config = GenerateContentConfig.builder()
@@ -96,7 +86,6 @@ public class GeminiAIServiceImpl implements GeminiAIService {
 
             return response;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("Gemini Error: " + e.getMessage());
         }
     }
@@ -110,19 +99,11 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     @Override
     public GenerateContentResponse sendPromptFunctionCallingFullResponse(String prompt, ChatPersonalityType type, Long userId) {
         try {
-            String personality;
+            String personality = switch (type) {
+                case MatikanetannHauser -> "You are Matikanetannhauser from Uma Musume. talk like her.";
 
-            switch(type){
-                case MatikanetannHauser:
-                    personality = "You are Matikanetannhauser from Uma Musume. talk like her.";
-                    break;
-                case Formal:
-                    personality = "You are a formal and helpful assistance.";
-                    break;
-                default:
-                    personality = "You are a formal and helpful assistance.";
-            }
-
+                case Formal -> "You are a formal and helpful assistance.";
+            };
 
 
             FunctionDeclaration getDisplayNameFunc = FunctionDeclaration.builder()
@@ -174,7 +155,6 @@ public class GeminiAIServiceImpl implements GeminiAIService {
 
             return response;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("Gemini Error: " + e.getMessage());
         }
     }
@@ -205,35 +185,43 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     private GenerateContentResponse handleFunctionCalls(GenerateContentResponse response,
                                                          GenerateContentConfig config,
                                                          List<Content> contents, Long userId) {
-        // Check if there are function calls in the response
-        List<FunctionCall> functionCalls = response.functionCalls();
+        try{
+            // Check if there are function calls in the response
+            List<FunctionCall> functionCalls = response.functionCalls();
 
-        if (functionCalls == null || functionCalls.isEmpty()) {
-            return response;
+            if (functionCalls == null || functionCalls.isEmpty()) {
+                return response;
+            }
+
+            // Add the model's response to contents
+            if(response.candidates().isEmpty() || response.candidates().get().get(0).content().isEmpty()){
+                throw new RuntimeException("handleFunctionCalls: candidate or content not found.");
+            }
+
+            contents.add(response.candidates().get().get(0).content().get());
+
+            // Process each function call and create function responses
+            List<FunctionResponse> functionResponses = new ArrayList<>();
+            for (FunctionCall functionCall : functionCalls) {
+                FunctionResponse functionResponse = functionCallingService.handleFunctionCall(functionCall, userId);
+                functionResponses.add(functionResponse);
+            }
+
+            // Create content parts with the function responses
+            List<Part> responseParts = new ArrayList<>();
+            for (FunctionResponse functionResponse : functionResponses) {
+                Part part = Part.builder()
+                        .functionResponse(functionResponse)
+                        .build();
+                responseParts.add(part);
+            }
+            contents.add(Content.fromParts(responseParts.toArray(new Part[0])));
+
+            // Send the function responses back to the model for final response
+            return client.models.generateContent(MODEL_ID, contents, config);
+        }catch(Exception e){
+            throw new RuntimeException("Error at handleFunctionCalls: " + e.getMessage());
         }
-
-        // Add the model's response to contents
-        contents.add(response.candidates().get().get(0).content().get());
-
-        // Process each function call and create function responses
-        List<FunctionResponse> functionResponses = new ArrayList<>();
-        for (FunctionCall functionCall : functionCalls) {
-            FunctionResponse functionResponse = functionCallingService.handleFunctionCall(functionCall, userId);
-            functionResponses.add(functionResponse);
-        }
-
-        // Create content parts with the function responses
-        List<Part> responseParts = new ArrayList<>();
-        for (FunctionResponse functionResponse : functionResponses) {
-            Part part = Part.builder()
-                    .functionResponse(functionResponse)
-                    .build();
-            responseParts.add(part);
-        }
-        contents.add(Content.fromParts(responseParts.toArray(new Part[0])));
-
-        // Send the function responses back to the model for final response
-        return client.models.generateContent(MODEL_ID, contents, config);
     }
 
     private AIMessageResponse extractAIMessage(GenerateContentResponse response) {
