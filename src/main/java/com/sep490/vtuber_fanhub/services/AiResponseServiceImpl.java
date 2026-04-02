@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.sep490.vtuber_fanhub.dto.responses.AIMessageResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MessageResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.ChatMessage;
@@ -29,43 +30,49 @@ public class AiResponseServiceImpl implements AiResponseService{
 
 
     @Override
-    @Transactional
     @Async("aiResponseExecutor")
     public void generateAndSendReply(User sender, String userMessageContent) {
-        ChatSession chatSession = chatSessionRepository.findByUser_Id(sender.getId())
-                .orElseThrow(()-> new NotFoundException("Chat session not found"));
+        try{
+            ChatSession chatSession = chatSessionRepository.findByUser_Id(sender.getId())
+                    .orElseThrow(()-> new NotFoundException("Chat session not found"));
 
-        String aiResponse = smartChat(userMessageContent, sender.getId(), chatSession.getId());
+            AIMessageResponse aiResponse = smartChat(userMessageContent, sender.getId(), chatSession.getId());
 
-        ChatMessage chatMessage = new ChatMessage();
-        chatMessage.setSenderRole("AI");
-        chatMessage.setCreatedAt(Instant.now());
-        chatMessage.setContent(aiResponse);
-        chatMessage.setSession(chatSession);
-        chatMessage = chatMessageRepository.save(chatMessage);
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.setSenderRole("AI");
+            chatMessage.setCreatedAt(Instant.now());
+            chatMessage.setContent(aiResponse.getMessage());
+            chatMessage.setThought(aiResponse.getThought());
+            chatMessage.setSession(chatSession);
+            chatMessage = chatMessageRepository.save(chatMessage);
 
-        // Send AI response via WebSocket to /user/queue/reply
-        // Use /user prefix to target the specific user's queue
-        MessageResponse response = MessageResponse.builder()
-                        .id(chatMessage.getId())
-                        .createdAt(chatMessage.getCreatedAt())
-                        .content(chatMessage.getContent())
-                        .senderRole("AI")
-                        .build();
-        messagingTemplate.convertAndSendToUser(sender.getUsername(), "/queue/reply", response);
-        
-        // Also try sending directly to the queue without user prefix
-        messagingTemplate.convertAndSend("/queue/reply", response);
+            // Send AI response via WebSocket
+            // Note: We send to /topic/ai-response/{username} instead of /user/queue/reply
+            // because @Async runs outside the WebSocket session context
+            MessageResponse response = MessageResponse.builder()
+                    .id(chatMessage.getId())
+                    .createdAt(chatMessage.getCreatedAt())
+                    .content(chatMessage.getContent())
+                    .senderRole("AI")
+                    .build();
+
+            String destination = "/queue/reply/" + sender.getUsername();
+            messagingTemplate.convertAndSend(destination, response);
+        }catch(Exception e){
+            e.printStackTrace();
+            throw new RuntimeException("Error while generating and sending reply to user");
+        }
     }
 
     @Override
-    public String smartChat(String userPrompt, Long userId, Long sessionId) {
+    public AIMessageResponse smartChat(String userPrompt, Long userId, Long sessionId) {
         List<ChatMessage> lastMessages = chatMessageRepository.findTop20BySession_Id(sessionId);
 
-        return generateResponse(userPrompt, convertToPromptContext(lastMessages), AI_CHATBOT_RESPONSE_PERSONALITY_TYPE);
+        return generateResponse(userPrompt, convertToPromptContext(lastMessages), AI_CHATBOT_RESPONSE_PERSONALITY_TYPE, userId);
     }
 
-    private String generateResponse(String userPrompt, String lastMessages, ChatPersonalityType personalityType) {
+    // user id is required for function calling
+    private AIMessageResponse generateResponse(String userPrompt, String lastMessages, ChatPersonalityType personalityType, Long userId) {
         String fullPrompt = String.format(""" 
             USER PROMPT: %s
             
@@ -73,7 +80,7 @@ public class AiResponseServiceImpl implements AiResponseService{
             
             """, userPrompt, lastMessages);
 
-        return geminiAIService.sendPrompt(fullPrompt, personalityType);
+        return geminiAIService.sendPromptFunctionCalling(fullPrompt, personalityType, userId);
     }
 
     public String convertToPromptContext(List<ChatMessage> messages) {

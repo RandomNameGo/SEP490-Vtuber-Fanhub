@@ -40,7 +40,7 @@ public class TestController {
                 APIResponse.<String>builder()
                         .message("Test Gemini Success")
                         .success(true)
-                        .data(geminiAIService.sendPrompt(text, ChatPersonalityType.MatikanetannHauser))
+                        .data(geminiAIService.sendPrompt(text, ChatPersonalityType.MatikanetannHauser).getMessage())
                         .build()
         );
     }

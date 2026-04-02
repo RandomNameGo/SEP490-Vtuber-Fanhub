@@ -86,7 +86,6 @@ public class SightEngineServiceImpl implements SightEngineService{
         RestTemplate restTemplate = new RestTemplate();
         try {
             if (mediaType.equals(PostMediaType.IMAGE)) {
-                System.out.println("Calling SightEngine for Image");
                 String apiUrl = "https://api.sightengine.com/1.0/check-workflow.json";
 
                 HttpHeaders headers = new HttpHeaders();
@@ -99,23 +98,9 @@ public class SightEngineServiceImpl implements SightEngineService{
 
                 HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
                 ResponseEntity<JsonNode> response = restTemplate.postForEntity(apiUrl, requestEntity, JsonNode.class);
-                System.out.println("SightEngineServiceImpl: response:");
-                System.out.println(response);
                 return response.getBody();
 
             } else if (mediaType.equals(PostMediaType.VIDEO)) {
-//                System.out.println("Calling SightEngine for Video");
-//                String apiUrl = "https://api.sightengine.com/1.0/video/check-workflow-sync.json";
-//
-//                UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiUrl)
-//                        .queryParam("stream_url", url)
-//                        .queryParam("workflow", videoWorkflowId)
-//                        .queryParam("api_user", apiUser)
-//                        .queryParam("api_secret", apiSecret);
-//
-//                ResponseEntity<JsonNode> response = restTemplate.getForEntity(builder.toUriString(), JsonNode.class);
-//                return response.getBody();
-                System.out.println("Calling SightEngine for Video");
                 String apiUrl = "https://api.sightengine.com/1.0/video/check-workflow-sync.json";
 
                 HttpHeaders headers = new HttpHeaders();
@@ -134,14 +119,12 @@ public class SightEngineServiceImpl implements SightEngineService{
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("Error processing media url check", e);
         }
     }
 
     @Override
     public JsonNode checkVideoUrlAsync(String url) {
-        System.out.println("Calling SightEngine Asynchronously");
         String apiUrl = "https://api.sightengine.com/1.0/video/check-workflow.json";
 
         RestTemplate restTemplate = new RestTemplate();
@@ -157,8 +140,6 @@ public class SightEngineServiceImpl implements SightEngineService{
             return response.getBody();
 
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println(e.getMessage());
             throw new RuntimeException("Error processing checking video url upload async", e);
         }
     }

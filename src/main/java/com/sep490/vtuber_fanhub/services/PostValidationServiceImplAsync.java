@@ -26,7 +26,6 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     @Async("validationExecutor")
     public void validatePost(Post post) {
         try {
-            System.out.println("Validating video with Asynchronous approach.");
             // validate text first
             String textValidation = contentValidationService.validateText(post.getContent());
             String[] text_validation_split = textValidation.split("@");
@@ -35,7 +34,9 @@ public class PostValidationServiceImplAsync implements PostValidationService {
             }
             if(text_validation_split[1].equals("AI_UNSAFE")){
                 post.setAiValidationStatus("AI_UNSAFE");
-            }else if(text_validation_split[1].equals("AI_SAFE")){}
+            }else if(text_validation_split[1].equals("AI_SAFE")){
+                post.setAiValidationStatus("AI_SAFE");
+            }
             else throw new RuntimeException("AI returned incorrect form");
 
             post.setAiValidationComment(textValidation);
@@ -77,7 +78,6 @@ public class PostValidationServiceImplAsync implements PostValidationService {
             }
 
         } catch (Exception ermWhatTheSigma) {
-            System.out.println("Error while validation post");
             ermWhatTheSigma.printStackTrace();
         }
     }
@@ -86,7 +86,6 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     @Async("validationExecutor")
     public void handleVideoCallback(JsonNode node){
         try{
-            System.out.println("Received callback");
             String mediaId = node.path("media").path("id").asText();
             PostMedia postMedia = postMediaRepository.findBySightEngineMediaId(mediaId)
                     .orElseThrow(() -> new RuntimeException("post media with sight engine media id not found"));
@@ -103,7 +102,6 @@ public class PostValidationServiceImplAsync implements PostValidationService {
             Post post = postMedia.getPost();
             finalizeValidation(post);
         }catch(Exception ermWhatTheSigma){
-            System.out.println("Error while validation post");
             ermWhatTheSigma.printStackTrace();
         }
 
@@ -134,7 +132,6 @@ public class PostValidationServiceImplAsync implements PostValidationService {
                 postRepository.save(post);
             }
         }catch(Exception ermWhatTheSigma){
-            System.out.println("Error while finalizing post.");
         }
     }
 }

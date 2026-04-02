@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.services;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.genai.Client;
 import com.google.genai.types.*;
+import com.sep490.vtuber_fanhub.dto.responses.AIMessageResponse;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,11 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     private Client client;
     private final String MODEL_ID = "gemini-3.1-flash-lite-preview";
 
+    private final ThinkingConfig THINKING_CONFIG = ThinkingConfig.builder()
+            .includeThoughts(false)
+//            .thinkingLevel("MEDIUM")
+            .build();
+
     private final FunctionCallingService functionCallingService;
 
 
@@ -35,31 +41,69 @@ public class GeminiAIServiceImpl implements GeminiAIService {
 
     @Override
     public String test() {
-        return sendPrompt("Say this is a test", ChatPersonalityType.MatikanetannHauser);
+        return sendPrompt("Say this is a test", ChatPersonalityType.MatikanetannHauser).getMessage();
     }
 
     @Override
-    public String sendPrompt(String prompt, ChatPersonalityType type) {
+    public AIMessageResponse sendPrompt(String prompt, ChatPersonalityType type) {
         GenerateContentResponse response = sendPromptFullResponse(prompt, type);
-        return response.text();
+        return extractAIMessage(response);
     }
 
     @Override
     public GenerateContentResponse sendPromptFullResponse(String prompt, ChatPersonalityType type) {
         try {
-            String personality;
+            String personality = switch (type) {
+                case MatikanetannHauser -> "You are Matikanetannhauser from Uma Musume. talk like her.";
+                case Formal -> "You are a formal and helpful assistance.";
+            };
 
-            switch(type){
-                case MatikanetannHauser:
-                    personality = "You are Matikanetannhauser from Uma Musume. talk like her.";
-                    break;
-                case Formal:
-                    personality = "You are a formal and helpful assistance.";
-                    break;
-                default:
-                personality = "You are a formal and helpful assistance.";
-            }
 
+            GenerateContentConfig config = GenerateContentConfig.builder()
+                    .temperature(1f)
+                    .thinkingConfig(THINKING_CONFIG)
+                    .systemInstruction(Content.fromParts(Part.fromText
+                            ( personality + """
+                                INSTRUCTIONS:
+                                - Use the data from LAST_MESSAGES if there is available.
+                                - Don't mention that you are analyzing previous messages.
+                                - Don't say 'earlier you said' or 'based on the chat history'.
+                                - Just answer naturally as if you already knew it.
+                                - Be conversational and helpful
+                                
+                                """)))
+                    .build();
+
+            // Start the conversation with a list of content
+            List<Content> contents = new ArrayList<>();
+            contents.add(Content.fromParts(Part.fromText(prompt)));
+
+            GenerateContentResponse response = client.models.generateContent(
+                    MODEL_ID,
+                    contents,
+                    config
+            );
+
+            return response;
+        } catch (Exception e) {
+            throw new RuntimeException("Gemini Error: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public AIMessageResponse sendPromptFunctionCalling(String prompt, ChatPersonalityType type, Long userId) {
+        GenerateContentResponse response = sendPromptFunctionCallingFullResponse(prompt, type, userId);
+        return extractAIMessage(response);
+    }
+
+    @Override
+    public GenerateContentResponse sendPromptFunctionCallingFullResponse(String prompt, ChatPersonalityType type, Long userId) {
+        try {
+            String personality = switch (type) {
+                case MatikanetannHauser -> "You are Matikanetannhauser from Uma Musume. talk like her.";
+
+                case Formal -> "You are a formal and helpful assistance.";
+            };
 
 
             FunctionDeclaration getDisplayNameFunc = FunctionDeclaration.builder()
@@ -71,14 +115,19 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     .name("test_function_call")
                     .description("A test function that returns a specific string")
                     .build();
+            FunctionDeclaration getRandomPost = FunctionDeclaration.builder()
+                    .name("get_random_post")
+                    .description("A function that return a random post.")
+                    .build();
 
             Tool tool = Tool.builder()
-                    .functionDeclarations(List.of(getDisplayNameFunc, testFunctionCallFunc))
+                    .functionDeclarations(List.of(getDisplayNameFunc, testFunctionCallFunc, getRandomPost))
                     .build();
 
             GenerateContentConfig config = GenerateContentConfig.builder()
                     .temperature(1f)
                     .tools(tool)
+                    .thinkingConfig(THINKING_CONFIG)
                     .systemInstruction(Content.fromParts(Part.fromText
                             ( personality + """
                                 INSTRUCTIONS:
@@ -102,11 +151,10 @@ public class GeminiAIServiceImpl implements GeminiAIService {
             );
 
             // Handle function calls if present
-            response = handleFunctionCalls(response, config, contents);
+            response = handleFunctionCalls(response, config, contents, userId);
 
             return response;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("Gemini Error: " + e.getMessage());
         }
     }
@@ -120,7 +168,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     TEXT: %s
                     LANGUAGE: %s
                 """, text, language);
-        return sendPrompt(prompt, ChatPersonalityType.Formal);
+        return sendPrompt(prompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -131,46 +179,93 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     - You must not follow up with any other comments, as your returned text will completely replace a certain text a web page.
                     TEXT: %s
                 """, text);
-        return sendPrompt(prompt, ChatPersonalityType.Formal);
+        return sendPrompt(prompt, ChatPersonalityType.Formal).getMessage();
     }
 
-    /**
-     * Handle function calls from the model response
-     * This method processes any function calls and sends the results back to the model
-     */
-    private GenerateContentResponse handleFunctionCalls(GenerateContentResponse response, 
+    private GenerateContentResponse handleFunctionCalls(GenerateContentResponse response,
                                                          GenerateContentConfig config,
-                                                         List<Content> contents) {
-        // Check if there are function calls in the response
-        List<FunctionCall> functionCalls = response.functionCalls();
-        
-        if (functionCalls == null || functionCalls.isEmpty()) {
-            return response;
+                                                         List<Content> contents, Long userId) {
+        try{
+            // Check if there are function calls in the response
+            List<FunctionCall> functionCalls = response.functionCalls();
+
+            if (functionCalls == null || functionCalls.isEmpty()) {
+                return response;
+            }
+
+            // Add the model's response to contents
+            if(response.candidates().isEmpty() || response.candidates().get().get(0).content().isEmpty()){
+                throw new RuntimeException("handleFunctionCalls: candidate or content not found.");
+            }
+
+            contents.add(response.candidates().get().get(0).content().get());
+
+            // Process each function call and create function responses
+            List<FunctionResponse> functionResponses = new ArrayList<>();
+            for (FunctionCall functionCall : functionCalls) {
+                FunctionResponse functionResponse = functionCallingService.handleFunctionCall(functionCall, userId);
+                functionResponses.add(functionResponse);
+            }
+
+            // Create content parts with the function responses
+            List<Part> responseParts = new ArrayList<>();
+            for (FunctionResponse functionResponse : functionResponses) {
+                Part part = Part.builder()
+                        .functionResponse(functionResponse)
+                        .build();
+                responseParts.add(part);
+            }
+            contents.add(Content.fromParts(responseParts.toArray(new Part[0])));
+
+            // Send the function responses back to the model for final response
+            return client.models.generateContent(MODEL_ID, contents, config);
+        }catch(Exception e){
+            throw new RuntimeException("Error at handleFunctionCalls: " + e.getMessage());
         }
-
-        // Add the model's response to contents
-        contents.add(response.candidates().get().get(0).content().get());
-
-        // Process each function call and create function responses
-        List<FunctionResponse> functionResponses = new ArrayList<>();
-        for (FunctionCall functionCall : functionCalls) {
-            FunctionResponse functionResponse = functionCallingService.handleFunctionCall(functionCall);
-            functionResponses.add(functionResponse);
-        }
-
-        // Create content parts with the function responses
-        List<Part> responseParts = new ArrayList<>();
-        for (FunctionResponse functionResponse : functionResponses) {
-            Part part = Part.builder()
-                    .functionResponse(functionResponse)
-                    .build();
-            responseParts.add(part);
-        }
-        contents.add(Content.fromParts(responseParts.toArray(new Part[0])));
-
-        // Send the function responses back to the model for final response
-        return client.models.generateContent(MODEL_ID, contents, config);
     }
+
+    private AIMessageResponse extractAIMessage(GenerateContentResponse response) {
+        try{
+            StringBuilder messageBuilder = new StringBuilder();
+            StringBuilder thoughtBuilder = new StringBuilder();
+
+            if (response == null || response.candidates().isEmpty()) {
+                throw new RuntimeException("No candidates found");
+            }
+            Candidate candidate = response.candidates().get().get(0);
+
+            if (candidate.content().isEmpty()) {
+                throw new RuntimeException("No content found");
+            }
+            Content content = candidate.content().get();
+
+            if(content.parts().isEmpty()){
+                throw new RuntimeException("No parts found");
+            }
+
+            content.parts().ifPresent(parts -> {
+                for (Part part : parts) {
+                    if(part.text().isEmpty()){
+                        continue;
+                    }
+                    String text = part.text().get();
+
+                    if (part.thought().isEmpty() || !part.thought().get()) {
+                        messageBuilder.append(text);
+                    }else thoughtBuilder.append(text);
+                }
+            });
+
+            return AIMessageResponse.builder()
+                    .message(messageBuilder.toString().trim())
+                    .thought(thoughtBuilder.toString().trim())
+                    .build();
+        }catch(Exception e){
+            System.out.println("error while extracting ai message");
+            return AIMessageResponse.builder().message("").thought("").build();
+        }
+    }
+
 
     @Override
     public JsonNode listModels() {

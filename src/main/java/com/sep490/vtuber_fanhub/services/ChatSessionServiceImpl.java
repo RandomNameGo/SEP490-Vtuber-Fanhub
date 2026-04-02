@@ -1,6 +1,5 @@
 package com.sep490.vtuber_fanhub.services;
 
-import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.models.ChatSession;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.ChatSessionRepository;
