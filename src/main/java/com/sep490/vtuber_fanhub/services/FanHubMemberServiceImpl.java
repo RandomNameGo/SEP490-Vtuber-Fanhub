@@ -89,12 +89,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
                 fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
-        // Check if user is a member with MODERATOR role
-        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
-                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
-                .orElse(false);
-
-        if (!isOwner && !isModerator) {
+        if (!isOwner) {
             throw new AccessDeniedException("Access denied");
         }
 
