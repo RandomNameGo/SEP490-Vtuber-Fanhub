@@ -140,4 +140,16 @@ public class FanHubMemberController {
                 .build()
         );
     }
+
+
+    @GetMapping("/{fanHubId}/is-member")
+    public ResponseEntity<?> checkIsUserMemberOfFanHub(@PathVariable Long fanHubId) {
+        Boolean isMember = fanHubMemberService.isUserMemberOfFanHub(fanHubId);
+        return ResponseEntity.ok().body(APIResponse.<Boolean>builder()
+                .success(true)
+                .message("Success")
+                .data(isMember)
+                .build()
+        );
+    }
 }

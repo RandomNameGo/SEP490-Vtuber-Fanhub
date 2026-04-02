@@ -49,5 +49,11 @@ public interface PostService {
 
     String unVotePost(Long postId);
 
+    String deletePost(Long postId);
+
     List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy);
+
+    List<PostResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+
+    List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
 }

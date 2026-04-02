@@ -18,4 +18,6 @@ public interface FanHubMemberService {
     String reviewFanHubMember(long fanHubMemberId, String status);
 
     MemberDetailResponse getMemberDetail(long fanHubMemberId);
+
+    Boolean isUserMemberOfFanHub(Long fanHubId);
 }

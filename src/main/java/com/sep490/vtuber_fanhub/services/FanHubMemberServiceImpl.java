@@ -246,6 +246,21 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         return mapToMemberDetailResponse(member.get());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Boolean isUserMemberOfFanHub(Long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        // Check if fan hub exists
+        FanHub fanHub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        // Check if user is a member with JOINED status
+        return fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .filter(member -> "JOINED".equals(member.getStatus()))
+                .isPresent();
+    }
+
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {
         FanHubMemberResponse response = new FanHubMemberResponse();
 

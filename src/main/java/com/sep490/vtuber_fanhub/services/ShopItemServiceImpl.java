@@ -28,8 +28,20 @@ public class ShopItemServiceImpl implements ShopItemService {
     @Override
     @Transactional
     public String createShopItem(CreateShopItemRequest request) {
-        Item item = itemRepository.findById(request.getItemId())
-                .orElseThrow(() -> new NotFoundException("Item not found"));
+        Item item;
+
+        // If itemId is provided, use existing item; otherwise create new item
+        if (request.getItemId() != null) {
+            item = itemRepository.findById(request.getItemId())
+                    .orElseThrow(() -> new NotFoundException("Item not found"));
+        } else {
+            item = new Item();
+            item.setItemName(request.getItemName());
+            item.setDescription(request.getDescription());
+            item.setImageUrl(request.getImageUrl());
+            item.setCategory(request.getCategory());
+            itemRepository.save(item);
+        }
 
         ShopItem shopItem = new ShopItem();
         shopItem.setItem(item);

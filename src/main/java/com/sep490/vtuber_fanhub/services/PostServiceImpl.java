@@ -1155,6 +1155,43 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
+    public String deletePost(Long postId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        Long fanHubId = post.get().getHub().getId();
+
+        // Check if current user is the post author
+        boolean isAuthor = post.get().getUser().getId().equals(currentUser.getId());
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isAuthor && !isOwner && !isModerator) {
+            throw new AccessDeniedException("Only the post author, VTUBER (owner), or MODERATOR can delete this post");
+        }
+
+        post.get().setStatus("DELETED");
+        post.get().setUpdatedAt(Instant.now());
+        postRepository.save(post.get());
+
+        return "Post deleted successfully";
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
@@ -1175,6 +1212,78 @@ public class PostServiceImpl implements PostService {
 
         return pagedPosts.getContent().stream()
                 .map(this::mapToPostWithMediaResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view all posts");
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts = postRepository.findByHubIdAndStatusNotDeleted(fanHubId, paging);
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHub.get().getId(), currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view all posts");
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts = postRepository.findByHubIdAndStatusNotDeleted(fanHub.get().getId(), paging);
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
                 .collect(Collectors.toList());
     }
 }

@@ -202,13 +202,24 @@ public class PostController {
     }
 
     @PutMapping("/{postId}/reject")
-    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> rejectPost(@PathVariable long postId,
                                         @RequestParam(required = false) String reason) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
                 .data(postService.rejectPost(postId, reason))
+                .build()
+        );
+    }
+
+    @PutMapping("delete/{postId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER', 'MODERATOR')")
+    public ResponseEntity<?> deletePost(@PathVariable long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.deletePost(postId))
                 .build()
         );
     }
@@ -367,6 +378,36 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postService.getPostsByUsername(pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @GetMapping("/fan-hub/{fanHubId}/all")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> getAllPostsByFanHubId(@PathVariable long fanHubId,
+                                                   @RequestParam(defaultValue = "0") int pageNo,
+                                                   @RequestParam(defaultValue = "10") int pageSize,
+                                                   @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getAllPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @GetMapping("/fan-hub/subdomain/{subdomain}/all")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> getAllPostsBySubdomain(@PathVariable String subdomain,
+                                                    @RequestParam(defaultValue = "0") int pageNo,
+                                                    @RequestParam(defaultValue = "10") int pageSize,
+                                                    @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getAllPostsBySubdomain(subdomain, pageNo, pageSize, sortBy))
                 .build()
         );
     }

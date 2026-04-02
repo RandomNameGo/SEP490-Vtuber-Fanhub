@@ -84,4 +84,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "where p.user.username = :username " +
             "order by p.createdAt desc")
     Page<Post> findByUsername(String username, Pageable pageable);
+
+    // Find posts by hub id excluding DELETED status
+    @Query("select p from Post p " +
+            "where p.hub.id = :fanHubId " +
+            "and p.status != 'DELETED' " +
+            "order by p.createdAt desc")
+    Page<Post> findByHubIdAndStatusNotDeleted(Long fanHubId, Pageable pageable);
 }
