@@ -56,7 +56,6 @@ public class ContentValidationServiceImpl implements ContentValidationService{
 
             """, mediaValidationResult.toString());
         String result = groqAIService.sendPrompt(intentPrompt).trim();
-        System.out.println(result);
         return result;
     }
 
@@ -79,7 +78,6 @@ public class ContentValidationServiceImpl implements ContentValidationService{
 
             """, mediaValidationResult.toString());
         String result = groqAIService.sendPrompt(intentPrompt).trim();
-        System.out.println(result);
         return result;
     }
 
@@ -102,7 +100,6 @@ public class ContentValidationServiceImpl implements ContentValidationService{
 
             """, mediaValidationResult.toString());
         String result = groqAIService.sendPrompt(intentPrompt).trim();
-        System.out.println(result);
         return result;
     }
 
@@ -129,7 +126,6 @@ public class ContentValidationServiceImpl implements ContentValidationService{
 
             """, result.toString());
         String res = groqAIService.sendPrompt(intentPrompt).trim();
-        System.out.println(res);
         return res;
     }
 }

@@ -24,21 +24,17 @@ public class FunctionCallingService {
 
     public String get_display_name(Long userId) {
         try{
-            System.out.println("get_display_name used");
             User user = userRepository.findById(userId)
                     .orElseThrow(()-> new RuntimeException("User not found."));
             return user.getDisplayName();
         }
         catch (Exception e) {
-            System.out.println("get_display_name failed");
-            System.out.println(e.getMessage());
             return "get_display_name failed, inform user about this...";
         }
     }
 
     public String get_random_post(){
         try{
-            System.out.println("Get random post used");
             Post post = testingPostRepository.findTop1ByOrderByIdDesc();
 
             Map<String, Object> postMap = getStringObjectMap(post);
@@ -46,12 +42,9 @@ public class FunctionCallingService {
             ObjectMapper mapper = new ObjectMapper();
             String postJson = mapper.writeValueAsString(postMap);
 
-            System.out.println("Returning post with ID: " + post.getId());
             return postJson;
         }
         catch (Exception e) {
-            System.out.println("Failed to return post");
-            System.out.println(e.getMessage());
             return "failed getting post";
         }
     }
@@ -73,7 +66,6 @@ public class FunctionCallingService {
 
 
     public String test_function_call() {
-        System.out.println("test_function_call used");
         return "if you are reading this, response with 'AAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHH!' ";
     }
 

@@ -7,11 +7,9 @@ public interface PostValidationService {
     void validatePost(Post post);
 
     default void handleVideoCallback(JsonNode jsonNode) {
-        System.out.println("handleVideoCallback method called. but is unimplemented.");
     }
     // this method is purely for async implementation of this interface.
     // this method is called when all media validation is done.
     default void finalizeValidation(Post post) {
-        System.out.println("finalize method called, but is unimplemented.");
     }
 }

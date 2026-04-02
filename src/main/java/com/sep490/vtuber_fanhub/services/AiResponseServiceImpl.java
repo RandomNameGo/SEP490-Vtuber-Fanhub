@@ -30,35 +30,38 @@ public class AiResponseServiceImpl implements AiResponseService{
 
 
     @Override
-    @Transactional
     @Async("aiResponseExecutor")
     public void generateAndSendReply(User sender, String userMessageContent) {
-        ChatSession chatSession = chatSessionRepository.findByUser_Id(sender.getId())
-                .orElseThrow(()-> new NotFoundException("Chat session not found"));
+        try{
+            ChatSession chatSession = chatSessionRepository.findByUser_Id(sender.getId())
+                    .orElseThrow(()-> new NotFoundException("Chat session not found"));
 
-        AIMessageResponse aiResponse = smartChat(userMessageContent, sender.getId(), chatSession.getId());
+            AIMessageResponse aiResponse = smartChat(userMessageContent, sender.getId(), chatSession.getId());
 
-        ChatMessage chatMessage = new ChatMessage();
-        chatMessage.setSenderRole("AI");
-        chatMessage.setCreatedAt(Instant.now());
-        chatMessage.setContent(aiResponse.getMessage());
-        chatMessage.setThought(aiResponse.getThought());
-        chatMessage.setSession(chatSession);
-        chatMessage = chatMessageRepository.save(chatMessage);
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.setSenderRole("AI");
+            chatMessage.setCreatedAt(Instant.now());
+            chatMessage.setContent(aiResponse.getMessage());
+            chatMessage.setThought(aiResponse.getThought());
+            chatMessage.setSession(chatSession);
+            chatMessage = chatMessageRepository.save(chatMessage);
 
-        // Send AI response via WebSocket to /user/queue/reply
-        // Use /user prefix to target the specific user's queue
-        MessageResponse response = MessageResponse.builder()
-                        .id(chatMessage.getId())
-                        .createdAt(chatMessage.getCreatedAt())
-                        .content(chatMessage.getContent())
-                        .senderRole("AI")
-                        .build();
-        // TODO: One of these isn't working. Take a look at these
-        messagingTemplate.convertAndSendToUser(sender.getUsername(), "/queue/reply", response);
-        
-        // Also try sending directly to the queue without user prefix
-        messagingTemplate.convertAndSend("/queue/reply", response);
+            // Send AI response via WebSocket
+            // Note: We send to /topic/ai-response/{username} instead of /user/queue/reply
+            // because @Async runs outside the WebSocket session context
+            MessageResponse response = MessageResponse.builder()
+                    .id(chatMessage.getId())
+                    .createdAt(chatMessage.getCreatedAt())
+                    .content(chatMessage.getContent())
+                    .senderRole("AI")
+                    .build();
+
+            String destination = "/queue/reply/" + sender.getUsername();
+            messagingTemplate.convertAndSend(destination, response);
+        }catch(Exception e){
+            e.printStackTrace();
+            throw new RuntimeException("Error while generating and sending reply to user");
+        }
     }
 
     @Override

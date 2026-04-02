@@ -7,7 +7,6 @@ import com.sep490.vtuber_fanhub.repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -30,24 +29,19 @@ public class PostValidationServiceImplSync implements PostValidationService {
     @Override
     @Async("validationExecutor")
     public void validatePost(Post post) {
-
-        System.out.println("Validating video with Synchronous approach.");
         try {
             StringBuilder totalComments = new StringBuilder();
 
             boolean isSafe = true;
 
             if(post.getPostType().equals("IMAGE") || post.getPostType().equals("VIDEO")) {
-                System.out.println("Post contains media. performing media ai validation");
                 List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
                 boolean isVideo = post.getPostType().equals("VIDEO");
                 for(PostMedia postMedia : postMediaList) {
                     String ai_validation;
                     if(isVideo){
-                        System.out.println("This post is a video-type");
                         ai_validation = contentValidationService.validateVideoUrl(postMedia.getMediaUrl());
                     }else{
-                        System.out.println("This post is image-type");
                         ai_validation = contentValidationService.validateImageUrl(postMedia.getMediaUrl());
                     }
                     String[] media_validation_split = ai_validation.split("@");
