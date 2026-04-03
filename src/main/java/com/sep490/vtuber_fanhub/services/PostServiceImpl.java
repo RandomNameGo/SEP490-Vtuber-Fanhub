@@ -78,6 +78,7 @@ public class PostServiceImpl implements PostService {
     private final AuthService authService;
 
     // SSE notification service for sending real-time updates to users
+    private final BanMemberService banMemberService;
     // Note: Using NotificationService which handles both DB persistence and SSE delivery
     private final NotificationService notificationService;
 
@@ -102,11 +103,14 @@ public class PostServiceImpl implements PostService {
             throw new NotFoundException("FanHub not found");
         }
 
+        // Check if user is banned from creating posts in this hub
+        banMemberService.checkBanStatus(request.getFanHubId(), currentUser.getId(), List.of("POST"));
+
         boolean isOwner = fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
         Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
                 request.getFanHubId(), currentUser.getId());
-        
+
         if (!isOwner && member.isEmpty()) {
             throw new AccessDeniedException("You must be the owner (VTuber) or a member of this FanHub to create a post");
         }
@@ -966,6 +970,12 @@ public class PostServiceImpl implements PostService {
         if (post.isEmpty()) {
             throw new NotFoundException("Post not found");
         }
+
+        // Check if user is banned from interacting with posts in this hub
+        banMemberService.checkBanStatus(
+                post.get().getHub().getId(),
+                currentUser.getId(),
+                List.of("INTERACT"));
 
         Long userId = currentUser.getId();
 

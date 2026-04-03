@@ -4,15 +4,25 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
 import com.sep490.vtuber_fanhub.dto.responses.BanMemberResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.BanMember;
+import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.BanMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
+import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +31,8 @@ public class BanMemberServiceImpl implements BanMemberService {
     private final BanMemberRepository banMemberRepository;
 
     private final FanHubMemberRepository fanHubMemberRepository;
+
+    private final FanHubRepository fanHubRepository;
 
     private final AuthService authService;
 
@@ -34,6 +46,23 @@ public class BanMemberServiceImpl implements BanMemberService {
         FanHubMember fanHubMember = fanHubMemberRepository.findById(request.getFanHubMemberId())
                 .orElseThrow(() -> new NotFoundException("Fan hub member not found"));
 
+        Long fanHubId = fanHubMember.getHub().getId();
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
         BanMember banMember = new BanMember();
         banMember.setHub(fanHubMember.getHub());
         banMember.setUser(fanHubMember.getUser());
@@ -46,6 +75,92 @@ public class BanMemberServiceImpl implements BanMemberService {
         banMemberRepository.save(banMember);
 
         return "Member banned successfully";
+    }
+
+    @Override
+    public void checkBanStatus(Long hubId, Long userId, List<String> banTypes) {
+        List<BanMember> activeBans = banMemberRepository
+                .findByHubIdAndUserIdAndIsActiveTrueAndBanTypeIn(hubId, userId, banTypes);
+
+        if (!activeBans.isEmpty()) {
+            BanMember ban = activeBans.get(0);
+            String message = String.format("You are banned from this hub. Reason: %s, Ban type: %s",
+                    ban.getReason(), ban.getBanType());
+            throw new AccessDeniedException(message);
+        }
+    }
+
+    @Override
+    public List<BanMemberResponse> getActiveBansByHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Page<BanMember> pagedBans = banMemberRepository.findByHubIdAndIsActiveTrue(fanHubId, paging);
+
+        if (pagedBans.hasContent()) {
+            return pagedBans.getContent().stream()
+                    .map(this::mapToBanMemberResponse)
+                    .collect(Collectors.toList());
+        }
+
+        return List.of();
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public String revokeBan(Long banId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<BanMember> banMember = banMemberRepository.findById(banId);
+        if (banMember.isEmpty()) {
+            throw new NotFoundException("Ban record not found");
+        }
+
+        Long fanHubId = banMember.get().getHub().getId();
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        // Check if ban is already inactive
+        if (!banMember.get().getIsActive()) {
+            throw new IllegalArgumentException("Ban is already inactive");
+        }
+
+        // Revoke the ban by setting isActive to false
+        banMember.get().setIsActive(false);
+        banMemberRepository.save(banMember.get());
+
+        return "Ban revoked successfully";
     }
 
     private BanMemberResponse mapToBanMemberResponse(BanMember banMember) {

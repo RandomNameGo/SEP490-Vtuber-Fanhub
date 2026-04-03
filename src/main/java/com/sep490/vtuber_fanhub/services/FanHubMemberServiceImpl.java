@@ -39,6 +39,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     private final AuthService authService;
 
+    private final BanMemberService banMemberService;
+
     @Override
     @Transactional
     public String joinFanHubMember(long fanHubId) {
@@ -48,6 +50,9 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
+
+        // Check if user is banned from joining this hub
+        banMemberService.checkBanStatus(fanHubId, currentUser.getId(), List.of("JOIN"));
 
         // Check if user is already a member
         Optional<FanHubMember> existingMember = fanHubMemberRepository.findByHubIdAndUserId(
@@ -174,6 +179,40 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         }
 
         return "Set moderator successfully";
+    }
+
+    @Override
+    @Transactional
+    public String removeModerator(long fanHubId, List<Long> fanHubMemberIds) {
+
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        if (!isOwner) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        for (Long fanHubMemberId : fanHubMemberIds) {
+            Optional<FanHubMember> member = fanHubMemberRepository.findById(fanHubMemberId);
+            if (member.isPresent()) {
+                if (!"MODERATOR".equals(member.get().getRoleInHub())) {
+                    throw new IllegalArgumentException("Member is not a moderator");
+                }
+                member.get().setRoleInHub("MEMBER");
+                fanHubMemberRepository.save(member.get());
+            } else {
+                throw new NotFoundException("Member not found");
+            }
+        }
+
+        return "Remove moderator successfully";
     }
 
     @Override

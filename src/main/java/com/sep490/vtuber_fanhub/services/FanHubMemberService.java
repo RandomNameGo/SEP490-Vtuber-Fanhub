@@ -15,6 +15,8 @@ public interface FanHubMemberService {
 
     String addModerator(long fanHubId, List<Long> fanHubMemberIds);
 
+    String removeModerator(long fanHubId, List<Long> fanHubMemberIds);
+
     String reviewFanHubMember(long fanHubMemberId, String status);
 
     MemberDetailResponse getMemberDetail(long fanHubMemberId);

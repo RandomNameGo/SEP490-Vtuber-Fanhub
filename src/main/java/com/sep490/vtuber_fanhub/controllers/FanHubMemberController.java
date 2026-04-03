@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportMemberRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
+import com.sep490.vtuber_fanhub.dto.responses.BanMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
@@ -79,6 +80,17 @@ public class FanHubMemberController {
         );
     }
 
+    @PostMapping("/remove-moderator/{fanHubId}")
+    @PreAuthorize("hasRole('VTUBER')")
+    public ResponseEntity<?> removeModerator(@PathVariable long fanHubId, @RequestParam List<Long> memberIds) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.removeModerator(fanHubId, memberIds))
+                .build()
+        );
+    }
+
     @PutMapping("/review")
     @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
     public ResponseEntity<?> reviewFanHubMember(
@@ -126,6 +138,33 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(banMemberService.banFanHubMember(request))
+                .build()
+        );
+    }
+
+    @GetMapping("/bans/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getActiveBansByHubId(
+            @PathVariable Long fanHubId,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<BanMemberResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(banMemberService.getActiveBansByHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @PutMapping("/ban/revoke")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> revokeBan(@RequestParam Long banId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(banMemberService.revokeBan(banId))
                 .build()
         );
     }
