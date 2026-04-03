@@ -85,14 +85,15 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new NotFoundException("FanHub not found");
         }
 
-        // Check if user has USER role
-        boolean isUser = "USER".equals(currentUser.getRole());
+        // Check if user is a member of this FanHub
+        Optional<FanHubMember> currentMember = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId());
+        boolean isUserMember = "USER".equals(currentUser.getRole()) && currentMember.isPresent();
 
         // Check if user is VTUBER and owns this FanHub
         boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
                 fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
-        if (!isUser && !isOwner) {
+        if (!isUserMember && !isOwner) {
             throw new AccessDeniedException("Access denied");
         }
 
@@ -242,7 +243,12 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
                         .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
                         .orElse(false);
 
-        if (!isOwner) {
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(m -> "MODERATOR".equals(m.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
             throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view member details");
         }
 
