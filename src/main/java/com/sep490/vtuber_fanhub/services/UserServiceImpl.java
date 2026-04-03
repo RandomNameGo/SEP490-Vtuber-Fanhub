@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
+import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
@@ -313,5 +314,29 @@ public class UserServiceImpl implements UserService{
         userRepository.save(currentUser);
 
         return "Set oshi successfully";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDetailResponse getCurrentUserDetail() {
+        User user = authService.getUserFromToken(httpServletRequest);
+
+        UserDetailResponse response = new UserDetailResponse();
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setDisplayName(user.getDisplayName());
+        response.setAvatarUrl(user.getAvatarUrl());
+        response.setFrameUrl(user.getFrameUrl());
+        response.setBio(user.getBio());
+        response.setRole(user.getRole());
+        response.setPoints(user.getPoints());
+        response.setPaidPoints(user.getPaidPoints());
+        response.setTranslateLanguage(user.getTranslateLanguage());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+        response.setIsActive(user.getIsActive());
+
+        return response;
     }
 }

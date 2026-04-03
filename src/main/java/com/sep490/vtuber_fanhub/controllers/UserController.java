@@ -5,6 +5,7 @@ import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
+import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.services.EmailService;
 import com.sep490.vtuber_fanhub.services.OtpService;
@@ -127,6 +128,16 @@ public class UserController {
                 .success(true)
                 .message("Success")
                 .data(userService.setOshi(request))
+                .build()
+        );
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUserDetail() {
+        return ResponseEntity.ok().body(APIResponse.<UserDetailResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(userService.getCurrentUserDetail())
                 .build()
         );
     }
