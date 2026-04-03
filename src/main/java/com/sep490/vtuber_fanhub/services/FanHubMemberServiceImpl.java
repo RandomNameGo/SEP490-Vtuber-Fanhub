@@ -85,11 +85,14 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new NotFoundException("FanHub not found");
         }
 
+        // Check if user has USER role
+        boolean isUser = "USER".equals(currentUser.getRole());
+
         // Check if user is VTUBER and owns this FanHub
         boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
                 fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
-        if (!isOwner) {
+        if (!isUser && !isOwner) {
             throw new AccessDeniedException("Access denied");
         }
 
