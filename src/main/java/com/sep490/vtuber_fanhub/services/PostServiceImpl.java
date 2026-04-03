@@ -582,14 +582,23 @@ public class PostServiceImpl implements PostService {
 
 
         Instant lastExecutedTime = post.getAiValidationLastSentAt();
-        if(lastExecutedTime!=null){
+
+        if (lastExecutedTime != null) {
             Instant cooldownEndTime = lastExecutedTime.plus(AI_VALIDATION_COOLDOWN_MINUTES, ChronoUnit.MINUTES);
-            if(cooldownEndTime.isBefore(Instant.now())) {
-                Duration remaining = Duration.between(cooldownEndTime, Instant.now());
-                throw new CooldownException("AI Validation cooldown: " + String.format("%02d:%02d", remaining.toMinutes(), remaining.toSecondsPart()));
+            Instant now = Instant.now();
+
+            if (now.isBefore(cooldownEndTime)) {
+                Duration remaining = Duration.between(now, cooldownEndTime);
+
+                long minutes = remaining.toMinutes();
+                long seconds = remaining.toSecondsPart();
+
+                throw new CooldownException(String.format(
+                        "Please wait %02d:%02d before validating this post again.",
+                        minutes, seconds
+                ));
             }
         }
-
         post.setAiValidationLastSentAt(Instant.now());
         postRepository.save(post);
         
