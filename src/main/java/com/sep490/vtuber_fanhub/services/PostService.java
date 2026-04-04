@@ -28,6 +28,8 @@ public interface PostService {
 
     String reviewPost(Long postId, String status);
 
+    String reviewPosts(List<Long> postIds, String status);
+
     String sendAiValidate(Long postId);
 
     List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy);

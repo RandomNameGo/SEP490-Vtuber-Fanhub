@@ -155,6 +155,19 @@ public class PostController {
         );
     }
 
+    @PutMapping("/review/bulk")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> reviewPosts(
+            @RequestParam List<Long> postIds,
+            @RequestParam String status) {
+
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message(postService.reviewPosts(postIds, status))
+                .build()
+        );
+    }
+
     @GetMapping("/feed")
     public ResponseEntity<?> getPersonalizedFeed(
             @RequestParam(defaultValue = "0") int pageNo,

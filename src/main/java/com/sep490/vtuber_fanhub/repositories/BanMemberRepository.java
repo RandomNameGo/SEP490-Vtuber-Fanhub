@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,4 +23,7 @@ public interface BanMemberRepository extends JpaRepository<BanMember, Long> {
 
     @Query("SELECT b FROM BanMember b WHERE b.hub.id = :hubId AND b.isActive = true ORDER BY b.createdAt DESC")
     Page<BanMember> findByHubIdAndIsActiveTrue(@Param("hubId") Long hubId, Pageable pageable);
+
+    @Query("SELECT b FROM BanMember b WHERE b.isActive = true AND b.bannedUntil IS NOT NULL AND b.bannedUntil < :now")
+    List<BanMember> findExpiredBans(@Param("now") Instant now);
 }

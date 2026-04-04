@@ -518,6 +518,69 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
+    public String reviewPosts(List<Long> postIds, String status) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        String normalizedStatus = status.toUpperCase();
+        if (!List.of("APPROVED", "REJECTED").contains(normalizedStatus)) {
+            throw new IllegalArgumentException("Invalid status. Must be APPROVED or REJECTED");
+        }
+
+        int approvedCount = 0;
+        int rejectedCount = 0;
+
+        for (Long postId : postIds) {
+            Optional<Post> post = postRepository.findById(postId);
+            if (post.isEmpty()) {
+                throw new NotFoundException("Post not found with id: " + postId);
+            }
+
+            Long fanHubId = post.get().getHub().getId();
+
+            boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                    fanHubRepository.findById(fanHubId)
+                            .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                            .orElse(false);
+
+            boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                    .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                    .orElse(false);
+
+            if (!isOwner && !isModerator) {
+                throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can review posts");
+            }
+
+            post.get().setStatus(normalizedStatus);
+            post.get().setUpdatedAt(Instant.now());
+            postRepository.save(post.get());
+
+            // Award points when post is APPROVED
+            if ("APPROVED".equals(normalizedStatus)) {
+                User postAuthor = post.get().getUser();
+
+                long currentPoints = postAuthor.getPoints() != null ? postAuthor.getPoints() : 0;
+                postAuthor.setPoints(currentPoints + 10);
+                userRepository.save(postAuthor);
+
+                Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                        fanHubId, postAuthor.getId());
+                if (member.isPresent()) {
+                    FanHubMember fanHubMember = member.get();
+                    int currentScore = fanHubMember.getFanHubScore() != null ? fanHubMember.getFanHubScore() : 0;
+                    fanHubMember.setFanHubScore(currentScore + 10);
+                    fanHubMemberRepository.save(fanHubMember);
+                }
+                approvedCount++;
+            } else {
+                rejectedCount++;
+            }
+        }
+
+        return "Reviewed " + approvedCount + " approved, " + rejectedCount + " rejected";
+    }
+
+    @Override
+    @Transactional
     public String rejectPost(Long postId, String reason) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 

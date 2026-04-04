@@ -12,11 +12,13 @@ import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BanMemberServiceImpl implements BanMemberService {
 
     private final BanMemberRepository banMemberRepository;
@@ -180,5 +183,24 @@ public class BanMemberServiceImpl implements BanMemberService {
         response.setIsActive(banMember.getIsActive());
         response.setCreatedAt(banMember.getCreatedAt());
         return response;
+    }
+
+    /**
+     * Runs daily at midnight (00:00) UTC+7 to deactivate expired bans.
+     */
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Ho_Chi_Minh")
+    @org.springframework.transaction.annotation.Transactional
+    public void deactivateExpiredBans() {
+        Instant now = Instant.now();
+        List<BanMember> expiredBans = banMemberRepository.findExpiredBans(now);
+
+        if (!expiredBans.isEmpty()) {
+            log.info("Deactivating {} expired bans", expiredBans.size());
+            for (BanMember ban : expiredBans) {
+                ban.setIsActive(false);
+            }
+            banMemberRepository.saveAll(expiredBans);
+            log.info("Successfully deactivated {} expired bans", expiredBans.size());
+        }
     }
 }
