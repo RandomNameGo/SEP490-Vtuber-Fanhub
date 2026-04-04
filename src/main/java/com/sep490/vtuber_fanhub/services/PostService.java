@@ -56,4 +56,6 @@ public interface PostService {
     List<PostResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
+
+    PostResponse getPostDetail(Long postId);
 }

@@ -1305,4 +1305,13 @@ public class PostServiceImpl implements PostService {
                 .map(this::mapToPostResponse)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostResponse getPostDetail(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        return mapToPostResponse(post);
+    }
 }
