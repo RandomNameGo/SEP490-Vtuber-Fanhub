@@ -82,7 +82,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
     }
 
     @Override
-    public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -104,7 +104,12 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
 
-        Page<FanHubMember> pagedMembers = fanHubMemberRepository.findByHubId(fanHubId, paging);
+        Page<FanHubMember> pagedMembers;
+        if (username != null && !username.isEmpty()) {
+            pagedMembers = fanHubMemberRepository.findByHubIdAndUsername(fanHubId, username, paging);
+        } else {
+            pagedMembers = fanHubMemberRepository.findByHubId(fanHubId, paging);
+        }
 
         if (pagedMembers.hasContent()) {
             return pagedMembers.getContent().stream()

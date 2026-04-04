@@ -91,6 +91,42 @@ public class ReportPostServiceImpl implements ReportPostService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public String resolveReportPost(Long reportId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<ReportPost> reportPostOpt = reportPostRepository.findById(reportId);
+        if (reportPostOpt.isEmpty()) {
+            throw new NotFoundException("Report not found");
+        }
+
+        ReportPost reportPost = reportPostOpt.get();
+        FanHub fanHub = reportPost.getPost().getHub();
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHub.getId(), currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        // If reported user is the current user, they cannot resolve their own report
+        if (reportPost.getPost().getUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("Cannot resolve your own report");
+        }
+
+        reportPost.setStatus("RESOLVED");
+        reportPostRepository.save(reportPost);
+
+        return "Report resolved successfully";
+    }
+
     private ReportPostResponse mapToReportPostResponse(ReportPost reportPost) {
         ReportPostResponse response = new ReportPostResponse();
         response.setReportId(reportPost.getId());

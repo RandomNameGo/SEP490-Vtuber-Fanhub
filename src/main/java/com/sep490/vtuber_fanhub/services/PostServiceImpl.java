@@ -307,7 +307,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag) {
+    public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -331,7 +331,9 @@ public class PostServiceImpl implements PostService {
 
         Page<Post> pagedPosts;
         if (postHashtag != null && !postHashtag.isEmpty()) {
-            pagedPosts = postRepository.findByHubIdAndStatusAndHashtag(fanHubId, "APPROVED", postHashtag, paging);
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtagAndAuthor(fanHubId, "APPROVED", postHashtag, authorUsername, paging);
+        } else if (authorUsername != null && !authorUsername.isEmpty()) {
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtagAndAuthor(fanHubId, "APPROVED", null, authorUsername, paging);
         } else {
             pagedPosts = postRepository.findByHubIdAndStatus(fanHubId, "APPROVED", paging);
         }
@@ -346,7 +348,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag) {
+    public List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
@@ -370,7 +372,9 @@ public class PostServiceImpl implements PostService {
 
         Page<Post> pagedPosts;
         if (postHashtag != null && !postHashtag.isEmpty()) {
-            pagedPosts = postRepository.findByHubIdAndStatusAndHashtag(fanHub.get().getId(), "APPROVED", postHashtag, paging);
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtagAndAuthor(fanHub.get().getId(), "APPROVED", postHashtag, authorUsername, paging);
+        } else if (authorUsername != null && !authorUsername.isEmpty()) {
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtagAndAuthor(fanHub.get().getId(), "APPROVED", null, authorUsername, paging);
         } else {
             pagedPosts = postRepository.findByHubIdAndStatus(fanHub.get().getId(), "APPROVED", paging);
         }

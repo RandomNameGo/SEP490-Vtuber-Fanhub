@@ -45,11 +45,12 @@ public class FanHubMemberController {
             @PathVariable long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "joinedAt") String sortBy) {
+            @RequestParam(defaultValue = "joinedAt") String sortBy,
+            @RequestParam(required = false) String username) {
         return ResponseEntity.ok().body(APIResponse.<List<FanHubMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubMemberService.getFanHubMembers(fanHubId, pageNo, pageSize, sortBy))
+                .data(fanHubMemberService.getFanHubMembers(fanHubId, pageNo, pageSize, sortBy, username))
                 .build()
         );
     }
@@ -127,6 +128,17 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(reportMemberService.getReportMembersByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @PutMapping("/report/resolve")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> resolveReportMember(@RequestParam Long reportId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.resolveReportMember(reportId))
                 .build()
         );
     }

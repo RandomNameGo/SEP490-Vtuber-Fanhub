@@ -23,6 +23,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             String hashtag,
             Pageable pageable);
 
+    @Query("select distinct p from Post p " +
+            "left join PostHashtag ph on p.id = ph.post.id " +
+            "where p.hub.id = :fanHubId " +
+            "and p.status = :status " +
+            "and (:hashtag is null or ph.hashtag = :hashtag) " +
+            "and (:authorUsername is null or p.user.username = :authorUsername)")
+    Page<Post> findByHubIdAndStatusAndHashtagAndAuthor(
+            Long fanHubId,
+            String status,
+            String hashtag,
+            String authorUsername,
+            Pageable pageable);
+
     @Query("select p from Post p " +
             "where p.hub.id = :fanHubId " +
             "and p.status = :status " +

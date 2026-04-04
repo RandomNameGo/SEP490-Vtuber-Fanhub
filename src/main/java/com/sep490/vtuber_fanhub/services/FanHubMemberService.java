@@ -9,7 +9,7 @@ public interface FanHubMemberService {
 
     String joinFanHubMember(long fanHubId);
 
-    List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username);
 
     List<FanHubMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy);
 

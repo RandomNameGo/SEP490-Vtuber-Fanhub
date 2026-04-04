@@ -117,12 +117,13 @@ public class PostController {
                                       @RequestParam(defaultValue = "0") int pageNo,
                                       @RequestParam(defaultValue = "10") int pageSize,
                                       @RequestParam(defaultValue = "createdAt") String sortBy,
-                                      @RequestParam(required = false) String postHashtag) {
+                                      @RequestParam(required = false) String postHashtag,
+                                      @RequestParam(required = false) String authorUsername) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPosts(fanHubId, pageNo, pageSize, sortBy, postHashtag))
+                .data(postService.getPosts(fanHubId, pageNo, pageSize, sortBy, postHashtag, authorUsername))
                 .build()
         );
     }
@@ -338,17 +339,29 @@ public class PostController {
         );
     }
 
+    @PutMapping("/report/resolve")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> resolveReportPost(@RequestParam Long reportId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.resolveReportPost(reportId))
+                .build()
+        );
+    }
+
     @GetMapping("/fan-hub/subdomain/{subdomain}")
     public ResponseEntity<?> getPostsBySubDomain(@PathVariable String subdomain,
                                       @RequestParam(defaultValue = "0") int pageNo,
                                       @RequestParam(defaultValue = "10") int pageSize,
                                       @RequestParam(defaultValue = "createdAt") String sortBy,
-                                      @RequestParam(required = false) String postHashtag) {
+                                      @RequestParam(required = false) String postHashtag,
+                                      @RequestParam(required = false) String authorUsername) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, postHashtag))
+                .data(postService.getPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, postHashtag, authorUsername))
                 .build()
         );
     }
