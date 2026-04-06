@@ -89,6 +89,43 @@ public class ReportMemberServiceImpl implements ReportMemberService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public String resolveReportMember(Long reportId, String resolveMessage) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<ReportMember> reportMemberOpt = reportMemberRepository.findById(reportId);
+        if (reportMemberOpt.isEmpty()) {
+            throw new NotFoundException("Report not found");
+        }
+
+        ReportMember reportMember = reportMemberOpt.get();
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                reportMember.getHub().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(reportMember.getHub().getId(), currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        // If reported user is the current user, they cannot resolve their own report
+        if (reportMember.getUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("Cannot resolve your own report");
+        }
+
+        reportMember.setStatus("RESOLVED");
+        reportMember.setResolveBy(currentUser);
+        reportMember.setResolveMessage(resolveMessage);
+        reportMemberRepository.save(reportMember);
+
+        return "Report resolved successfully";
+    }
+
     private ReportMemberResponse mapToReportMemberResponse(ReportMember reportMember) {
         ReportMemberResponse response = new ReportMemberResponse();
         response.setReportId(reportMember.getId());
@@ -103,6 +140,14 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         response.setReason(reportMember.getReason());
         response.setStatus(reportMember.getStatus());
         response.setCreatedAt(reportMember.getCreatedAt());
+        
+        if (reportMember.getResolveBy() != null) {
+            response.setResolvedByUserId(reportMember.getResolveBy().getId());
+            response.setResolvedByUsername(reportMember.getResolveBy().getUsername());
+            response.setResolvedByDisplayName(reportMember.getResolveBy().getDisplayName());
+        }
+        response.setResolveMessage(reportMember.getResolveMessage());
+        
         return response;
     }
 }

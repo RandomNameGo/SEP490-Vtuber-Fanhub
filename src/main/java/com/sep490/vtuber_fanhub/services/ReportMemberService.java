@@ -10,4 +10,6 @@ public interface ReportMemberService {
     String createReportMember(CreateReportMemberRequest createReportMemberRequest);
 
     List<ReportMemberResponse> getReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+
+    String resolveReportMember(Long reportId, String resolveMessage);
 }

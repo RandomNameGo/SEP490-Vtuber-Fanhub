@@ -3,6 +3,8 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportMemberRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
+import com.sep490.vtuber_fanhub.dto.responses.BanMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
@@ -44,11 +46,12 @@ public class FanHubMemberController {
             @PathVariable long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "joinedAt") String sortBy) {
+            @RequestParam(defaultValue = "joinedAt") String sortBy,
+            @RequestParam(required = false) String username) {
         return ResponseEntity.ok().body(APIResponse.<List<FanHubMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubMemberService.getFanHubMembers(fanHubId, pageNo, pageSize, sortBy))
+                .data(fanHubMemberService.getFanHubMembers(fanHubId, pageNo, pageSize, sortBy, username))
                 .build()
         );
     }
@@ -75,6 +78,17 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(fanHubMemberService.addModerator(fanHubId, memberIds))
+                .build()
+        );
+    }
+
+    @PostMapping("/remove-moderator/{fanHubId}")
+    @PreAuthorize("hasRole('VTUBER')")
+    public ResponseEntity<?> removeModerator(@PathVariable long fanHubId, @RequestParam List<Long> memberIds) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.removeModerator(fanHubId, memberIds))
                 .build()
         );
     }
@@ -119,6 +133,19 @@ public class FanHubMemberController {
         );
     }
 
+    @PutMapping("/report/resolve")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> resolveReportMember(
+            @RequestParam Long reportId,
+            @RequestParam(required = false) String resolveMessage) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.resolveReportMember(reportId, resolveMessage))
+                .build()
+        );
+    }
+
     @PostMapping("/ban")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> banMember(@RequestBody CreateBanMemberRequest request) {
@@ -126,6 +153,33 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(banMemberService.banFanHubMember(request))
+                .build()
+        );
+    }
+
+    @GetMapping("/bans/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getActiveBansByHubId(
+            @PathVariable Long fanHubId,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<BanMemberResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(banMemberService.getActiveBansByHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @PutMapping("/ban/revoke")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> revokeBan(@RequestParam Long banId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(banMemberService.revokeBan(banId))
                 .build()
         );
     }
@@ -144,11 +198,11 @@ public class FanHubMemberController {
 
     @GetMapping("/{fanHubId}/is-member")
     public ResponseEntity<?> checkIsUserMemberOfFanHub(@PathVariable Long fanHubId) {
-        Boolean isMember = fanHubMemberService.isUserMemberOfFanHub(fanHubId);
-        return ResponseEntity.ok().body(APIResponse.<Boolean>builder()
+        FanHubMembershipResponse membership = fanHubMemberService.checkUserMembership(fanHubId);
+        return ResponseEntity.ok().body(APIResponse.<FanHubMembershipResponse>builder()
                 .success(true)
                 .message("Success")
-                .data(isMember)
+                .data(membership)
                 .build()
         );
     }

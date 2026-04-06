@@ -117,12 +117,13 @@ public class PostController {
                                       @RequestParam(defaultValue = "0") int pageNo,
                                       @RequestParam(defaultValue = "10") int pageSize,
                                       @RequestParam(defaultValue = "createdAt") String sortBy,
-                                      @RequestParam(required = false) String postHashtag) {
+                                      @RequestParam(required = false) String postHashtag,
+                                      @RequestParam(required = false) String authorUsername) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPosts(fanHubId, pageNo, pageSize, sortBy, postHashtag))
+                .data(postService.getPosts(fanHubId, pageNo, pageSize, sortBy, postHashtag, authorUsername))
                 .build()
         );
     }
@@ -150,6 +151,19 @@ public class PostController {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message(postService.reviewPost(postId, status))
+                .build()
+        );
+    }
+
+    @PutMapping("/review/bulk")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> reviewPosts(
+            @RequestParam List<Long> postIds,
+            @RequestParam String status) {
+
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message(postService.reviewPosts(postIds, status))
                 .build()
         );
     }
@@ -338,17 +352,31 @@ public class PostController {
         );
     }
 
+    @PutMapping("/report/resolve")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> resolveReportPost(
+            @RequestParam Long reportId,
+            @RequestParam(required = false) String resolveMessage) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.resolveReportPost(reportId, resolveMessage))
+                .build()
+        );
+    }
+
     @GetMapping("/fan-hub/subdomain/{subdomain}")
     public ResponseEntity<?> getPostsBySubDomain(@PathVariable String subdomain,
                                       @RequestParam(defaultValue = "0") int pageNo,
                                       @RequestParam(defaultValue = "10") int pageSize,
                                       @RequestParam(defaultValue = "createdAt") String sortBy,
-                                      @RequestParam(required = false) String postHashtag) {
+                                      @RequestParam(required = false) String postHashtag,
+                                      @RequestParam(required = false) String authorUsername) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, postHashtag))
+                .data(postService.getPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, postHashtag, authorUsername))
                 .build()
         );
     }
@@ -393,6 +421,16 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postService.getAllPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @PostMapping("/share/{postId}")
+    public ResponseEntity<?> getPostDetail(@PathVariable Long postId) {
+        return ResponseEntity.ok().body(APIResponse.<PostResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getPostDetail(postId))
                 .build()
         );
     }

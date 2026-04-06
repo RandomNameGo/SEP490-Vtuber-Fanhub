@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
@@ -39,6 +40,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     private final AuthService authService;
 
+    private final BanMemberService banMemberService;
+
     @Override
     @Transactional
     public String joinFanHubMember(long fanHubId) {
@@ -48,6 +51,9 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
+
+        // Check if user is banned from joining this hub
+        banMemberService.checkBanStatus(fanHubId, currentUser.getId(), List.of("JOIN"));
 
         // Check if user is already a member
         Optional<FanHubMember> existingMember = fanHubMemberRepository.findByHubIdAndUserId(
@@ -77,7 +83,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
     }
 
     @Override
-    public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -85,20 +91,26 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new NotFoundException("FanHub not found");
         }
 
-        // Check if user has USER role
-        boolean isUser = "USER".equals(currentUser.getRole());
+        // Check if user is a member of this FanHub
+        Optional<FanHubMember> currentMember = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId());
+        boolean isUserMember = "USER".equals(currentUser.getRole()) && currentMember.isPresent();
 
         // Check if user is VTUBER and owns this FanHub
         boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
                 fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
-        if (!isUser && !isOwner) {
+        if (!isUserMember && !isOwner) {
             throw new AccessDeniedException("Access denied");
         }
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
 
-        Page<FanHubMember> pagedMembers = fanHubMemberRepository.findByHubId(fanHubId, paging);
+        Page<FanHubMember> pagedMembers;
+        if (username != null && !username.isEmpty()) {
+            pagedMembers = fanHubMemberRepository.findByHubIdAndUsername(fanHubId, username, paging);
+        } else {
+            pagedMembers = fanHubMemberRepository.findByHubId(fanHubId, paging);
+        }
 
         if (pagedMembers.hasContent()) {
             return pagedMembers.getContent().stream()
@@ -177,6 +189,40 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     @Override
     @Transactional
+    public String removeModerator(long fanHubId, List<Long> fanHubMemberIds) {
+
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        if (!isOwner) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        for (Long fanHubMemberId : fanHubMemberIds) {
+            Optional<FanHubMember> member = fanHubMemberRepository.findById(fanHubMemberId);
+            if (member.isPresent()) {
+                if (!"MODERATOR".equals(member.get().getRoleInHub())) {
+                    throw new IllegalArgumentException("Member is not a moderator");
+                }
+                member.get().setRoleInHub("MEMBER");
+                fanHubMemberRepository.save(member.get());
+            } else {
+                throw new NotFoundException("Member not found");
+            }
+        }
+
+        return "Remove moderator successfully";
+    }
+
+    @Override
+    @Transactional
     public String reviewFanHubMember(long fanHubMemberId, String status) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
@@ -242,7 +288,12 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
                         .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
                         .orElse(false);
 
-        if (!isOwner) {
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(m -> "MODERATOR".equals(m.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
             throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view member details");
         }
 
@@ -251,17 +302,23 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public Boolean isUserMemberOfFanHub(Long fanHubId) {
+    public FanHubMembershipResponse checkUserMembership(Long fanHubId) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         // Check if fan hub exists
         FanHub fanHub = fanHubRepository.findById(fanHubId)
                 .orElseThrow(() -> new NotFoundException("FanHub not found"));
 
+        FanHubMembershipResponse response = new FanHubMembershipResponse();
+
         // Check if user is a member with JOINED status
-        return fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
-                .filter(member -> "JOINED".equals(member.getStatus()))
-                .isPresent();
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .filter(m -> "JOINED".equals(m.getStatus()));
+
+        response.setIsMember(member.isPresent());
+        response.setRoleInHub(member.isPresent() ? member.get().getRoleInHub() : null);
+
+        return response;
     }
 
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {

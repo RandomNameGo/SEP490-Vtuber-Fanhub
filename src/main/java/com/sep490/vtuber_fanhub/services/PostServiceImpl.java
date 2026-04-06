@@ -78,6 +78,7 @@ public class PostServiceImpl implements PostService {
     private final AuthService authService;
 
     // SSE notification service for sending real-time updates to users
+    private final BanMemberService banMemberService;
     // Note: Using NotificationService which handles both DB persistence and SSE delivery
     private final NotificationService notificationService;
 
@@ -102,11 +103,14 @@ public class PostServiceImpl implements PostService {
             throw new NotFoundException("FanHub not found");
         }
 
+        // Check if user is banned from creating posts in this hub
+        banMemberService.checkBanStatus(request.getFanHubId(), currentUser.getId(), List.of("POST"));
+
         boolean isOwner = fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
 
         Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
                 request.getFanHubId(), currentUser.getId());
-        
+
         if (!isOwner && member.isEmpty()) {
             throw new AccessDeniedException("You must be the owner (VTuber) or a member of this FanHub to create a post");
         }
@@ -303,7 +307,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag) {
+    public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -327,7 +331,9 @@ public class PostServiceImpl implements PostService {
 
         Page<Post> pagedPosts;
         if (postHashtag != null && !postHashtag.isEmpty()) {
-            pagedPosts = postRepository.findByHubIdAndStatusAndHashtag(fanHubId, "APPROVED", postHashtag, paging);
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtagAndAuthor(fanHubId, "APPROVED", postHashtag, authorUsername, paging);
+        } else if (authorUsername != null && !authorUsername.isEmpty()) {
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtagAndAuthor(fanHubId, "APPROVED", null, authorUsername, paging);
         } else {
             pagedPosts = postRepository.findByHubIdAndStatus(fanHubId, "APPROVED", paging);
         }
@@ -342,7 +348,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag) {
+    public List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
@@ -366,7 +372,9 @@ public class PostServiceImpl implements PostService {
 
         Page<Post> pagedPosts;
         if (postHashtag != null && !postHashtag.isEmpty()) {
-            pagedPosts = postRepository.findByHubIdAndStatusAndHashtag(fanHub.get().getId(), "APPROVED", postHashtag, paging);
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtagAndAuthor(fanHub.get().getId(), "APPROVED", postHashtag, authorUsername, paging);
+        } else if (authorUsername != null && !authorUsername.isEmpty()) {
+            pagedPosts = postRepository.findByHubIdAndStatusAndHashtagAndAuthor(fanHub.get().getId(), "APPROVED", null, authorUsername, paging);
         } else {
             pagedPosts = postRepository.findByHubIdAndStatus(fanHub.get().getId(), "APPROVED", paging);
         }
@@ -484,6 +492,7 @@ public class PostServiceImpl implements PostService {
         }
 
         post.get().setStatus(normalizedStatus);
+        post.get().setReviewedBy(currentUser);
         post.get().setUpdatedAt(Instant.now());
         postRepository.save(post.get());
 
@@ -506,6 +515,70 @@ public class PostServiceImpl implements PostService {
         }
 
         return "Post " + normalizedStatus.toLowerCase() + " successfully";
+    }
+
+    @Override
+    @Transactional
+    public String reviewPosts(List<Long> postIds, String status) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        String normalizedStatus = status.toUpperCase();
+        if (!List.of("APPROVED", "REJECTED").contains(normalizedStatus)) {
+            throw new IllegalArgumentException("Invalid status. Must be APPROVED or REJECTED");
+        }
+
+        int approvedCount = 0;
+        int rejectedCount = 0;
+
+        for (Long postId : postIds) {
+            Optional<Post> post = postRepository.findById(postId);
+            if (post.isEmpty()) {
+                throw new NotFoundException("Post not found with id: " + postId);
+            }
+
+            Long fanHubId = post.get().getHub().getId();
+
+            boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                    fanHubRepository.findById(fanHubId)
+                            .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                            .orElse(false);
+
+            boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                    .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                    .orElse(false);
+
+            if (!isOwner && !isModerator) {
+                throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can review posts");
+            }
+
+            post.get().setStatus(normalizedStatus);
+            post.get().setReviewedBy(currentUser);
+            post.get().setUpdatedAt(Instant.now());
+            postRepository.save(post.get());
+
+            // Award points when post is APPROVED
+            if ("APPROVED".equals(normalizedStatus)) {
+                User postAuthor = post.get().getUser();
+
+                long currentPoints = postAuthor.getPoints() != null ? postAuthor.getPoints() : 0;
+                postAuthor.setPoints(currentPoints + 10);
+                userRepository.save(postAuthor);
+
+                Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                        fanHubId, postAuthor.getId());
+                if (member.isPresent()) {
+                    FanHubMember fanHubMember = member.get();
+                    int currentScore = fanHubMember.getFanHubScore() != null ? fanHubMember.getFanHubScore() : 0;
+                    fanHubMember.setFanHubScore(currentScore + 10);
+                    fanHubMemberRepository.save(fanHubMember);
+                }
+                approvedCount++;
+            } else {
+                rejectedCount++;
+            }
+        }
+
+        return "Reviewed " + approvedCount + " approved, " + rejectedCount + " rejected";
     }
 
     @Override
@@ -976,6 +1049,12 @@ public class PostServiceImpl implements PostService {
             throw new NotFoundException("Post not found");
         }
 
+        // Check if user is banned from interacting with posts in this hub
+        banMemberService.checkBanStatus(
+                post.get().getHub().getId(),
+                currentUser.getId(),
+                List.of("INTERACT"));
+
         Long userId = currentUser.getId();
 
         // Check if user already liked this post
@@ -1294,5 +1373,14 @@ public class PostServiceImpl implements PostService {
         return pagedPosts.getContent().stream()
                 .map(this::mapToPostResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostResponse getPostDetail(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        return mapToPostResponse(post);
     }
 }

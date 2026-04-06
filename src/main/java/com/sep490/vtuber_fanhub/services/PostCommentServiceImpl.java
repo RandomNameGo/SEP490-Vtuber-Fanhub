@@ -57,6 +57,8 @@ public class PostCommentServiceImpl implements PostCommentService {
     //SSE
     private final NotificationService notificationService;
 
+    private final BanMemberService banMemberService;
+
     @Override
     @Transactional
     public boolean createPostComment(CreatePostCommentRequest createPostCommentRequest) {
@@ -66,6 +68,12 @@ public class PostCommentServiceImpl implements PostCommentService {
         if (post.isEmpty()) {
             throw new NotFoundException("Post not found");
         }
+
+        // Check if user is banned from commenting in this hub
+        banMemberService.checkBanStatus(
+                post.get().getHub().getId(),
+                currentUser.getId(),
+                List.of("COMMENT"));
 
         PostComment postComment = new PostComment();
         postComment.setPost(post.get());

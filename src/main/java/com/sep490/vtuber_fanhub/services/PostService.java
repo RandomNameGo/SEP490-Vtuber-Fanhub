@@ -18,15 +18,17 @@ public interface PostService {
 
     List<PostWithMediaResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
-    List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag);
+    List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername);
 
-    List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag);
+    List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername);
 
     List<PostWithMediaResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
 
     List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     String reviewPost(Long postId, String status);
+
+    String reviewPosts(List<Long> postIds, String status);
 
     String sendAiValidate(Long postId);
 
@@ -56,4 +58,6 @@ public interface PostService {
     List<PostResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
+
+    PostResponse getPostDetail(Long postId);
 }
