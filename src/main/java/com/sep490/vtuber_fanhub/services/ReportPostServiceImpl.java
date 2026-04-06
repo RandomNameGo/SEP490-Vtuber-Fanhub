@@ -5,10 +5,13 @@ import com.sep490.vtuber_fanhub.dto.responses.ReportPostResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.Post;
+import com.sep490.vtuber_fanhub.models.PostHashtag;
 import com.sep490.vtuber_fanhub.models.ReportPost;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
+import com.sep490.vtuber_fanhub.repositories.PostHashtagRepository;
+import com.sep490.vtuber_fanhub.repositories.PostMediaRepository;
 import com.sep490.vtuber_fanhub.repositories.PostRepository;
 import com.sep490.vtuber_fanhub.repositories.ReportPostRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +42,10 @@ public class ReportPostServiceImpl implements ReportPostService {
     private final FanHubRepository fanHubRepository;
 
     private final FanHubMemberRepository fanHubMemberRepository;
+
+    private final PostMediaRepository postMediaRepository;
+
+    private final PostHashtagRepository postHashtagRepository;
 
     @Override
     public String createReportPost(CreateReportPostRequest createReportPostRequest) {
@@ -129,19 +136,144 @@ public class ReportPostServiceImpl implements ReportPostService {
         return "Report resolved successfully";
     }
 
+    @Override
+    public List<ReportPostResponse> getReportPostsByCurrentUser(int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Page<ReportPost> reportPostPage = reportPostRepository.findByReportedById(currentUser.getId(), pageRequest);
+
+        return reportPostPage.getContent().stream()
+                .map(this::mapToReportPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReportPostResponse> getPendingReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubIdAndStatus(fanHubId, "PENDING", pageRequest);
+
+        return reportPostPage.getContent().stream()
+                .map(this::mapToReportPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public String bulkResolveReportPosts(List<Long> reportIds, String resolveMessage) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        if (reportIds == null || reportIds.isEmpty()) {
+            throw new IllegalArgumentException("Report IDs cannot be empty");
+        }
+
+        int resolvedCount = 0;
+        for (Long reportId : reportIds) {
+            Optional<ReportPost> reportPostOpt = reportPostRepository.findById(reportId);
+            if (reportPostOpt.isEmpty()) {
+                continue;
+            }
+
+            ReportPost reportPost = reportPostOpt.get();
+            FanHub fanHub = reportPost.getPost().getHub();
+
+            // Check if user is VTUBER and owns this FanHub
+            boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                    fanHub.getOwnerUser().getId().equals(currentUser.getId());
+
+            // Check if user is a member with MODERATOR role
+            boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHub.getId(), currentUser.getId())
+                    .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                    .orElse(false);
+
+            if (!isOwner && !isModerator) {
+                throw new AccessDeniedException("Access denied for report ID: " + reportId);
+            }
+
+            // If reported user is the current user, they cannot resolve their own report
+            if (reportPost.getPost().getUser().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("Cannot resolve your own report for report ID: " + reportId);
+            }
+
+            reportPost.setStatus("RESOLVED");
+            reportPost.setResolveBy(currentUser);
+            reportPost.setResolveMessage(resolveMessage);
+            reportPostRepository.save(reportPost);
+            resolvedCount++;
+        }
+
+        return "Successfully resolved " + resolvedCount + " report(s)";
+    }
+
     private ReportPostResponse mapToReportPostResponse(ReportPost reportPost) {
         ReportPostResponse response = new ReportPostResponse();
+        
+        // Report information
         response.setReportId(reportPost.getId());
-        response.setPostId(reportPost.getPost().getId());
-        response.setFanHubId(reportPost.getPost().getHub().getId());
-        response.setPostTitle(reportPost.getPost().getTitle());
+        response.setReason(reportPost.getReason());
+        response.setReportStatus(reportPost.getStatus());
+        response.setReportCreatedAt(reportPost.getCreatedAt());
+        
+        // Post information
+        Post post = reportPost.getPost();
+        response.setPostId(post.getId());
+        response.setPostType(post.getPostType());
+        response.setTitle(post.getTitle());
+        response.setContent(post.getContent());
+        response.setStatus(post.getStatus());
+        response.setIsPinned(post.getIsPinned());
+        response.setPostCreatedAt(post.getCreatedAt());
+        response.setPostUpdatedAt(post.getUpdatedAt());
+        
+        // FanHub information
+        FanHub fanHub = post.getHub();
+        response.setFanHubId(fanHub.getId());
+        response.setFanHubName(fanHub.getHubName());
+        response.setFanHubSubdomain(fanHub.getSubdomain());
+        
+        // Author information
+        User author = post.getUser();
+        response.setAuthorId(author.getId());
+        response.setAuthorUsername(author.getUsername());
+        response.setAuthorDisplayName(author.getDisplayName());
+        response.setAuthorAvatarUrl(author.getAvatarUrl());
+        
+        // Media count
+        int mediaCount = postMediaRepository.findByPostId(post.getId()).size();
+        response.setMediaCount(mediaCount);
+        
+        // Hashtags
+        List<String> hashtags = postHashtagRepository.findByPostId(post.getId())
+                .stream()
+                .map(PostHashtag::getHashtag)
+                .collect(Collectors.toList());
+        response.setHashtags(hashtags);
+        
+        // Reporter information
         response.setReportedByUserId(reportPost.getReportedBy().getId());
         response.setReportedByUsername(reportPost.getReportedBy().getUsername());
         response.setReportedByDisplayName(reportPost.getReportedBy().getDisplayName());
-        response.setReason(reportPost.getReason());
-        response.setStatus(reportPost.getStatus());
-        response.setCreatedAt(reportPost.getCreatedAt());
         
+        // Resolver information (if resolved)
         if (reportPost.getResolveBy() != null) {
             response.setResolvedByUserId(reportPost.getResolveBy().getId());
             response.setResolvedByUsername(reportPost.getResolveBy().getUsername());

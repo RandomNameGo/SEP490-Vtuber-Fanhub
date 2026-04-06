@@ -126,6 +126,93 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         return "Report resolved successfully";
     }
 
+    @Override
+    public List<ReportMemberResponse> getReportMembersByCurrentUser(int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Page<ReportMember> reportMemberPage = reportMemberRepository.findByReportedById(currentUser.getId(), pageRequest);
+
+        return reportMemberPage.getContent().stream()
+                .map(this::mapToReportMemberResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReportMemberResponse> getPendingReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Page<ReportMember> reportMemberPage = reportMemberRepository.findByHubIdAndStatus(fanHubId, "PENDING", pageRequest);
+
+        return reportMemberPage.getContent().stream()
+                .map(this::mapToReportMemberResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public String bulkResolveReportMembers(List<Long> reportIds, String resolveMessage) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        if (reportIds == null || reportIds.isEmpty()) {
+            throw new IllegalArgumentException("Report IDs cannot be empty");
+        }
+
+        int resolvedCount = 0;
+        for (Long reportId : reportIds) {
+            Optional<ReportMember> reportMemberOpt = reportMemberRepository.findById(reportId);
+            if (reportMemberOpt.isEmpty()) {
+                continue;
+            }
+
+            ReportMember reportMember = reportMemberOpt.get();
+
+            // Check if user is VTUBER and owns this FanHub
+            boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                    reportMember.getHub().getOwnerUser().getId().equals(currentUser.getId());
+
+            // Check if user is a member with MODERATOR role
+            boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(reportMember.getHub().getId(), currentUser.getId())
+                    .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                    .orElse(false);
+
+            if (!isOwner && !isModerator) {
+                throw new AccessDeniedException("Access denied for report ID: " + reportId);
+            }
+
+            // If reported user is the current user, they cannot resolve their own report
+            if (reportMember.getUser().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("Cannot resolve your own report for report ID: " + reportId);
+            }
+
+            reportMember.setStatus("RESOLVED");
+            reportMember.setResolveBy(currentUser);
+            reportMember.setResolveMessage(resolveMessage);
+            reportMemberRepository.save(reportMember);
+            resolvedCount++;
+        }
+
+        return "Successfully resolved " + resolvedCount + " report(s)";
+    }
+
     private ReportMemberResponse mapToReportMemberResponse(ReportMember reportMember) {
         ReportMemberResponse response = new ReportMemberResponse();
         response.setReportId(reportMember.getId());

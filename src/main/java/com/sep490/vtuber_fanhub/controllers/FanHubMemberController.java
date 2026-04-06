@@ -206,4 +206,49 @@ public class FanHubMemberController {
                 .build()
         );
     }
+
+    @GetMapping("/reports/my-members-report")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyReportMembers(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<ReportMemberResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.getReportMembersByCurrentUser(pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @GetMapping("/reports/pending-members/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getPendingReportMembers(
+            @PathVariable Long fanHubId,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<ReportMemberResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.getPendingReportMembersByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @PutMapping("/reports/bulk-resolve")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> bulkResolveReportMembers(
+            @RequestParam List<Long> reportIds,
+            @RequestParam(required = false) String resolveMessage) {
+
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.bulkResolveReportMembers(reportIds, resolveMessage))
+                .build()
+        );
+    }
 }

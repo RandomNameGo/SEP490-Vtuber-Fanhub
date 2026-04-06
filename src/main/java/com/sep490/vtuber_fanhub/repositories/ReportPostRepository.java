@@ -11,4 +11,9 @@ public interface ReportPostRepository extends JpaRepository<ReportPost, Long> {
 
     @Query("SELECT rp FROM ReportPost rp JOIN rp.post p WHERE p.hub.id = :fanHubId")
     Page<ReportPost> findByFanHubId(@Param("fanHubId") Long fanHubId, Pageable pageable);
+
+    Page<ReportPost> findByReportedById(Long reportedById, Pageable pageable);
+
+    @Query("SELECT rp FROM ReportPost rp JOIN rp.post p WHERE p.hub.id = :fanHubId AND rp.status = :status")
+    Page<ReportPost> findByFanHubIdAndStatus(@Param("fanHubId") Long fanHubId, @Param("status") String status, Pageable pageable);
 }

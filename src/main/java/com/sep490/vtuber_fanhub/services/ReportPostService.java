@@ -13,4 +13,10 @@ public interface ReportPostService {
     List<ReportPostResponse> getReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     String resolveReportPost(Long reportId, String resolveMessage);
+
+    List<ReportPostResponse> getReportPostsByCurrentUser(int pageNo, int pageSize, String sortBy);
+
+    List<ReportPostResponse> getPendingReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+
+    String bulkResolveReportPosts(List<Long> reportIds, String resolveMessage);
 }

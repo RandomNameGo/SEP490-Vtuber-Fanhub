@@ -11,4 +11,8 @@ public interface ReportMemberRepository extends JpaRepository<ReportMember, Long
 
     @Query("SELECT rm FROM ReportMember rm WHERE rm.hub.id = :fanHubId")
     Page<ReportMember> findByFanHubId(@Param("fanHubId") Long fanHubId, Pageable pageable);
+
+    Page<ReportMember> findByReportedById(Long reportedById, Pageable pageable);
+
+    Page<ReportMember> findByHubIdAndStatus(Long fanHubId, String status, Pageable pageable);
 }
