@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 
 import java.util.List;
@@ -21,5 +22,5 @@ public interface FanHubMemberService {
 
     MemberDetailResponse getMemberDetail(long fanHubMemberId);
 
-    Boolean isUserMemberOfFanHub(Long fanHubId);
+    FanHubMembershipResponse checkUserMembership(Long fanHubId);
 }

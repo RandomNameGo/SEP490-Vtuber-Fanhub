@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportMemberRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.BanMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
@@ -195,11 +196,11 @@ public class FanHubMemberController {
 
     @GetMapping("/{fanHubId}/is-member")
     public ResponseEntity<?> checkIsUserMemberOfFanHub(@PathVariable Long fanHubId) {
-        Boolean isMember = fanHubMemberService.isUserMemberOfFanHub(fanHubId);
-        return ResponseEntity.ok().body(APIResponse.<Boolean>builder()
+        FanHubMembershipResponse membership = fanHubMemberService.checkUserMembership(fanHubId);
+        return ResponseEntity.ok().body(APIResponse.<FanHubMembershipResponse>builder()
                 .success(true)
                 .message("Success")
-                .data(isMember)
+                .data(membership)
                 .build()
         );
     }

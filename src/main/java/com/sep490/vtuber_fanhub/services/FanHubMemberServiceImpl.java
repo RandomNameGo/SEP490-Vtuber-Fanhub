@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
@@ -301,17 +302,23 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public Boolean isUserMemberOfFanHub(Long fanHubId) {
+    public FanHubMembershipResponse checkUserMembership(Long fanHubId) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         // Check if fan hub exists
         FanHub fanHub = fanHubRepository.findById(fanHubId)
                 .orElseThrow(() -> new NotFoundException("FanHub not found"));
 
+        FanHubMembershipResponse response = new FanHubMembershipResponse();
+
         // Check if user is a member with JOINED status
-        return fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
-                .filter(member -> "JOINED".equals(member.getStatus()))
-                .isPresent();
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .filter(m -> "JOINED".equals(m.getStatus()));
+
+        response.setIsMember(member.isPresent());
+        response.setRoleInHub(member.isPresent() ? member.get().getRoleInHub() : null);
+
+        return response;
     }
 
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {
