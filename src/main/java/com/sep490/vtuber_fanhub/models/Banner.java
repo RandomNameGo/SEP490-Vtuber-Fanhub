@@ -29,6 +29,9 @@ public class Banner {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "gacha_cost")
+    private Integer gachaCost;
+
     @Column(name = "created_at")
     private Instant createdAt;
 

@@ -90,7 +90,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
     }
 
     @Override
-    public String resolveReportMember(Long reportId) {
+    public String resolveReportMember(Long reportId, String resolveMessage) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<ReportMember> reportMemberOpt = reportMemberRepository.findById(reportId);
@@ -119,6 +119,8 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         }
 
         reportMember.setStatus("RESOLVED");
+        reportMember.setResolveBy(currentUser);
+        reportMember.setResolveMessage(resolveMessage);
         reportMemberRepository.save(reportMember);
 
         return "Report resolved successfully";
@@ -138,6 +140,14 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         response.setReason(reportMember.getReason());
         response.setStatus(reportMember.getStatus());
         response.setCreatedAt(reportMember.getCreatedAt());
+        
+        if (reportMember.getResolveBy() != null) {
+            response.setResolvedByUserId(reportMember.getResolveBy().getId());
+            response.setResolvedByUsername(reportMember.getResolveBy().getUsername());
+            response.setResolvedByDisplayName(reportMember.getResolveBy().getDisplayName());
+        }
+        response.setResolveMessage(reportMember.getResolveMessage());
+        
         return response;
     }
 }

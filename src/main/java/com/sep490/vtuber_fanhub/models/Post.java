@@ -71,4 +71,8 @@ public class Post {
     private Instant aiValidationLastSentAt;
 
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewed_by")
+    private User reviewedBy;
+
 }

@@ -12,5 +12,5 @@ public interface ReportPostService {
 
     List<ReportPostResponse> getReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
-    String resolveReportPost(Long reportId);
+    String resolveReportPost(Long reportId, String resolveMessage);
 }

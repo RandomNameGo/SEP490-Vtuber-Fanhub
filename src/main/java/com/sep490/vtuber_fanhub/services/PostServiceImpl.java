@@ -492,6 +492,7 @@ public class PostServiceImpl implements PostService {
         }
 
         post.get().setStatus(normalizedStatus);
+        post.get().setReviewedBy(currentUser);
         post.get().setUpdatedAt(Instant.now());
         postRepository.save(post.get());
 
@@ -551,6 +552,7 @@ public class PostServiceImpl implements PostService {
             }
 
             post.get().setStatus(normalizedStatus);
+            post.get().setReviewedBy(currentUser);
             post.get().setUpdatedAt(Instant.now());
             postRepository.save(post.get());
 

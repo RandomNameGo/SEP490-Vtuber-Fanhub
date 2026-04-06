@@ -41,4 +41,12 @@ public class ReportMember {
     @Column(name = "created_at")
     private Instant createdAt;
 
+    @Lob
+    @Column(name = "resolve_message")
+    private String resolveMessage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "resolve_by")
+    private User resolveBy;
+
 }

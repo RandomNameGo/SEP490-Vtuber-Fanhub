@@ -135,11 +135,13 @@ public class FanHubMemberController {
 
     @PutMapping("/report/resolve")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> resolveReportMember(@RequestParam Long reportId) {
+    public ResponseEntity<?> resolveReportMember(
+            @RequestParam Long reportId,
+            @RequestParam(required = false) String resolveMessage) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
-                .data(reportMemberService.resolveReportMember(reportId))
+                .data(reportMemberService.resolveReportMember(reportId, resolveMessage))
                 .build()
         );
     }

@@ -92,7 +92,7 @@ public class ReportPostServiceImpl implements ReportPostService {
     }
 
     @Override
-    public String resolveReportPost(Long reportId) {
+    public String resolveReportPost(Long reportId, String resolveMessage) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<ReportPost> reportPostOpt = reportPostRepository.findById(reportId);
@@ -122,6 +122,8 @@ public class ReportPostServiceImpl implements ReportPostService {
         }
 
         reportPost.setStatus("RESOLVED");
+        reportPost.setResolveBy(currentUser);
+        reportPost.setResolveMessage(resolveMessage);
         reportPostRepository.save(reportPost);
 
         return "Report resolved successfully";
@@ -139,6 +141,14 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setReason(reportPost.getReason());
         response.setStatus(reportPost.getStatus());
         response.setCreatedAt(reportPost.getCreatedAt());
+        
+        if (reportPost.getResolveBy() != null) {
+            response.setResolvedByUserId(reportPost.getResolveBy().getId());
+            response.setResolvedByUsername(reportPost.getResolveBy().getUsername());
+            response.setResolvedByDisplayName(reportPost.getResolveBy().getDisplayName());
+        }
+        response.setResolveMessage(reportPost.getResolveMessage());
+        
         return response;
     }
 }

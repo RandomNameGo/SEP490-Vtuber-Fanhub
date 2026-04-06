@@ -24,4 +24,9 @@ public class ReportMemberResponse {
     private String status;
 
     private Instant createdAt;
+
+    private Long resolvedByUserId;
+    private String resolvedByUsername;
+    private String resolvedByDisplayName;
+    private String resolveMessage;
 }

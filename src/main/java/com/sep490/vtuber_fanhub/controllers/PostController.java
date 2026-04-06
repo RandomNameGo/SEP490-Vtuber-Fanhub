@@ -354,11 +354,13 @@ public class PostController {
 
     @PutMapping("/report/resolve")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> resolveReportPost(@RequestParam Long reportId) {
+    public ResponseEntity<?> resolveReportPost(
+            @RequestParam Long reportId,
+            @RequestParam(required = false) String resolveMessage) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
-                .data(reportPostService.resolveReportPost(reportId))
+                .data(reportPostService.resolveReportPost(reportId, resolveMessage))
                 .build()
         );
     }
