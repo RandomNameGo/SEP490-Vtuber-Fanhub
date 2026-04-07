@@ -60,4 +60,8 @@ public interface PostService {
     List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
 
     PostResponse getPostDetail(Long postId);
+
+    List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy);
+
+    PostResponse getTrendingPublicPost();
 }

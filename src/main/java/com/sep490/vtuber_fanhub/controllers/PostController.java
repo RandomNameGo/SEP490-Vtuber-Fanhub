@@ -182,6 +182,16 @@ public class PostController {
         );
     }
 
+
+    @GetMapping("/trending")
+    public ResponseEntity<?> getTrendingPublicPost() {
+        return ResponseEntity.ok().body(APIResponse.<PostResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getTrendingPublicPost())
+                .build());
+    }
+
     @PostMapping("/like")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> likePost(@RequestParam long postId) {

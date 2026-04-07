@@ -1383,4 +1383,40 @@ public class PostServiceImpl implements PostService {
 
         return mapToPostResponse(post);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        if (fanHub.get().getIsPrivate()) {
+            throw new AccessDeniedException("This FanHub is private");
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts = postRepository.findTrendingPostsByFanHub(fanHubId, paging);
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostResponse getTrendingPublicPost() {
+        Instant oneDayAgo = Instant.now().minus(1, ChronoUnit.DAYS);
+
+        Post post = postRepository.findTopTrendingPublicPostLast24Hours(oneDayAgo)
+                .orElseThrow(() -> new NotFoundException("No trending posts found in the last 24 hours"));
+
+        return mapToPostResponse(post);
+    }
 }
