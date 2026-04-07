@@ -47,13 +47,13 @@ public class UserItemServiceImpl implements UserItemService {
         Item item = shopItem.getItem();
         Long price = shopItem.getPrice();
 
-        Long userPaidPoints = user.getPaidPoints() != null ? user.getPaidPoints() : 0L;
+        Long userPoints = user.getPoints() != null ? user.getPoints() : 0L;
 
-        if (userPaidPoints < price) {
-            throw new IllegalStateException("Insufficient points. Required: " + price + ", Available: " + userPaidPoints);
+        if (userPoints < price) {
+            throw new IllegalStateException("Insufficient points. Required: " + price + ", Available: " + userPoints);
         }
 
-        user.setPaidPoints(userPaidPoints - price);
+        user.setPoints(userPoints - price);
         userRepository.save(user);
 
         UserItem userItem = new UserItem();
