@@ -14,7 +14,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -25,9 +27,20 @@ public class ShopItemServiceImpl implements ShopItemService {
 
     private final ItemRepository itemRepository;
 
+    private final CloudinaryService cloudinaryService;
+
     @Override
     @Transactional
-    public String createShopItem(CreateShopItemRequest request) {
+    public String createShopItem(CreateShopItemRequest request, MultipartFile image) {
+        String imageUrl = null;
+        if (image != null && !image.isEmpty()) {
+            try {
+                imageUrl = cloudinaryService.uploadFile(image);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload image", e);
+            }
+        }
+
         Item item;
 
         // If itemId is provided, use existing item; otherwise create new item
@@ -38,7 +51,7 @@ public class ShopItemServiceImpl implements ShopItemService {
             item = new Item();
             item.setItemName(request.getItemName());
             item.setDescription(request.getDescription());
-            item.setImageUrl(request.getImageUrl());
+            item.setImageUrl(imageUrl);
             item.setCategory(request.getCategory());
             itemRepository.save(item);
         }

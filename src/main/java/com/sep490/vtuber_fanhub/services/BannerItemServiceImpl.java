@@ -24,7 +24,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
@@ -46,32 +48,43 @@ public class BannerItemServiceImpl implements BannerItemService {
 
     private final AuthService authService;
 
+    private final CloudinaryService cloudinaryService;
+
     private static final Random RANDOM = new Random();
 
     @Override
     @Transactional
-    public String createBannerItem(CreateBannerItemRequest request) {
+    public String createBannerItem(CreateBannerItemRequest request, MultipartFile image) {
         Banner banner = bannerRepository.findById(request.getBannerId())
                 .orElseThrow(() -> new NotFoundException("Banner not found"));
 
-        Item item;
+        Item item = null;
 
-        // If itemId is provided, use existing item; otherwise create new item
-        if (request.getItemId() != null) {
+        if ("GOOD_LUCK".equalsIgnoreCase(request.getType())) {
+        } else if (request.getItemId() != null) {
             item = itemRepository.findById(request.getItemId())
                     .orElseThrow(() -> new NotFoundException("Item not found"));
         } else {
+            String imageUrl = null;
+            if (image != null && !image.isEmpty()) {
+                try {
+                    imageUrl = cloudinaryService.uploadFile(image);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to upload image", e);
+                }
+            }
+
             item = new Item();
             item.setItemName(request.getItemName());
             item.setDescription(request.getDescription());
-            item.setImageUrl(request.getImageUrl());
+            item.setImageUrl(imageUrl);
             item.setCategory(request.getCategory());
             itemRepository.save(item);
         }
 
         BannerItem bannerItem = new BannerItem();
         bannerItem.setBanner(banner);
-        bannerItem.setItem(item);
+        bannerItem.setItem(item); // Will be null for GOOD_LUCK
         bannerItem.setMultiplier(request.getMultiplier());
         bannerItem.setType(request.getType());
 
@@ -100,11 +113,21 @@ public class BannerItemServiceImpl implements BannerItemService {
         BannerItemResponse response = new BannerItemResponse();
         response.setBannerItemId(bannerItem.getId());
         response.setBannerId(bannerItem.getBanner().getId());
-        response.setItemId(bannerItem.getItem().getId());
-        response.setItemName(bannerItem.getItem().getItemName());
-        response.setDescription(bannerItem.getItem().getDescription());
-        response.setImageUrl(bannerItem.getItem().getImageUrl());
-        response.setCategory(bannerItem.getItem().getCategory());
+        
+        if (bannerItem.getItem() != null) {
+            response.setItemId(bannerItem.getItem().getId());
+            response.setItemName(bannerItem.getItem().getItemName());
+            response.setDescription(bannerItem.getItem().getDescription());
+            response.setImageUrl(bannerItem.getItem().getImageUrl());
+            response.setCategory(bannerItem.getItem().getCategory());
+        } else {
+            response.setItemId(null);
+            response.setItemName("Good luck next time");
+            response.setDescription(null);
+            response.setImageUrl(null);
+            response.setCategory(null);
+        }
+        
         response.setMultiplier(bannerItem.getMultiplier());
         response.setType(bannerItem.getType());
         return response;
@@ -147,7 +170,15 @@ public class BannerItemServiceImpl implements BannerItemService {
         // Perform weighted random selection based on multiplier
         BannerItem selectedBannerItem = performWeightedRandomSelection(bannerItems);
 
-        // Create UserItem entry
+        // If type is GOOD_LUCK, don't save to UserItem
+        if ("GOOD_LUCK".equalsIgnoreCase(selectedBannerItem.getType())) {
+            log.info("User {} performed gacha on banner {} and got GOOD_LUCK for {} points",
+                    user.getId(), banner.getId(), gachaCost);
+
+            return convertToGachaResponseForGoodLuck(selectedBannerItem, gachaCost, user.getId());
+        }
+
+        // For other types, create UserItem entry
         UserItem userItem = new UserItem();
         userItem.setUser(user);
         userItem.setItem(selectedBannerItem.getItem());
@@ -193,6 +224,20 @@ public class BannerItemServiceImpl implements BannerItemService {
         response.setType(bannerItem.getType());
         response.setCost(gachaCost);
         response.setObtainedAt(userItem.getPurchasedAt());
+        return response;
+    }
+
+    private GachaResultResponse convertToGachaResponseForGoodLuck(BannerItem bannerItem, int gachaCost, Long userId) {
+        GachaResultResponse response = new GachaResultResponse();
+        response.setUserItemId(null); // No UserItem for GOOD_LUCK
+        response.setUserId(userId);
+        response.setItemId(null); // No Item for GOOD_LUCK
+        response.setItemName("Good luck next time");
+        response.setImageUrl(null);
+        response.setMultiplier(bannerItem.getMultiplier());
+        response.setType("GOOD_LUCK");
+        response.setCost(gachaCost);
+        response.setObtainedAt(Instant.now());
         return response;
     }
 }

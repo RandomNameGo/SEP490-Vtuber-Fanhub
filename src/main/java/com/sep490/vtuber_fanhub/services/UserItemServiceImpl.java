@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.PurchaseItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.PurchaseResponse;
+import com.sep490.vtuber_fanhub.dto.responses.UserItemResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.Item;
 import com.sep490.vtuber_fanhub.models.ShopItem;
@@ -14,10 +15,15 @@ import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +48,7 @@ public class UserItemServiceImpl implements UserItemService {
         Long price = shopItem.getPrice();
 
         Long userPaidPoints = user.getPaidPoints() != null ? user.getPaidPoints() : 0L;
-        
+
         if (userPaidPoints < price) {
             throw new IllegalStateException("Insufficient points. Required: " + price + ", Available: " + userPaidPoints);
         }
@@ -61,6 +67,24 @@ public class UserItemServiceImpl implements UserItemService {
         return convertToResponse(userItem, price);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserItemResponse> getItemsByCurrentUser(HttpServletRequest httpRequest, int pageNo, int pageSize, String sortBy) {
+        User user = authService.getUserFromToken(httpRequest);
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<UserItem> pagedUserItems = userItemRepository.findByUser(user, paging);
+
+        if (pagedUserItems.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedUserItems.getContent().stream()
+                .map(this::convertToUserItemResponse)
+                .toList();
+    }
+
     private PurchaseResponse convertToResponse(UserItem userItem, Long price) {
         PurchaseResponse response = new PurchaseResponse();
         response.setUserItemId(userItem.getId());
@@ -69,6 +93,18 @@ public class UserItemServiceImpl implements UserItemService {
         response.setItemName(userItem.getItem().getItemName());
         response.setPrice(price);
         response.setPurchasedAt(userItem.getPurchasedAt());
+        return response;
+    }
+
+    private UserItemResponse convertToUserItemResponse(UserItem userItem) {
+        UserItemResponse response = new UserItemResponse();
+        response.setUserItemId(userItem.getId());
+        response.setItemId(userItem.getItem().getId());
+        response.setItemName(userItem.getItem().getItemName());
+        response.setDescription(userItem.getItem().getDescription());
+        response.setImageUrl(userItem.getItem().getImageUrl());
+        response.setCategory(userItem.getItem().getCategory());
+        response.setObtainedAt(userItem.getPurchasedAt());
         return response;
     }
 }
