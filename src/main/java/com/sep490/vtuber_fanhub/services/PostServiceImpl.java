@@ -119,8 +119,15 @@ public class PostServiceImpl implements PostService {
 
         // Validate post type
         String postType = request.getPostType().toUpperCase();
-        if (!List.of("TEXT", "IMAGE", "VIDEO").contains(postType)) {
-            throw new IllegalArgumentException("Invalid post type. Must be TEXT, IMAGE, or VIDEO");
+        if (!List.of("TEXT", "IMAGE", "VIDEO", "POLL", "ANNOUNCEMENT", "EVENT_SCHEDULE").contains(postType)) {
+            throw new IllegalArgumentException("Invalid post type. Must be TEXT, IMAGE, VIDEO, POLL, ANNOUNCEMENT, or EVENT_SCHEDULE");
+        }
+
+        // Only VTUBER owner can create ANNOUNCEMENT or EVENT_SCHEDULE posts
+        if ("ANNOUNCEMENT".equals(postType) || "EVENT_SCHEDULE".equals(postType)) {
+            if (!"VTUBER".equals(currentUser.getRole()) || !isOwner) {
+                throw new AccessDeniedException("Only the VTUBER (owner) of this FanHub can create " + postType + " posts");
+            }
         }
 
         // Validate media based on post type

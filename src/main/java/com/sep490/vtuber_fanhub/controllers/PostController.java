@@ -216,7 +216,7 @@ public class PostController {
     }
 
     @PutMapping("/{postId}/pin")
-    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> pinPost(@PathVariable long postId) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
