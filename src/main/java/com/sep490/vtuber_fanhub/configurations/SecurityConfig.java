@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/vhub/api/v1/posts/feed").permitAll()
                         .requestMatchers("/vhub/api/v1/user/user-name/*").permitAll()
                         .requestMatchers("/vhub/api/v1/fan-hub/top").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/*").permitAll()
                         // WebSocket endpoints
                         .requestMatchers("/ws-chat/**").permitAll()
                         .anyRequest().authenticated()
