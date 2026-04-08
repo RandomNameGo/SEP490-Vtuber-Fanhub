@@ -216,6 +216,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         response.setUsername(comment.getUser().getUsername());
         response.setDisplayName(comment.getUser().getDisplayName());
         response.setAvatarUrl(comment.getUser().getAvatarUrl());
+        response.setMemberId(comment.getMemberId());
 
         response.setContent(comment.getContent());
         response.setStatus(comment.getStatus());
