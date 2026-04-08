@@ -311,6 +311,13 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         FanHubMembershipResponse response = new FanHubMembershipResponse();
 
+        // Check if user is the owner of the FanHub
+        if (fanHub.getOwnerUser().getId().equals(currentUser.getId())) {
+            response.setIsMember(true);
+            response.setRoleInHub("VTUBER");
+            return response;
+        }
+
         // Check if user is a member with JOINED status
         Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
                 .filter(m -> "JOINED".equals(m.getStatus()));

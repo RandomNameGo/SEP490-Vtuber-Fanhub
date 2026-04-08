@@ -122,7 +122,22 @@ public class PostCommentServiceImpl implements PostCommentService {
             throw new NotFoundException("Post not found");
         }
 
-        List<PostComment> comments = postCommentRepository.findByPostIdOrderByCreatedAtAsc(postId);
+        List<PostComment> comments = postCommentRepository.findByPostIdAndParentCommentIsNullOrderByCreatedAtAsc(postId);
+
+        return comments.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostCommentResponse> getCommentsByParentId(Long parentCommentId) {
+        Optional<PostComment> parentComment = postCommentRepository.findById(parentCommentId);
+        if (parentComment.isEmpty()) {
+            throw new NotFoundException("Parent comment not found");
+        }
+
+        List<PostComment> comments = postCommentRepository.findByParentCommentIdOrderByCreatedAtAsc(parentCommentId);
 
         return comments.stream()
                 .map(this::mapToResponse)
@@ -163,6 +178,10 @@ public class PostCommentServiceImpl implements PostCommentService {
         // Get gift count for this comment
         List<PostCommentGift> gifts = postCommentGiftRepository.findByComment(comment);
         response.setGiftCount((long) gifts.size());
+
+        // Check if comment has children (replies)
+        boolean hasChildren = postCommentRepository.existsByParentCommentId(comment.getId());
+        response.setHasChildren(hasChildren);
 
         return response;
     }

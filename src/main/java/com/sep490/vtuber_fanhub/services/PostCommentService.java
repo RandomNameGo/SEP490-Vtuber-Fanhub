@@ -12,6 +12,8 @@ public interface PostCommentService {
 
     List<PostCommentResponse> getPostCommentsByPostId(Long postId);
 
+    List<PostCommentResponse> getCommentsByParentId(Long parentCommentId);
+
     String likeComment(Long commentId);
 
     String unlikeComment(Long commentId);

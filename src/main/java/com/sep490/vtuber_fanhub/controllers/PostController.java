@@ -280,6 +280,16 @@ public class PostController {
         );
     }
 
+    @GetMapping("/comments/{parentCommentId}/replies")
+    public ResponseEntity<?> getCommentsByParentId(@PathVariable Long parentCommentId) {
+        return ResponseEntity.ok().body(APIResponse.<List<PostCommentResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.getCommentsByParentId(parentCommentId))
+                .build()
+        );
+    }
+
     @PostMapping("/comment/like/{commentId}")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> likeComment(@PathVariable long commentId) {
