@@ -29,6 +29,8 @@ public class ReportPostResponse {
 
     private Integer mediaCount;
     private List<String> hashtags;
+    private List<String> mediaUrls;
+
 
     private Instant postCreatedAt;
     private Instant postUpdatedAt;

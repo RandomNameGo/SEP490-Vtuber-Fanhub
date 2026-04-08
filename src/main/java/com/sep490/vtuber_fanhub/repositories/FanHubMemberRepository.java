@@ -26,4 +26,6 @@ public interface FanHubMemberRepository extends JpaRepository<FanHubMember, Long
     List<FanHubMember> findAllByUserId(Long userId);
 
     long countByUserId(Long userId);
+
+    List<FanHubMember> findByUserIdAndStatus(Long userId, String status);
 }

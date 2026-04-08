@@ -247,6 +247,34 @@ public class FanHubServiceImpl implements FanHubService {
         return mapToFanHubResponseWithMemberCount(fanHub);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        List<FanHubMember> joinedMembers = fanHubMemberRepository.findByUserIdAndStatus(currentUser.getId(), "JOINED");
+
+        if (joinedMembers.isEmpty()) {
+            return List.of();
+        }
+
+        // Apply pagination manually since we need to filter by status
+        int start = Math.min(pageNo * pageSize, joinedMembers.size());
+        int end = Math.min(start + pageSize, joinedMembers.size());
+
+        if (start >= joinedMembers.size()) {
+            return List.of();
+        }
+
+        List<FanHubMember> pagedMembers = joinedMembers.subList(start, end);
+
+        return pagedMembers.stream()
+                .map(member -> mapToFanHubResponseWithMemberCount(member.getHub()))
+                .collect(Collectors.toList());
+    }
+
     private FanHubResponse mapToFanHubResponse(FanHub fanHub) {
         FanHubResponse response = new FanHubResponse();
         response.setFanHubId(fanHub.getId());

@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostCommentRequest;
+import com.sep490.vtuber_fanhub.dto.requests.EditPostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
 import com.sep490.vtuber_fanhub.models.PostComment;
 
@@ -13,6 +14,10 @@ public interface PostCommentService {
     List<PostCommentResponse> getPostCommentsByPostId(Long postId);
 
     List<PostCommentResponse> getCommentsByParentId(Long parentCommentId);
+
+    String editComment(Long commentId, EditPostCommentRequest request);
+
+    String deleteComment(Long commentId);
 
     String likeComment(Long commentId);
 

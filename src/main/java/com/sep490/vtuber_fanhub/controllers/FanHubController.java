@@ -95,4 +95,19 @@ public class FanHubController {
                 .build()
         );
     }
+
+    @GetMapping("/my-hubs")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyJoinedFanHubs(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.getJoinedFanHubs(pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
 }

@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreatePostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePollPostRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportPostRequest;
+import com.sep490.vtuber_fanhub.dto.requests.EditPostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
@@ -286,6 +287,28 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postCommentService.getCommentsByParentId(parentCommentId))
+                .build()
+        );
+    }
+
+    @PutMapping("/comment/{commentId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> editComment(@PathVariable Long commentId, @RequestBody @Valid EditPostCommentRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.editComment(commentId, request))
+                .build()
+        );
+    }
+
+    @DeleteMapping("/comment/{commentId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> deleteComment(@PathVariable Long commentId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.deleteComment(commentId))
                 .build()
         );
     }

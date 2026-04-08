@@ -6,6 +6,7 @@ import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.PostHashtag;
+import com.sep490.vtuber_fanhub.models.PostMedia;
 import com.sep490.vtuber_fanhub.models.ReportPost;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
@@ -258,9 +259,15 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setAuthorAvatarUrl(author.getAvatarUrl());
         
         // Media count
-        int mediaCount = postMediaRepository.findByPostId(post.getId()).size();
-        response.setMediaCount(mediaCount);
-        
+        List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
+        response.setMediaCount(mediaList.size());
+
+        // Media URLs
+        List<String> mediaUrls = mediaList.stream()
+                .map(PostMedia::getMediaUrl)
+                .collect(Collectors.toList());
+        response.setMediaUrls(mediaUrls);
+
         // Hashtags
         List<String> hashtags = postHashtagRepository.findByPostId(post.getId())
                 .stream()
