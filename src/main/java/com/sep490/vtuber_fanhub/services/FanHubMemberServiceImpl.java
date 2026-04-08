@@ -328,6 +328,90 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         return response;
     }
 
+    @Override
+    @Transactional
+    public String leaveFanHub(long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is the owner
+        if ("VTUBER".equals(currentUser.getRole()) && fanHub.get().getOwnerUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("Owner cannot leave their own FanHub");
+        }
+
+        // Find the member record
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId());
+        if (member.isEmpty()) {
+            throw new NotFoundException("You are not a member of this FanHub");
+        }
+
+        FanHubMember fanHubMember = member.get();
+        if (!"JOINED".equals(fanHubMember.getStatus())) {
+            throw new AccessDeniedException("Only active members can leave the FanHub");
+        }
+
+        fanHubMember.setStatus("LEFT");
+        fanHubMemberRepository.save(fanHubMember);
+
+        return "Left FanHub successfully";
+    }
+
+    @Override
+    @Transactional
+    public String kickMember(long fanHubId, long memberId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(m -> "MODERATOR".equals(m.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only the VTUBER (owner) or MODERATOR can kick members");
+        }
+
+        // Find the target member
+        Optional<FanHubMember> targetMember = fanHubMemberRepository.findById(memberId);
+        if (targetMember.isEmpty()) {
+            throw new NotFoundException("Member not found");
+        }
+
+        FanHubMember target = targetMember.get();
+
+        // Verify the member belongs to this fan hub
+        if (!target.getHub().getId().equals(fanHubId)) {
+            throw new NotFoundException("Member does not belong to this FanHub");
+        }
+
+        // Cannot kick yourself
+        if (target.getUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You cannot kick yourself");
+        }
+
+        // Cannot kick members with MODERATOR or VTUBER role
+        if (!"MEMBER".equals(target.getRoleInHub())) {
+            throw new AccessDeniedException("Cannot kick members with MODERATOR or VTUBER role");
+        }
+
+        target.setStatus("LEFT");
+        fanHubMemberRepository.save(target);
+
+        return "Member kicked successfully";
+    }
+
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {
         FanHubMemberResponse response = new FanHubMemberResponse();
 

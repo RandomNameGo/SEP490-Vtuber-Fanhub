@@ -14,9 +14,10 @@ public interface FanHubMemberRepository extends JpaRepository<FanHubMember, Long
 
     Page<FanHubMember> findByHubIdAndStatus(Long fanHubId, String status, Pageable pageable);
 
+    @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.status = 'JOINED'")
     Page<FanHubMember> findByHubId(Long fanHubId, Pageable pageable);
 
-    @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.user.username = :username")
+    @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.user.username = :username and f.status = 'JOINED'")
     Page<FanHubMember> findByHubIdAndUsername(@Param("fanHubId") Long fanHubId, @Param("username") String username, Pageable pageable);
 
     Optional<FanHubMember> findByHubIdAndUserId(Long fanHubId, Long userId);

@@ -37,4 +37,6 @@ public class PostResponse {
 
     private Long likeCount;
     private Boolean isLikedByCurrentUser;
+
+    private Long commentCount;
 }

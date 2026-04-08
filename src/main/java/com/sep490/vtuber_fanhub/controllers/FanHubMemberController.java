@@ -184,6 +184,28 @@ public class FanHubMemberController {
         );
     }
 
+    @PutMapping("/{fanHubId}/leave")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> leaveFanHub(@PathVariable long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.leaveFanHub(fanHubId))
+                .build()
+        );
+    }
+
+    @PutMapping("/{fanHubId}/kick/{memberId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> kickMember(@PathVariable long fanHubId, @PathVariable long memberId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.kickMember(fanHubId, memberId))
+                .build()
+        );
+    }
+
     @GetMapping("/members/{fanHubMemberId}/detail")
     @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> getMemberDetail(@PathVariable long fanHubMemberId) {

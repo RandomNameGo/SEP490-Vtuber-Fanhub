@@ -84,6 +84,8 @@ public class PostServiceImpl implements PostService {
 
     private final PostVoteRepository postVoteRepository;
 
+    private final PostCommentRepository postCommentRepository;
+
     private final JWTService jwtService;
 
     private static final double FOLLOWED_RATIO = 0.7;
@@ -933,6 +935,10 @@ public class PostServiceImpl implements PostService {
         //Count like
         Long likeCount = postLikeRepository.countByPostId(post.getId());
         response.setLikeCount(likeCount);
+
+        // Count comments (top-level only)
+        Long commentCount = postCommentRepository.countByPostId(post.getId());
+        response.setCommentCount(commentCount);
 
         // Check if current user liked this post
         try {

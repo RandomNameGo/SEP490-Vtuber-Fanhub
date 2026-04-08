@@ -14,6 +14,8 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
 
     List<PostComment> findByPostIdAndParentCommentIsNullOrderByCreatedAtAsc(Long postId);
 
+    Long countByPostId(Long postId);
+
     List<PostComment> findByParentCommentIdOrderByCreatedAtAsc(Long parentCommentId);
 
     boolean existsByParentCommentId(Long parentCommentId);
