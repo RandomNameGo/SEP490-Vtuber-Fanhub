@@ -38,16 +38,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             String authorUsername,
             Pageable pageable);
 
-    @Query("select p from Post p " +
-            "where p.hub.id = :fanHubId " +
-            "and p.status = :status " +
-            "and p.postType in :postTypes")
-    Page<Post> findByHubIdAndStatusAndPostTypes(
-            Long fanHubId,
-            String status,
-            List<String> postTypes,
-            Pageable pageable);
-
     //Find posts from specific hub IDs (user's followed hubs)
     @Query("select p from Post p " +
             "where p.hub.id in :hubIds " +
@@ -127,4 +117,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "and p.status != 'DELETED' " +
             "order by p.createdAt desc")
     Page<Post> findByHubIdAndStatusNotDeleted(Long fanHubId, Pageable pageable);
+
+    // Find announcement or schedule posts by hub id
+    @Query("select p from Post p " +
+            "where p.hub.id = :fanHubId " +
+            "and p.status = :status " +
+            "and (p.isAnnouncement = true or p.isSchedule = true)")
+    Page<Post> findByHubIdAndStatusAndAnnouncementOrSchedule(
+            Long fanHubId,
+            String status,
+            Pageable pageable);
 }

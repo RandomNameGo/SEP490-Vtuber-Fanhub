@@ -30,4 +30,8 @@ public class CreatePostRequest {
 
     @Size(max = 5, message = "Cannot exceed 10 hashtags")
     private List<String> hashtags;
+
+    private Boolean isAnnouncement;
+
+    private Boolean isSchedule;
 }

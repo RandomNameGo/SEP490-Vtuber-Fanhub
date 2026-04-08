@@ -119,14 +119,15 @@ public class PostServiceImpl implements PostService {
 
         // Validate post type
         String postType = request.getPostType().toUpperCase();
-        if (!List.of("TEXT", "IMAGE", "VIDEO", "POLL", "ANNOUNCEMENT", "EVENT_SCHEDULE").contains(postType)) {
-            throw new IllegalArgumentException("Invalid post type. Must be TEXT, IMAGE, VIDEO, POLL, ANNOUNCEMENT, or EVENT_SCHEDULE");
+        if (!List.of("TEXT", "IMAGE", "VIDEO", "POLL").contains(postType)) {
+            throw new IllegalArgumentException("Invalid post type. Must be TEXT, IMAGE, VIDEO, or POLL");
         }
 
-        // Only VTUBER owner can create ANNOUNCEMENT or EVENT_SCHEDULE posts
-        if ("ANNOUNCEMENT".equals(postType) || "EVENT_SCHEDULE".equals(postType)) {
+        // Only VTUBER owner can set isAnnouncement or isSchedule
+        if ((request.getIsAnnouncement() != null && request.getIsAnnouncement()) ||
+            (request.getIsSchedule() != null && request.getIsSchedule())) {
             if (!"VTUBER".equals(currentUser.getRole()) || !isOwner) {
-                throw new AccessDeniedException("Only the VTUBER (owner) of this FanHub can create " + postType + " posts");
+                throw new AccessDeniedException("Only the VTUBER (owner) of this FanHub can create announcement or schedule posts");
             }
         }
 
@@ -151,6 +152,9 @@ public class PostServiceImpl implements PostService {
             }
         }
 
+        boolean isAnnouncement = request.getIsAnnouncement() != null && request.getIsAnnouncement();
+        boolean isSchedule = request.getIsSchedule() != null && request.getIsSchedule();
+
         // Create the post
         Post post = new Post();
         post.setHub(fanHub.get());
@@ -159,8 +163,9 @@ public class PostServiceImpl implements PostService {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setIsPinned(false);
-        post.setStatus("PENDING"); // Default status is PENDING
-        post.setAiValidationStatus("PENDING");
+        post.setStatus(isAnnouncement || isSchedule ? "APPROVED" : "PENDING");
+        post.setIsAnnouncement(isAnnouncement);
+        post.setIsSchedule(isSchedule);
         post.setCreatedAt(Instant.now());
         post.setUpdatedAt(Instant.now());
 
@@ -436,30 +441,15 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
-        User currentUser = authService.getUserFromToken(httpServletRequest);
-
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
 
-        // Check if user is a member of the FanHub
-        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
-                fanHubId, currentUser.getId());
-        if (member.isEmpty()) {
-            // If fanHub is public, allow viewing posts
-            if (!fanHub.get().getIsPrivate()) {
-                // Continue - public fanHub, non-member can view approved posts
-            } else {
-                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
-            }
-        }
-
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
 
-        List<String> postTypes = List.of("ANNOUNCEMENT", "EVENT_SCHEDULE");
-        Page<Post> pagedPosts = postRepository.findByHubIdAndStatusAndPostTypes(
-                fanHubId, "APPROVED", postTypes, paging);
+        Page<Post> pagedPosts = postRepository.findByHubIdAndStatusAndAnnouncementOrSchedule(
+                fanHubId, "APPROVED", paging);
 
         if (pagedPosts.isEmpty()) {
             return List.of();
