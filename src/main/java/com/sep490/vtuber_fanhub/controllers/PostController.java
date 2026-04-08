@@ -478,6 +478,16 @@ public class PostController {
         );
     }
 
+    @GetMapping("/{postId}")
+    public ResponseEntity<?> getApprovedPostById(@PathVariable Long postId) {
+        return ResponseEntity.ok().body(APIResponse.<PostResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getApprovedPostById(postId))
+                .build()
+        );
+    }
+
     @GetMapping("/fan-hub/subdomain/{subdomain}/all")
     @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> getAllPostsBySubdomain(@PathVariable String subdomain,

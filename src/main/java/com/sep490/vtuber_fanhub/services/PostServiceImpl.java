@@ -1386,6 +1386,19 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
+    public PostResponse getApprovedPostById(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        if (!"APPROVED".equals(post.getStatus())) {
+            throw new NotFoundException("Post not found");
+        }
+
+        return mapToPostResponse(post);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy) {
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
