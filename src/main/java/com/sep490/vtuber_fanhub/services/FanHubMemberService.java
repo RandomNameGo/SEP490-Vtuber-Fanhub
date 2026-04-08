@@ -23,4 +23,8 @@ public interface FanHubMemberService {
     MemberDetailResponse getMemberDetail(long fanHubMemberId);
 
     FanHubMembershipResponse checkUserMembership(Long fanHubId);
+
+    String leaveFanHub(long fanHubId);
+
+    String kickMember(long fanHubId, long memberId);
 }

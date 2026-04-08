@@ -16,6 +16,8 @@ public interface FanHubRepository extends JpaRepository<FanHub, Long> {
 
     Optional<FanHub> findBySubdomainAndIsActive(String subdomain, Boolean isActive);
 
+    boolean existsBySubdomainAndIsActive(String subdomain, Boolean isActive);
+
     @Query("SELECT fh FROM FanHub fh WHERE fh.isActive = true AND fh.isPrivate = false ORDER BY fh.createdAt DESC")
     Page<FanHub> findActivePublicFanHubs(Pageable pageable);
 

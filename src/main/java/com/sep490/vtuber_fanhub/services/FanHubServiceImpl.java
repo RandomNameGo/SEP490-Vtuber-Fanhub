@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateFanHubRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateFanHubRequest;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
@@ -82,6 +83,67 @@ public class FanHubServiceImpl implements FanHubService {
         }
 
         return "Created FanHub successfully";
+    }
+
+    @Override
+    @Transactional
+    public String updateFanHub(Long fanHubId, UpdateFanHubRequest request) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHubOptional = fanHubRepository.findById(fanHubId);
+        if (fanHubOptional.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        FanHub fanHub = fanHubOptional.get();
+
+        if (!fanHub.getOwnerUser().getId().equals(currentUser.getId())) {
+            throw new CustomAuthenticationException("Access denied. Only the owner can update this FanHub.");
+        }
+
+        if (request.getHubName() != null) {
+            fanHub.setHubName(request.getHubName());
+        }
+
+        if (request.getSubdomain() != null) {
+            if (!fanHub.getSubdomain().equals(request.getSubdomain())) {
+                if (fanHubRepository.existsBySubdomainAndIsActive(request.getSubdomain(), true)) {
+                    throw new IllegalArgumentException("Subdomain is already in use");
+                }
+            }
+            fanHub.setSubdomain(request.getSubdomain());
+        }
+
+        if (request.getDescription() != null) {
+            fanHub.setDescription(request.getDescription());
+        }
+
+        if (request.getThemeColor() != null) {
+            fanHub.setThemeColor(request.getThemeColor());
+        }
+
+        if (request.getIsPrivate() != null) {
+            fanHub.setIsPrivate(request.getIsPrivate());
+        }
+
+        if (request.getRequiresApproval() != null) {
+            fanHub.setRequiresApproval(request.getRequiresApproval());
+        }
+
+        if (request.getCategory() != null) {
+            fanHubCategoryRepository.deleteByHubId(fanHubId);
+            
+            for (String categoryName : request.getCategory()) {
+                FanHubCategory category = new FanHubCategory();
+                category.setHub(fanHub);
+                category.setCategoryName(categoryName);
+                fanHubCategoryRepository.save(category);
+            }
+        }
+
+        fanHubRepository.save(fanHub);
+
+        return "Updated FanHub successfully";
     }
 
     @Override
@@ -183,6 +245,34 @@ public class FanHubServiceImpl implements FanHubService {
                 .orElseThrow(() -> new NotFoundException("FanHub not found with subdomain: " + subdomain));
 
         return mapToFanHubResponseWithMemberCount(fanHub);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        List<FanHubMember> joinedMembers = fanHubMemberRepository.findByUserIdAndStatus(currentUser.getId(), "JOINED");
+
+        if (joinedMembers.isEmpty()) {
+            return List.of();
+        }
+
+        // Apply pagination manually since we need to filter by status
+        int start = Math.min(pageNo * pageSize, joinedMembers.size());
+        int end = Math.min(start + pageSize, joinedMembers.size());
+
+        if (start >= joinedMembers.size()) {
+            return List.of();
+        }
+
+        List<FanHubMember> pagedMembers = joinedMembers.subList(start, end);
+
+        return pagedMembers.stream()
+                .map(member -> mapToFanHubResponseWithMemberCount(member.getHub()))
+                .collect(Collectors.toList());
     }
 
     private FanHubResponse mapToFanHubResponse(FanHub fanHub) {

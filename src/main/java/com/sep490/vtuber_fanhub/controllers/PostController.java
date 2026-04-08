@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreatePostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePollPostRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportPostRequest;
+import com.sep490.vtuber_fanhub.dto.requests.EditPostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
@@ -182,6 +183,16 @@ public class PostController {
         );
     }
 
+
+    @GetMapping("/trending")
+    public ResponseEntity<?> getTrendingPublicPost() {
+        return ResponseEntity.ok().body(APIResponse.<PostResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getTrendingPublicPost())
+                .build());
+    }
+
     @PostMapping("/like")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> likePost(@RequestParam long postId) {
@@ -266,6 +277,38 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postCommentService.getPostCommentsByPostId(postId))
+                .build()
+        );
+    }
+
+    @GetMapping("/comments/{parentCommentId}/replies")
+    public ResponseEntity<?> getCommentsByParentId(@PathVariable Long parentCommentId) {
+        return ResponseEntity.ok().body(APIResponse.<List<PostCommentResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.getCommentsByParentId(parentCommentId))
+                .build()
+        );
+    }
+
+    @PutMapping("/comment/{commentId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> editComment(@PathVariable Long commentId, @RequestBody @Valid EditPostCommentRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.editComment(commentId, request))
+                .build()
+        );
+    }
+
+    @DeleteMapping("/comment/{commentId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> deleteComment(@PathVariable Long commentId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.deleteComment(commentId))
                 .build()
         );
     }
@@ -435,6 +478,16 @@ public class PostController {
         );
     }
 
+    @GetMapping("/{postId}")
+    public ResponseEntity<?> getApprovedPostById(@PathVariable Long postId) {
+        return ResponseEntity.ok().body(APIResponse.<PostResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getApprovedPostById(postId))
+                .build()
+        );
+    }
+
     @GetMapping("/fan-hub/subdomain/{subdomain}/all")
     @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> getAllPostsBySubdomain(@PathVariable String subdomain,
@@ -446,6 +499,51 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(postService.getAllPostsBySubdomain(subdomain, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @GetMapping("/reports/my-posts-report")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyReportPosts(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<ReportPostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.getReportPostsByCurrentUser(pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @GetMapping("/reports/pending-posts/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getPendingReportPosts(
+            @PathVariable Long fanHubId,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<ReportPostResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.getPendingReportPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @PutMapping("/reports/bulk-resolve")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> bulkResolveReportPosts(
+            @RequestParam List<Long> reportIds,
+            @RequestParam(required = false) String resolveMessage) {
+
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.bulkResolveReportPosts(reportIds, resolveMessage))
                 .build()
         );
     }

@@ -84,6 +84,8 @@ public class PostServiceImpl implements PostService {
 
     private final PostVoteRepository postVoteRepository;
 
+    private final PostCommentRepository postCommentRepository;
+
     private final JWTService jwtService;
 
     private static final double FOLLOWED_RATIO = 0.7;
@@ -934,6 +936,10 @@ public class PostServiceImpl implements PostService {
         Long likeCount = postLikeRepository.countByPostId(post.getId());
         response.setLikeCount(likeCount);
 
+        // Count comments (top-level only)
+        Long commentCount = postCommentRepository.countByPostId(post.getId());
+        response.setCommentCount(commentCount);
+
         // Check if current user liked this post
         try {
             User currentUser = authService.getUserFromToken(httpServletRequest);
@@ -1380,6 +1386,55 @@ public class PostServiceImpl implements PostService {
     public PostResponse getPostDetail(Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        return mapToPostResponse(post);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostResponse getApprovedPostById(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        if (!"APPROVED".equals(post.getStatus())) {
+            throw new NotFoundException("Post not found");
+        }
+
+        return mapToPostResponse(post);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        if (fanHub.get().getIsPrivate()) {
+            throw new AccessDeniedException("This FanHub is private");
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts = postRepository.findTrendingPostsByFanHub(fanHubId, paging);
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostResponse getTrendingPublicPost() {
+        Instant oneDayAgo = Instant.now().minus(1, ChronoUnit.DAYS);
+
+        Post post = postRepository.findTopTrendingPublicPostLast24Hours(oneDayAgo)
+                .orElseThrow(() -> new NotFoundException("No trending posts found in the last 24 hours"));
 
         return mapToPostResponse(post);
     }

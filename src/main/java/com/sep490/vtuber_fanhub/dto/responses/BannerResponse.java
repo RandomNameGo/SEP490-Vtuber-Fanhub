@@ -14,4 +14,6 @@ public class BannerResponse {
     private String description;
     private Integer gachaCost;
     private Instant createdAt;
+    private String bannerImgUrl;
+    private Boolean isActive;
 }

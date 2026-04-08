@@ -6,7 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
@@ -92,7 +94,28 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "where fc.hub.id in :hubIds")
     List<String> findCategoriesByHubIds(List<Long> hubIds);
 
-    //Find posts by username with pagination
+    // Find trending posts by FanHub: APPROVED posts ordered by likes + comments count desc
+    @Query("select p from Post p " +
+            "left join PostLike pl on p.id = pl.post.id " +
+            "left join PostComment pc on p.id = pc.post.id " +
+            "where p.hub.id = :fanHubId " +
+            "and p.status = 'APPROVED' " +
+            "group by p.id " +
+            "order by count(distinct pl.id) + count(distinct pc.id) desc, p.createdAt desc")
+    Page<Post> findTrendingPostsByFanHub(Long fanHubId, Pageable pageable);
+
+    // Find the most recent trending post across all public FanHubs from the last 24 hours: APPROVED posts ordered by likes + comments count desc
+    @Query("select p from Post p " +
+            "left join PostLike pl on p.id = pl.post.id " +
+            "left join PostComment pc on p.id = pc.post.id " +
+            "where p.hub.isPrivate = false " +
+            "and p.status = 'APPROVED' " +
+            "and p.createdAt >= :oneDayAgo " +
+            "group by p.id " +
+            "order by count(distinct pl.id) + count(distinct pc.id) desc, p.createdAt desc")
+    Optional<Post> findTopTrendingPublicPostLast24Hours(Instant oneDayAgo);
+
+    // Find posts by username with pagination
     @Query("select p from Post p " +
             "where p.user.username = :username " +
             "order by p.createdAt desc")

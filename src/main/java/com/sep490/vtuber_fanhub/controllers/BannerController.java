@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -29,11 +30,13 @@ public class BannerController {
 
     @PostMapping("/add")
     @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
-    public ResponseEntity<?> createBanner(@RequestBody @Valid CreateBannerRequest request) {
+    public ResponseEntity<?> createBanner(
+            @RequestPart("request") @Valid CreateBannerRequest request,
+            @RequestPart(value = "bannerImage", required = false) MultipartFile bannerImage) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
-                .data(bannerService.createBanner(request))
+                .data(bannerService.createBanner(request, bannerImage))
                 .build()
         );
     }
@@ -53,13 +56,26 @@ public class BannerController {
         );
     }
 
+    //only one banner active in the time
+    @GetMapping("/active")
+    public ResponseEntity<?> getActiveBanner() {
+        return ResponseEntity.ok().body(APIResponse.<BannerResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(bannerService.getActiveBanner())
+                .build()
+        );
+    }
+
     @PostMapping("/items/add")
     @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
-    public ResponseEntity<?> createBannerItem(@RequestBody @Valid CreateBannerItemRequest request) {
+    public ResponseEntity<?> createBannerItem(
+            @RequestPart("request") @Valid CreateBannerItemRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
-                .data(bannerItemService.createBannerItem(request))
+                .data(bannerItemService.createBannerItem(request, image))
                 .build()
         );
     }

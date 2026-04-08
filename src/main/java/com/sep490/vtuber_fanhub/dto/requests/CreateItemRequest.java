@@ -16,9 +16,6 @@ public class CreateItemRequest {
     @Size(max = 1000, message = "Description must not exceed 1000 characters")
     private String description;
 
-    @Size(max = 512, message = "Image URL must not exceed 512 characters")
-    private String imageUrl;
-
     @Size(max = 50, message = "Category must not exceed 50 characters")
     private String category;
 }

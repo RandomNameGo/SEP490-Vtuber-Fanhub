@@ -1,7 +1,9 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreatePostCommentRequest;
+import com.sep490.vtuber_fanhub.dto.requests.EditPostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
+import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.PostComment;
@@ -122,11 +124,65 @@ public class PostCommentServiceImpl implements PostCommentService {
             throw new NotFoundException("Post not found");
         }
 
-        List<PostComment> comments = postCommentRepository.findByPostIdOrderByCreatedAtAsc(postId);
+        List<PostComment> comments = postCommentRepository.findByPostIdAndParentCommentIsNullOrderByCreatedAtAsc(postId);
 
         return comments.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostCommentResponse> getCommentsByParentId(Long parentCommentId) {
+        Optional<PostComment> parentComment = postCommentRepository.findById(parentCommentId);
+        if (parentComment.isEmpty()) {
+            throw new NotFoundException("Parent comment not found");
+        }
+
+        List<PostComment> comments = postCommentRepository.findByParentCommentIdOrderByCreatedAtAsc(parentCommentId);
+
+        return comments.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public String editComment(Long commentId, EditPostCommentRequest request) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<PostComment> comment = postCommentRepository.findById(commentId);
+        if (comment.isEmpty()) {
+            throw new NotFoundException("Comment not found");
+        }
+
+        if (!comment.get().getUser().getId().equals(currentUser.getId())) {
+            throw new CustomAuthenticationException("Access denied. Only the author can edit this comment.");
+        }
+
+        comment.get().setContent(request.getContent());
+        postCommentRepository.save(comment.get());
+
+        return "Comment edited successfully";
+    }
+
+    @Override
+    @Transactional
+    public String deleteComment(Long commentId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<PostComment> comment = postCommentRepository.findById(commentId);
+        if (comment.isEmpty()) {
+            throw new NotFoundException("Comment not found");
+        }
+
+        if (!comment.get().getUser().getId().equals(currentUser.getId())) {
+            throw new CustomAuthenticationException("Access denied. Only the author can delete this comment.");
+        }
+
+        postCommentRepository.delete(comment.get());
+
+        return "Comment deleted successfully";
     }
 
     private PostCommentResponse mapToResponse(PostComment comment) {
@@ -163,6 +219,10 @@ public class PostCommentServiceImpl implements PostCommentService {
         // Get gift count for this comment
         List<PostCommentGift> gifts = postCommentGiftRepository.findByComment(comment);
         response.setGiftCount((long) gifts.size());
+
+        // Check if comment has children (replies)
+        boolean hasChildren = postCommentRepository.existsByParentCommentId(comment.getId());
+        response.setHasChildren(hasChildren);
 
         return response;
     }

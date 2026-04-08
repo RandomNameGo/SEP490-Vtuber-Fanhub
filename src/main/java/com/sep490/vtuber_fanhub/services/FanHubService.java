@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateFanHubRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateFanHubRequest;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubResponse;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,6 +13,8 @@ public interface FanHubService {
 
     String createFanHub(CreateFanHubRequest request);
 
+    String updateFanHub(Long fanHubId, UpdateFanHubRequest request);
+
     String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, List<MultipartFile> highlight, MultipartFile avatar) throws IOException;
 
     List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, boolean includePrivate);
@@ -19,4 +22,6 @@ public interface FanHubService {
     List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category);
 
     FanHubResponse getFanHubBySubdomain(String subdomain);
+
+    List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy);
 }

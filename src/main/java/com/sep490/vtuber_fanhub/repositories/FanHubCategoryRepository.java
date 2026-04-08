@@ -8,4 +8,6 @@ import java.util.List;
 public interface FanHubCategoryRepository extends JpaRepository<FanHubCategory, Long> {
 
     List<FanHubCategory> findByHubId(Long hubId);
+
+    void deleteByHubId(Long hubId);
 }

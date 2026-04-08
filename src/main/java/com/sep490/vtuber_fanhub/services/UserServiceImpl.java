@@ -97,11 +97,11 @@ public class UserServiceImpl implements UserService{
     public String uploadAvatarFrame(MultipartFile avatarFile, MultipartFile frameFile) throws IOException {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        if(!avatarFile.isEmpty()){
+        if(avatarFile != null && !avatarFile.isEmpty()){
             String avatarUrl = cloudinaryService.uploadFile(avatarFile);
             currentUser.setAvatarUrl(avatarUrl);
         }
-        if(!frameFile.isEmpty()){
+        if(frameFile != null && !frameFile.isEmpty()){
             String frameUrl = cloudinaryService.uploadFile(frameFile);
             currentUser.setFrameUrl(frameUrl);
         }

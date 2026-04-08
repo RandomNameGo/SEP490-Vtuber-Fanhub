@@ -12,4 +12,10 @@ public interface ReportMemberService {
     List<ReportMemberResponse> getReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     String resolveReportMember(Long reportId, String resolveMessage);
+
+    List<ReportMemberResponse> getReportMembersByCurrentUser(int pageNo, int pageSize, String sortBy);
+
+    List<ReportMemberResponse> getPendingReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+
+    String bulkResolveReportMembers(List<Long> reportIds, String resolveMessage);
 }

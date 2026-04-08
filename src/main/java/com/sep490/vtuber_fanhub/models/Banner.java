@@ -35,4 +35,11 @@ public class Banner {
     @Column(name = "created_at")
     private Instant createdAt;
 
+    @Lob
+    @Column(name = "banner_img_url")
+    private String bannerImgUrl;
+
+    @Column(name = "isActive")
+    private Boolean isActive;
+
 }

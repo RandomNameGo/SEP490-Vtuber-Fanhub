@@ -11,4 +11,12 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
     List<PostComment> findByPostIdOrderByCreatedAtAsc(Long postId);
 
     List<PostComment> findByPostOrderByCreatedAtAsc(Post post);
+
+    List<PostComment> findByPostIdAndParentCommentIsNullOrderByCreatedAtAsc(Long postId);
+
+    Long countByPostId(Long postId);
+
+    List<PostComment> findByParentCommentIdOrderByCreatedAtAsc(Long parentCommentId);
+
+    boolean existsByParentCommentId(Long parentCommentId);
 }

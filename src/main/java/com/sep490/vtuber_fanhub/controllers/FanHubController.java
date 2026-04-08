@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateFanHubRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateFanHubRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubResponse;
 import com.sep490.vtuber_fanhub.services.FanHubService;
@@ -27,6 +28,17 @@ public class FanHubController {
                 .success(true)
                 .message("Success")
                 .data(fanHubService.createFanHub(request))
+                .build()
+        );
+    }
+
+    @PutMapping("/update/{fanHubId}")
+    @PreAuthorize("hasRole('VTUBER')")
+    public ResponseEntity<?> updateFanHub(@PathVariable Long fanHubId, @RequestBody @Valid UpdateFanHubRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.updateFanHub(fanHubId, request))
                 .build()
         );
     }
@@ -80,6 +92,21 @@ public class FanHubController {
                 .success(true)
                 .message("Success")
                 .data(fanHubService.getFanHubBySubdomain(subdomain))
+                .build()
+        );
+    }
+
+    @GetMapping("/my-hubs")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyJoinedFanHubs(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.getJoinedFanHubs(pageNo, pageSize, sortBy))
                 .build()
         );
     }

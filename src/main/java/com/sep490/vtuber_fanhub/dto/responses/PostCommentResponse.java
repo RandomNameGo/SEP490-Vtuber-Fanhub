@@ -24,6 +24,7 @@ public class PostCommentResponse {
 
     private Long likeCount;
     private Boolean isLikedByCurrentUser;
+    private Boolean hasChildren;
 
     private Long giftCount;
 }

@@ -6,13 +6,17 @@ import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
+import com.sep490.vtuber_fanhub.dto.responses.UserItemResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.services.EmailService;
 import com.sep490.vtuber_fanhub.services.OtpService;
+import com.sep490.vtuber_fanhub.services.UserItemService;
 import com.sep490.vtuber_fanhub.services.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +33,8 @@ public class UserController {
     private final EmailService emailService;
 
     private final OtpService otpService;
+
+    private final UserItemService userItemService;
 
     @PostMapping("/verify")
     public ResponseEntity<?> verify(@RequestParam("email") String email){
@@ -138,6 +144,23 @@ public class UserController {
                 .success(true)
                 .message("Success")
                 .data(userService.getCurrentUserDetail())
+                .build()
+        );
+    }
+
+    @GetMapping("/my-items")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyItems(
+            HttpServletRequest httpRequest,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "purchasedAt") String sortBy) {
+
+        List<UserItemResponse> items = userItemService.getItemsByCurrentUser(httpRequest, pageNo, pageSize, sortBy);
+        return ResponseEntity.ok().body(APIResponse.<List<UserItemResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(items)
                 .build()
         );
     }
