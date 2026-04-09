@@ -1256,15 +1256,26 @@ public class PostServiceImpl implements PostService {
         Long userId = currentUser.getId();
 
         // Check if user already voted on this post (any option)
-        List<VoteOption> allOptions = voteOptionRepository.findAllByPostId(postId);
-        for (VoteOption opt : allOptions) {
-            Optional<PostVote> existingVote = postVoteRepository.findByUserIdAndOptionId(userId, opt.getId());
-            if (existingVote.isPresent()) {
-                throw new IllegalArgumentException("You have already voted on this poll");
+        List<PostVote> existingVotes = postVoteRepository.findByUserIdAndPostId(userId, postId);
+        
+        if (!existingVotes.isEmpty()) {
+            // User already voted - update their vote to the new option
+            PostVote existingVote = existingVotes.get(0);
+            Long oldOptionId = existingVote.getOption().getId();
+            
+            if (oldOptionId.equals(optionId)) {
+                return "You have already voted on this option";
             }
+            
+            // Update the vote to the new option
+            existingVote.setOption(option.get());
+            existingVote.setVotedAt(Instant.now());
+            postVoteRepository.save(existingVote);
+            
+            return "Vote changed successfully!";
         }
 
-        // Create and save the vote
+        // Create and save the new vote
         PostVote postVote = new PostVote();
         postVote.setUser(currentUser);
         postVote.setOption(option.get());
