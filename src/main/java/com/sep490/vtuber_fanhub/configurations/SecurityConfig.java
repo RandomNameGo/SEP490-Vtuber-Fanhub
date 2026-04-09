@@ -42,6 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/vhub/api/v1/fan-hub/top").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/*").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/fan-hub/{fanHubId}/announcements-events").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/{postId}/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/comments/{parentCommentId}/replies").permitAll()
                         // WebSocket endpoints
                         .requestMatchers("/ws-chat/**").permitAll()
                         .anyRequest().authenticated()
