@@ -324,23 +324,31 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername) {
-        User currentUser = authService.getUserFromToken(httpServletRequest);
+        // Get current user from token (may be null if unauthenticated)
+        User currentUser = null;
+        try {
+            currentUser = authService.getUserFromToken(httpServletRequest);
+        } catch (Exception e) {
+            // Token is invalid or expired, treat as unauthenticated
+            currentUser = null;
+        }
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
 
-        // Check if user is a member of the FanHub
-        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
-                fanHubId, currentUser.getId());
-        if (member.isEmpty()) {
-            // If fanHub is public, allow viewing posts
-            if (!fanHub.get().getIsPrivate()) {
-                // Continue - public fanHub, non-member can view approved posts
-            } else {
-                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
-            }
+        // Check access permissions
+        boolean isMember = false;
+        if (currentUser != null) {
+            Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                    fanHubId, currentUser.getId());
+            isMember = member.isPresent();
+        }
+
+        // If not a member and fanHub is private, deny access
+        if (!isMember && fanHub.get().getIsPrivate()) {
+            throw new AccessDeniedException("You must be a member of this FanHub to view posts");
         }
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
@@ -365,23 +373,31 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername) {
-        User currentUser = authService.getUserFromToken(httpServletRequest);
+        // Get current user from token (may be null if unauthenticated)
+        User currentUser = null;
+        try {
+            currentUser = authService.getUserFromToken(httpServletRequest);
+        } catch (Exception e) {
+            // Token is invalid or expired, treat as unauthenticated
+            currentUser = null;
+        }
 
         Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
 
-        // Check if user is a member of the FanHub
-        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
-                fanHub.get().getId(), currentUser.getId());
-        if (member.isEmpty()) {
-            // If fanHub is public, allow viewing posts
-            if (!fanHub.get().getIsPrivate()) {
-                // Continue - public fanHub, non-member can view approved posts
-            } else {
-                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
-            }
+        // Check access permissions
+        boolean isMember = false;
+        if (currentUser != null) {
+            Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                    fanHub.get().getId(), currentUser.getId());
+            isMember = member.isPresent();
+        }
+
+        // If not a member and fanHub is private, deny access
+        if (!isMember && fanHub.get().getIsPrivate()) {
+            throw new AccessDeniedException("You must be a member of this FanHub to view posts");
         }
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
@@ -726,11 +742,23 @@ public class PostServiceImpl implements PostService {
         }
 
         // Calculate the number of posts for each category (70/30 split)
-        int followedPostsCount = (int) Math.ceil(pageSize * FOLLOWED_RATIO);
-        int suggestionPostsCount = pageSize - followedPostsCount;
+        // Ensure minimum counts to avoid fetching 0 posts for either category
+        int followedPostsCount = Math.max(1, (int) Math.ceil(pageSize * FOLLOWED_RATIO));
+        int suggestionPostsCount = Math.max(1, pageSize - followedPostsCount);
+
+        // Adjust followedPostsCount if suggestionPostsCount increase causes total to exceed pageSize
+        if (followedPostsCount + suggestionPostsCount > pageSize) {
+            followedPostsCount = pageSize - suggestionPostsCount;
+        }
+
+        // Ensure followedPostsCount is at least 1 after adjustment
+        followedPostsCount = Math.max(1, followedPostsCount);
+
+        // Calculate total posts needed to cover up to the requested page
+        int pageMultiplier = pageNo + 1;
 
         // Fetch posts from followed hubs (70%)
-        Pageable followedPageable = PageRequest.of(0, followedPostsCount * 2, Sort.by(Sort.Direction.DESC, sortBy));
+        Pageable followedPageable = PageRequest.of(0, followedPostsCount * pageMultiplier, Sort.by(Sort.Direction.DESC, sortBy));
         List<Post> followedPosts = postRepository.findByHubIdInAndStatusApproved(followedHubIds, followedPageable)
                 .getContent();
 
@@ -741,24 +769,31 @@ public class PostServiceImpl implements PostService {
         List<Post> suggestionPosts;
         if (followedCategories.isEmpty()) {
             // No categories found, get any public posts
-            Pageable suggestionPageable = PageRequest.of(0, suggestionPostsCount * 2, Sort.by(Sort.Direction.DESC, sortBy));
+            Pageable suggestionPageable = PageRequest.of(0, suggestionPostsCount * pageMultiplier, Sort.by(Sort.Direction.DESC, sortBy));
             suggestionPosts = postRepository.findPublicPosts(followedHubIds, suggestionPageable).getContent();
         } else {
             // Get posts from public hubs with similar categories
-            Pageable suggestionPageable = PageRequest.of(0, suggestionPostsCount * 2, Sort.by(Sort.Direction.DESC, sortBy));
+            Pageable suggestionPageable = PageRequest.of(0, suggestionPostsCount * pageMultiplier, Sort.by(Sort.Direction.DESC, sortBy));
             suggestionPosts = postRepository.findPublicPostsByCategories(followedHubIds, followedCategories, suggestionPageable)
                     .getContent();
         }
 
         // Merge posts maintaining 70/30 ratio with interleaving
-        List<Post> mergedPosts = mergePostsByRatio(followedPosts, suggestionPosts, followedPostsCount, suggestionPostsCount);
+        List<Post> mergedPosts = mergePostsByRatio(followedPosts, suggestionPosts, followedPostsCount * pageMultiplier, suggestionPostsCount * pageMultiplier);
 
         // Apply pagination to merged results
         int startIndex = pageNo * pageSize;
         int endIndex = Math.min(startIndex + pageSize, mergedPosts.size());
 
+        // If requested page is beyond available posts, return the last valid page instead of empty
         if (startIndex >= mergedPosts.size()) {
-            return List.of();
+            // Calculate last valid page start index
+            int totalPages = (int) Math.ceil((double) mergedPosts.size() / pageSize);
+            if (totalPages == 0) {
+                return List.of(); // No posts at all
+            }
+            startIndex = (totalPages - 1) * pageSize;
+            endIndex = mergedPosts.size();
         }
 
         return mergedPosts.subList(startIndex, endIndex).stream()
