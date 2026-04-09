@@ -27,7 +27,7 @@ public class PostResponse {
 
     private List<String> mediaUrls;
     private List<String> hashtags;
-    private List<String> voteOptions;
+    private List<VoteOptionResponse> voteOptions;
     private Map<Long, Long> voteCounts;
     private Long totalVotes;
     private Long userVotedOptionId;

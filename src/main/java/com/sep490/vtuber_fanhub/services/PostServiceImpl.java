@@ -6,6 +6,7 @@ import com.sep490.vtuber_fanhub.dto.responses.SummarizePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.TranslatePostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostWithMediaResponse;
+import com.sep490.vtuber_fanhub.dto.responses.VoteOptionResponse;
 import com.sep490.vtuber_fanhub.events.PostCreatedEvent;
 import com.sep490.vtuber_fanhub.exceptions.CooldownException;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
@@ -351,7 +352,9 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("You must be a member of this FanHub to view posts");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        // Pinned posts first, then by user's sortBy
+        Sort sort = Sort.by(Sort.Direction.DESC, "isPinned").and(Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, sort);
 
         Page<Post> pagedPosts;
         if (postHashtag != null && !postHashtag.isEmpty()) {
@@ -400,7 +403,9 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("You must be a member of this FanHub to view posts");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        // Pinned posts first, then by user's sortBy
+        Sort sort = Sort.by(Sort.Direction.DESC, "isPinned").and(Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, sort);
 
         Page<Post> pagedPosts;
         if (postHashtag != null && !postHashtag.isEmpty()) {
@@ -957,20 +962,20 @@ public class PostServiceImpl implements PostService {
         //Vote option
         if ("POLL".equals(post.getPostType())) {
             List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(post.getId());
-            List<String> optionTexts = new ArrayList<>();
+            List<VoteOptionResponse> optionResponses = new ArrayList<>();
             Map<Long, Long> voteCounts = new HashMap<>();
             Long totalVotes = 0L;
-            
+
             for (VoteOption option : voteOptions) {
-                optionTexts.add(option.getOptionText());
+                optionResponses.add(new VoteOptionResponse(option.getId(), option.getOptionText()));
                 Long optionVoteCount = postVoteRepository.countByOptionId(option.getId());
                 voteCounts.put(option.getId(), optionVoteCount != null ? optionVoteCount : 0L);
                 totalVotes += optionVoteCount != null ? optionVoteCount : 0L;
             }
-            response.setVoteOptions(optionTexts);
+            response.setVoteOptions(optionResponses);
             response.setVoteCounts(voteCounts);
             response.setTotalVotes(totalVotes);
-            
+
             // Check if current user voted on this post
             try {
                 User currentUser = authService.getUserFromToken(httpServletRequest);
@@ -1050,17 +1055,17 @@ public class PostServiceImpl implements PostService {
         // Vote option
         if ("POLL".equals(post.getPostType())) {
             List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(post.getId());
-            List<String> optionTexts = new ArrayList<>();
+            List<VoteOptionResponse> optionResponses = new ArrayList<>();
             Map<Long, Long> voteCounts = new HashMap<>();
             Long totalVotes = 0L;
 
             for (VoteOption option : voteOptions) {
-                optionTexts.add(option.getOptionText());
+                optionResponses.add(new VoteOptionResponse(option.getId(), option.getOptionText()));
                 Long optionVoteCount = postVoteRepository.countByOptionId(option.getId());
                 voteCounts.put(option.getId(), optionVoteCount != null ? optionVoteCount : 0L);
                 totalVotes += optionVoteCount != null ? optionVoteCount : 0L;
             }
-            response.setVoteOptions(optionTexts);
+            response.setVoteOptions(optionResponses);
             response.setVoteCounts(voteCounts);
             response.setTotalVotes(totalVotes);
 
