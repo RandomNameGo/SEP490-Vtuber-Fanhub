@@ -65,6 +65,8 @@ public class PostCommentServiceImpl implements PostCommentService {
 
     private final UserTrackService userTrackService;
 
+    private final UserDailyMissionService userDailyMissionService;
+
     //SSE
     private final NotificationService notificationService;
 
@@ -275,21 +277,6 @@ public class PostCommentServiceImpl implements PostCommentService {
         postCommentLike.setCreatedAt(Instant.now());
         postCommentLikeRepository.save(postCommentLike);
 
-        // Update user track
-        userTrackService.updateOnLike(currentUser);
-
-        Optional<UserDailyMission> userDailyMission = userDailyMissionRepository.findById(userId);
-        if (userDailyMission.isPresent()) {
-            userDailyMission.get().setLikeAmount(userDailyMission.get().getLikeAmount() + 1);
-            userDailyMissionRepository.save(userDailyMission.get());
-            if (userDailyMission.get().getLikeAmount() == 5) {
-                currentUser.setPoints(currentUser.getPoints() + 10);
-                // Note: currentUser is detached, need to save via userRepository if needed
-                // For now, the mission update is sufficient
-            }
-        } else {
-            throw new NotFoundException("User daily mission not found");
-        }
 
         return "Comment liked successfully!";
     }

@@ -6,6 +6,7 @@ import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
+import com.sep490.vtuber_fanhub.dto.responses.UserDailyMissionResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserItemResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.services.EmailService;
@@ -161,6 +162,17 @@ public class UserController {
                 .success(true)
                 .message("Success")
                 .data(items)
+                .build()
+        );
+    }
+
+    @GetMapping("/my-daily-mission")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyDailyMission() {
+        return ResponseEntity.ok().body(APIResponse.<UserDailyMissionResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(userService.getMyDailyMission())
                 .build()
         );
     }

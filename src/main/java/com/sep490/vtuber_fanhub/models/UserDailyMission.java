@@ -26,4 +26,10 @@ public class UserDailyMission {
     @Column(name = "like_amount", nullable = false)
     private Integer likeAmount;
 
+    @Column(name = "bonus_10")
+    private Boolean bonus10;
+
+    @Column(name = "bonus_20")
+    private Boolean bonus20;
+
 }

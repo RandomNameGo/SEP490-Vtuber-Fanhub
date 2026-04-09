@@ -95,6 +95,8 @@ public class PostServiceImpl implements PostService {
 
     private final UserTrackService userTrackService;
 
+    private final UserDailyMissionService userDailyMissionService;
+
     @Override
     @Transactional
     public String createPost(CreatePostRequest request, List<MultipartFile> images, MultipartFile video) {
@@ -1078,12 +1080,13 @@ public class PostServiceImpl implements PostService {
 
         Optional<UserDailyMission> userDailyMission = userDailyMissionRepository.findById(userId);
         if (userDailyMission.isPresent()) {
-            userDailyMission.get().setLikeAmount(userDailyMission.get().getLikeAmount() + 1);
-            userDailyMissionRepository.save(userDailyMission.get());
-            if(userDailyMission.get().getLikeAmount() == 5) {
-                currentUser.setPoints(currentUser.getPoints() + 10);
-                userRepository.save(currentUser);
-            }
+            UserDailyMission mission = userDailyMission.get();
+            int newLikeAmount = mission.getLikeAmount() + 1;
+            mission.setLikeAmount(newLikeAmount);
+            userDailyMissionRepository.save(mission);
+            
+            // Award points based on daily mission milestones
+            userDailyMissionService.awardPointsForLikes(userId, newLikeAmount);
         } else {
             throw new NotFoundException("User daily mission not found");
         }

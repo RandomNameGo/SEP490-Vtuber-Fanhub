@@ -5,6 +5,7 @@ import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
+import com.sep490.vtuber_fanhub.dto.responses.UserDailyMissionResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,4 +31,6 @@ public interface UserService {
     String setOshi(SetOshiRequest request);
 
     UserDetailResponse getCurrentUserDetail();
+
+    UserDailyMissionResponse getMyDailyMission();
 }
