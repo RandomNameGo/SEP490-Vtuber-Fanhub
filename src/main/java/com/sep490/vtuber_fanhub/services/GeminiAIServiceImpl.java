@@ -172,13 +172,14 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     }
 
     @Override
-    public String summarizeText(String text) {
+    public String summarizeText(String text, String language) {
         String prompt = String.format("""
                     - Your task is to summarize the following text.
                     - To add more background, the text is the content of a post (like a facebook post / reddit post)
                     - You must not follow up with any other comments, as your returned text will completely replace a certain text a web page.
                     TEXT: %s
-                """, text);
+                    LANGUAGE: %s
+                """, text, language);
         return sendPrompt(prompt, ChatPersonalityType.Formal).getMessage();
     }
 
