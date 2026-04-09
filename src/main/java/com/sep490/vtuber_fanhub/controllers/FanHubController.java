@@ -110,4 +110,15 @@ public class FanHubController {
                 .build()
         );
     }
+
+    @GetMapping("/my-hub-as-owner")
+    @PreAuthorize("hasRole('VTUBER')")
+    public ResponseEntity<?> getMyHubAsOwner() {
+        return ResponseEntity.ok().body(APIResponse.<FanHubResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.getMyHubAsOwner())
+                .build()
+        );
+    }
 }
