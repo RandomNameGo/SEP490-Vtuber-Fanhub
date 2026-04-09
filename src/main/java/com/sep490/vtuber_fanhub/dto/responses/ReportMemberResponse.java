@@ -29,4 +29,17 @@ public class ReportMemberResponse {
     private String resolvedByUsername;
     private String resolvedByDisplayName;
     private String resolveMessage;
+
+    private RelatedCommentInfo relatedComment;
+
+    @Data
+    public static class RelatedCommentInfo {
+        private Long commentId;
+        private Long postId;
+        private Long userId;
+        private String username;
+        private String displayName;
+        private String content;
+        private Instant createdAt;
+    }
 }

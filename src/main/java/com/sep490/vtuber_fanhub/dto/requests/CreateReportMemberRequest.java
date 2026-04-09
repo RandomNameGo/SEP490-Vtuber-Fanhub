@@ -8,4 +8,6 @@ public class CreateReportMemberRequest {
     private Long memberId;
 
     private String reason;
+
+    private Long relatedCommentId;
 }

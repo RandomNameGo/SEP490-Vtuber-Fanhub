@@ -5,10 +5,12 @@ import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
+import com.sep490.vtuber_fanhub.models.PostComment;
 import com.sep490.vtuber_fanhub.models.ReportMember;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
+import com.sep490.vtuber_fanhub.repositories.PostCommentRepository;
 import com.sep490.vtuber_fanhub.repositories.ReportMemberRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,8 @@ public class ReportMemberServiceImpl implements ReportMemberService {
 
     private final FanHubRepository fanHubRepository;
 
+    private final PostCommentRepository postCommentRepository;
+
     @Override
     public String createReportMember(CreateReportMemberRequest createReportMemberRequest) {
 
@@ -54,6 +58,14 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         reportMember.setReason(createReportMemberRequest.getReason());
         reportMember.setStatus("PENDING");
         reportMember.setCreatedAt(Instant.now());
+
+        if (createReportMemberRequest.getRelatedCommentId() != null) {
+            Optional<PostComment> postComment = postCommentRepository.findById(createReportMemberRequest.getRelatedCommentId());
+            if (postComment.isPresent()) {
+                reportMember.setRelatedComment(postComment.get());
+            }
+        }
+
         reportMemberRepository.save(reportMember);
 
         return "Report member sent successfully";
@@ -227,14 +239,27 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         response.setReason(reportMember.getReason());
         response.setStatus(reportMember.getStatus());
         response.setCreatedAt(reportMember.getCreatedAt());
-        
+
         if (reportMember.getResolveBy() != null) {
             response.setResolvedByUserId(reportMember.getResolveBy().getId());
             response.setResolvedByUsername(reportMember.getResolveBy().getUsername());
             response.setResolvedByDisplayName(reportMember.getResolveBy().getDisplayName());
         }
         response.setResolveMessage(reportMember.getResolveMessage());
-        
+
+        if (reportMember.getRelatedComment() != null) {
+            PostComment comment = reportMember.getRelatedComment();
+            ReportMemberResponse.RelatedCommentInfo commentInfo = new ReportMemberResponse.RelatedCommentInfo();
+            commentInfo.setCommentId(comment.getId());
+            commentInfo.setPostId(comment.getPost().getId());
+            commentInfo.setUserId(comment.getUser().getId());
+            commentInfo.setUsername(comment.getUser().getUsername());
+            commentInfo.setDisplayName(comment.getUser().getDisplayName());
+            commentInfo.setContent(comment.getContent());
+            commentInfo.setCreatedAt(comment.getCreatedAt());
+            response.setRelatedComment(commentInfo);
+        }
+
         return response;
     }
 }
