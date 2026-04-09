@@ -805,8 +805,30 @@ public class PostServiceImpl implements PostService {
     public SummarizePostResponse summarizePost(Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("Post not found"));
+        String summmaryLanguage = "English";
+
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        String tokenUsername;
+        Optional<User> tokenUser = Optional.empty();
+        if (token != null) {
+            try {
+                tokenUsername = jwtService.getUsernameFromToken(token);
+                tokenUser = userRepository.findByUsernameAndIsActive(tokenUsername);
+            } catch (Exception e) {
+                // Token is invalid or expired, treat as unauthenticated
+                tokenUser = Optional.empty();
+            }
+        }
+
+        if(tokenUser.isPresent()){
+            String userSetLanguage = tokenUser.get().getTranslateLanguage();
+            if(userSetLanguage != null){
+                summmaryLanguage = userSetLanguage;
+            }
+        }
+
         return SummarizePostResponse.builder()
-                .summarizeResult(geminiAIServiceImpl.summarizeText(post.getContent()))
+                .summarizeResult(geminiAIServiceImpl.summarizeText(post.getContent(), summmaryLanguage))
                 .build();
     }
 

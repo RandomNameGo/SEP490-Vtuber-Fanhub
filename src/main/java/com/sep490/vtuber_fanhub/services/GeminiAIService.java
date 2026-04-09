@@ -11,7 +11,7 @@ public interface GeminiAIService {
     JsonNode listModels();
     GenerateContentResponse sendPromptFullResponse(String prompt, ChatPersonalityType type);
     String translateText(String text, String language);
-    String summarizeText(String text);
+    String summarizeText(String text, String language);
 
     // these are for function calling of chatbot, which require userid for authentication
     AIMessageResponse sendPromptFunctionCalling(String prompt, ChatPersonalityType type, Long userId);
