@@ -40,6 +40,12 @@ public class SecurityConfig {
                         .requestMatchers("/vhub/api/v1/posts/feed").permitAll()
                         .requestMatchers("/vhub/api/v1/user/user-name/*").permitAll()
                         .requestMatchers("/vhub/api/v1/fan-hub/top").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/*").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/fan-hub/{fanHubId}/announcements-events").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/{postId}/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/comments/{parentCommentId}/replies").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/fan-hub/subdomain/{subdomain}").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/fan-hub/{fanHubId}").permitAll()
                         // WebSocket endpoints
                         .requestMatchers("/ws-chat/**").permitAll()
                         .anyRequest().authenticated()

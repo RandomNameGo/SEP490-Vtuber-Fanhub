@@ -24,4 +24,6 @@ public interface FanHubService {
     FanHubResponse getFanHubBySubdomain(String subdomain);
 
     List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy);
+
+    FanHubResponse getMyHubAsOwner();
 }

@@ -18,7 +18,6 @@ public class CreatePostRequest {
     private Long fanHubId;
 
     @NotBlank(message = "Post type must not be blank")
-    @Pattern(regexp = "^(TEXT|IMAGE|VIDEO)$", message = "Post type must be TEXT, IMAGE, or VIDEO")
     private String postType;
 
     @NotBlank(message = "Title must not be blank")
@@ -31,4 +30,8 @@ public class CreatePostRequest {
 
     @Size(max = 5, message = "Cannot exceed 10 hashtags")
     private List<String> hashtags;
+
+    private Boolean isAnnouncement;
+
+    private Boolean isSchedule;
 }

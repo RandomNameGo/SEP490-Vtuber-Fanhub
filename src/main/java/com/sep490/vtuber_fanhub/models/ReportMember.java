@@ -49,4 +49,8 @@ public class ReportMember {
     @JoinColumn(name = "resolve_by")
     private User resolveBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_comment")
+    private PostComment relatedComment;
+
 }

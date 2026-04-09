@@ -5,6 +5,7 @@ import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
+import com.sep490.vtuber_fanhub.dto.responses.UserDailyMissionResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
@@ -336,6 +337,22 @@ public class UserServiceImpl implements UserService{
         response.setCreatedAt(user.getCreatedAt());
         response.setUpdatedAt(user.getUpdatedAt());
         response.setIsActive(user.getIsActive());
+
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDailyMissionResponse getMyDailyMission() {
+        User user = authService.getUserFromToken(httpServletRequest);
+
+        UserDailyMission mission = userDailyMissionRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new NotFoundException("User daily mission not found"));
+
+        UserDailyMissionResponse response = new UserDailyMissionResponse();
+        response.setLikeAmount(mission.getLikeAmount());
+        response.setBonus10(mission.getBonus10());
+        response.setBonus20(mission.getBonus20());
 
         return response;
     }

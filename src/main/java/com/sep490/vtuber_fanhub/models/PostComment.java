@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -38,5 +39,8 @@ public class PostComment {
 
     @Column(name = "created_at")
     private Instant createdAt;
+
+    @Column(name = "member_id")
+    private Long memberId;
 
 }

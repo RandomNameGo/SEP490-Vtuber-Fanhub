@@ -95,6 +95,8 @@ public class PostServiceImpl implements PostService {
 
     private final UserTrackService userTrackService;
 
+    private final UserDailyMissionService userDailyMissionService;
+
     @Override
     @Transactional
     public String createPost(CreatePostRequest request, List<MultipartFile> images, MultipartFile video) {
@@ -119,8 +121,16 @@ public class PostServiceImpl implements PostService {
 
         // Validate post type
         String postType = request.getPostType().toUpperCase();
-        if (!List.of("TEXT", "IMAGE", "VIDEO").contains(postType)) {
-            throw new IllegalArgumentException("Invalid post type. Must be TEXT, IMAGE, or VIDEO");
+        if (!List.of("TEXT", "IMAGE", "VIDEO", "POLL").contains(postType)) {
+            throw new IllegalArgumentException("Invalid post type. Must be TEXT, IMAGE, VIDEO, or POLL");
+        }
+
+        // Only VTUBER owner can set isAnnouncement or isSchedule
+        if ((request.getIsAnnouncement() != null && request.getIsAnnouncement()) ||
+            (request.getIsSchedule() != null && request.getIsSchedule())) {
+            if (!"VTUBER".equals(currentUser.getRole()) || !isOwner) {
+                throw new AccessDeniedException("Only the VTUBER (owner) of this FanHub can create announcement or schedule posts");
+            }
         }
 
         // Validate media based on post type
@@ -144,6 +154,9 @@ public class PostServiceImpl implements PostService {
             }
         }
 
+        boolean isAnnouncement = request.getIsAnnouncement() != null && request.getIsAnnouncement();
+        boolean isSchedule = request.getIsSchedule() != null && request.getIsSchedule();
+
         // Create the post
         Post post = new Post();
         post.setHub(fanHub.get());
@@ -152,8 +165,9 @@ public class PostServiceImpl implements PostService {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setIsPinned(false);
-        post.setStatus("PENDING"); // Default status is PENDING
-        post.setAiValidationStatus("PENDING");
+        post.setStatus(isAnnouncement || isSchedule ? "APPROVED" : "PENDING");
+        post.setIsAnnouncement(isAnnouncement);
+        post.setIsSchedule(isSchedule);
         post.setCreatedAt(Instant.now());
         post.setUpdatedAt(Instant.now());
 
@@ -429,30 +443,15 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
-        User currentUser = authService.getUserFromToken(httpServletRequest);
-
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
 
-        // Check if user is a member of the FanHub
-        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
-                fanHubId, currentUser.getId());
-        if (member.isEmpty()) {
-            // If fanHub is public, allow viewing posts
-            if (!fanHub.get().getIsPrivate()) {
-                // Continue - public fanHub, non-member can view approved posts
-            } else {
-                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
-            }
-        }
-
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
 
-        List<String> postTypes = List.of("ANNOUNCEMENT", "EVENT_SCHEDULE");
-        Page<Post> pagedPosts = postRepository.findByHubIdAndStatusAndPostTypes(
-                fanHubId, "APPROVED", postTypes, paging);
+        Page<Post> pagedPosts = postRepository.findByHubIdAndStatusAndAnnouncementOrSchedule(
+                fanHubId, "APPROVED", paging);
 
         if (pagedPosts.isEmpty()) {
             return List.of();
@@ -1081,12 +1080,13 @@ public class PostServiceImpl implements PostService {
 
         Optional<UserDailyMission> userDailyMission = userDailyMissionRepository.findById(userId);
         if (userDailyMission.isPresent()) {
-            userDailyMission.get().setLikeAmount(userDailyMission.get().getLikeAmount() + 1);
-            userDailyMissionRepository.save(userDailyMission.get());
-            if(userDailyMission.get().getLikeAmount() == 5) {
-                currentUser.setPoints(currentUser.getPoints() + 10);
-                userRepository.save(currentUser);
-            }
+            UserDailyMission mission = userDailyMission.get();
+            int newLikeAmount = mission.getLikeAmount() + 1;
+            mission.setLikeAmount(newLikeAmount);
+            userDailyMissionRepository.save(mission);
+            
+            // Award points based on daily mission milestones
+            userDailyMissionService.awardPointsForLikes(userId, newLikeAmount);
         } else {
             throw new NotFoundException("User daily mission not found");
         }

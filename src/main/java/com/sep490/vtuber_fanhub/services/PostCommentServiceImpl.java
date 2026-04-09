@@ -5,12 +5,16 @@ import com.sep490.vtuber_fanhub.dto.requests.EditPostCommentRequest;
 import com.sep490.vtuber_fanhub.dto.responses.PostCommentResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
+import com.sep490.vtuber_fanhub.models.FanHub;
+import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.PostComment;
 import com.sep490.vtuber_fanhub.models.PostCommentGift;
 import com.sep490.vtuber_fanhub.models.PostCommentLike;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.models.UserDailyMission;
+import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
+import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import com.sep490.vtuber_fanhub.repositories.PostCommentGiftRepository;
 import com.sep490.vtuber_fanhub.repositories.PostCommentLikeRepository;
 import com.sep490.vtuber_fanhub.repositories.PostCommentRepository;
@@ -20,6 +24,7 @@ import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,11 +55,17 @@ public class PostCommentServiceImpl implements PostCommentService {
 
     private final PostCommentGiftRepository postCommentGiftRepository;
 
+    private final FanHubMemberRepository fanHubMemberRepository;
+
+    private final FanHubRepository fanHubRepository;
+
     private final UserDailyMissionRepository userDailyMissionRepository;
 
     private final UserRepository userRepository;
 
     private final UserTrackService userTrackService;
+
+    private final UserDailyMissionService userDailyMissionService;
 
     //SSE
     private final NotificationService notificationService;
@@ -77,12 +88,25 @@ public class PostCommentServiceImpl implements PostCommentService {
                 currentUser.getId(),
                 List.of("COMMENT"));
 
+        // Validate membership: user must be the hub owner or a member of the hub
+        FanHub hub = post.get().getHub();
+        boolean isHubOwner = hub.getOwnerUser().getId().equals(currentUser.getId());
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                hub.getId(), currentUser.getId());
+
+        if (!isHubOwner && member.isEmpty()) {
+            throw new AccessDeniedException("You must be the owner (VTuber) or a member of this FanHub to comment");
+        }
+
         PostComment postComment = new PostComment();
         postComment.setPost(post.get());
         postComment.setUser(currentUser);
         postComment.setContent(createPostCommentRequest.getContent());
         postComment.setStatus("VISIBLE");
         postComment.setCreatedAt(Instant.now());
+
+        // Set memberId if user is a member, otherwise use null for hub owner
+        member.ifPresent(fanHubMember -> postComment.setMemberId(fanHubMember.getId()));
 
         if (createPostCommentRequest.getParentCommentId() != null) {
             Optional<PostComment> parentComment = postCommentRepository.findById(createPostCommentRequest.getParentCommentId());
@@ -194,6 +218,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         response.setUsername(comment.getUser().getUsername());
         response.setDisplayName(comment.getUser().getDisplayName());
         response.setAvatarUrl(comment.getUser().getAvatarUrl());
+        response.setMemberId(comment.getMemberId());
 
         response.setContent(comment.getContent());
         response.setStatus(comment.getStatus());
@@ -252,21 +277,6 @@ public class PostCommentServiceImpl implements PostCommentService {
         postCommentLike.setCreatedAt(Instant.now());
         postCommentLikeRepository.save(postCommentLike);
 
-        // Update user track
-        userTrackService.updateOnLike(currentUser);
-
-        Optional<UserDailyMission> userDailyMission = userDailyMissionRepository.findById(userId);
-        if (userDailyMission.isPresent()) {
-            userDailyMission.get().setLikeAmount(userDailyMission.get().getLikeAmount() + 1);
-            userDailyMissionRepository.save(userDailyMission.get());
-            if (userDailyMission.get().getLikeAmount() == 5) {
-                currentUser.setPoints(currentUser.getPoints() + 10);
-                // Note: currentUser is detached, need to save via userRepository if needed
-                // For now, the mission update is sufficient
-            }
-        } else {
-            throw new NotFoundException("User daily mission not found");
-        }
 
         return "Comment liked successfully!";
     }

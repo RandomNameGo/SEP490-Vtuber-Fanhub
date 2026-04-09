@@ -75,4 +75,10 @@ public class Post {
     @JoinColumn(name = "reviewed_by")
     private User reviewedBy;
 
+    @Column(name = "is_announcement")
+    private Boolean isAnnouncement;
+
+    @Column(name = "is_schedule")
+    private Boolean isSchedule;
+
 }

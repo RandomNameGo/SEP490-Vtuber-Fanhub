@@ -275,6 +275,21 @@ public class FanHubServiceImpl implements FanHubService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public FanHubResponse getMyHubAsOwner() {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        if (!"VTUBER".equals(currentUser.getRole())) {
+            throw new CustomAuthenticationException("Only VTUBER users can access this endpoint");
+        }
+
+        FanHub fanHub = fanHubRepository.findByOwnerUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("FanHub not found for this owner"));
+
+        return mapToFanHubResponseWithMemberCount(fanHub);
+    }
+
     private FanHubResponse mapToFanHubResponse(FanHub fanHub) {
         FanHubResponse response = new FanHubResponse();
         response.setFanHubId(fanHub.getId());
