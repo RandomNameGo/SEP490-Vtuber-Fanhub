@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface ReportMemberRepository extends JpaRepository<ReportMember, Long> {
 
     @Query("SELECT rm FROM ReportMember rm WHERE rm.hub.id = :fanHubId")
@@ -15,4 +17,6 @@ public interface ReportMemberRepository extends JpaRepository<ReportMember, Long
     Page<ReportMember> findByReportedById(Long reportedById, Pageable pageable);
 
     Page<ReportMember> findByHubIdAndStatus(Long fanHubId, String status, Pageable pageable);
+
+    List<ReportMember> findByUserId(Long userId);
 }

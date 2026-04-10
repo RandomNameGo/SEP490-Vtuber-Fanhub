@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface ReportPostRepository extends JpaRepository<ReportPost, Long> {
 
     @Query("SELECT rp FROM ReportPost rp JOIN rp.post p WHERE p.hub.id = :fanHubId")
@@ -16,4 +18,6 @@ public interface ReportPostRepository extends JpaRepository<ReportPost, Long> {
 
     @Query("SELECT rp FROM ReportPost rp JOIN rp.post p WHERE p.hub.id = :fanHubId AND rp.status = :status")
     Page<ReportPost> findByFanHubIdAndStatus(@Param("fanHubId") Long fanHubId, @Param("status") String status, Pageable pageable);
+
+    List<ReportPost> findByPostId(Long postId);
 }

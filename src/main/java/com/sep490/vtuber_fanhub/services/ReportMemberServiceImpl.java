@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportMemberRequest;
 import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.MemberWithReportsResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -255,6 +257,121 @@ public class ReportMemberServiceImpl implements ReportMemberService {
             commentInfo.setUserId(comment.getUser().getId());
             commentInfo.setUsername(comment.getUser().getUsername());
             commentInfo.setDisplayName(comment.getUser().getDisplayName());
+            commentInfo.setContent(comment.getContent());
+            commentInfo.setCreatedAt(comment.getCreatedAt());
+            response.setRelatedComment(commentInfo);
+        }
+
+        return response;
+    }
+
+    @Override
+    public List<MemberWithReportsResponse> getAllMembersWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        // Get all report members for this fan hub
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Page<ReportMember> reportMemberPage = reportMemberRepository.findByFanHubId(fanHubId, pageRequest);
+
+        if (reportMemberPage.isEmpty()) {
+            return List.of();
+        }
+
+        // Group reports by member (user)
+        Map<User, List<ReportMember>> userToReportsMap = reportMemberPage.getContent().stream()
+                .collect(Collectors.groupingBy(ReportMember::getUser));
+
+        // Convert to response
+        return userToReportsMap.entrySet().stream()
+                .map(entry -> {
+                    User user = entry.getKey();
+                    List<ReportMember> reports = entry.getValue();
+                    // Get the FanHubMember for this user and hub
+                    Optional<FanHubMember> fanHubMember = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, user.getId());
+                    return mapToMemberWithReportsResponse(user, fanHubMember, fanHub.get(), reports);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private MemberWithReportsResponse mapToMemberWithReportsResponse(User user, Optional<FanHubMember> fanHubMemberOpt, FanHub fanHub, List<ReportMember> reports) {
+        MemberWithReportsResponse response = new MemberWithReportsResponse();
+
+        // User information
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setDisplayName(user.getDisplayName());
+        response.setAvatarUrl(user.getAvatarUrl());
+
+        // FanHubMember information (if exists)
+        if (fanHubMemberOpt.isPresent()) {
+            FanHubMember fanHubMember = fanHubMemberOpt.get();
+            response.setMemberId(fanHubMember.getId());
+            response.setRoleInHub(fanHubMember.getRoleInHub());
+            response.setMemberStatus(fanHubMember.getStatus());
+            response.setJoinedAt(fanHubMember.getJoinedAt());
+        }
+
+        // FanHub information
+        response.setFanHubId(fanHub.getId());
+        response.setFanHubName(fanHub.getHubName());
+        response.setFanHubSubdomain(fanHub.getSubdomain());
+
+        // Convert all reports to SimpleMemberReportResponse
+        List<MemberWithReportsResponse.SimpleMemberReportResponse> reportResponses = reports.stream()
+                .map(this::mapToSimpleMemberReportResponse)
+                .collect(Collectors.toList());
+        response.setReports(reportResponses);
+
+        return response;
+    }
+
+    private MemberWithReportsResponse.SimpleMemberReportResponse mapToSimpleMemberReportResponse(ReportMember reportMember) {
+        MemberWithReportsResponse.SimpleMemberReportResponse response = new MemberWithReportsResponse.SimpleMemberReportResponse();
+
+        // Report information
+        response.setReportId(reportMember.getId());
+        response.setReason(reportMember.getReason());
+        response.setReportStatus(reportMember.getStatus());
+        response.setReportCreatedAt(reportMember.getCreatedAt());
+        response.setResolveMessage(reportMember.getResolveMessage());
+
+        // Reporter information
+        response.setReportedByUserId(reportMember.getReportedBy().getId());
+        response.setReportedByUsername(reportMember.getReportedBy().getUsername());
+        response.setReportedByDisplayName(reportMember.getReportedBy().getDisplayName());
+
+        // Resolver information (if resolved)
+        if (reportMember.getResolveBy() != null) {
+            response.setResolvedByUserId(reportMember.getResolveBy().getId());
+            response.setResolvedByUsername(reportMember.getResolveBy().getUsername());
+            response.setResolvedByDisplayName(reportMember.getResolveBy().getDisplayName());
+        }
+
+        // Related comment (if exists)
+        if (reportMember.getRelatedComment() != null) {
+            PostComment comment = reportMember.getRelatedComment();
+            MemberWithReportsResponse.SimpleMemberReportResponse.RelatedCommentInfo commentInfo = 
+                    new MemberWithReportsResponse.SimpleMemberReportResponse.RelatedCommentInfo();
+            commentInfo.setCommentId(comment.getId());
+            commentInfo.setPostId(comment.getPost().getId());
             commentInfo.setContent(comment.getContent());
             commentInfo.setCreatedAt(comment.getCreatedAt());
             response.setRelatedComment(commentInfo);

@@ -8,6 +8,7 @@ import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.MemberWithReportsResponse;
 import com.sep490.vtuber_fanhub.services.BanMemberService;
 import com.sep490.vtuber_fanhub.services.FanHubMemberService;
 import com.sep490.vtuber_fanhub.services.ReportMemberService;
@@ -270,6 +271,22 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(reportMemberService.bulkResolveReportMembers(reportIds, resolveMessage))
+                .build()
+        );
+    }
+
+    @GetMapping("/reports/members-with-reports/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getAllMembersWithReports(
+            @PathVariable Long fanHubId,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<MemberWithReportsResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.getAllMembersWithReports(fanHubId, pageNo, pageSize, sortBy))
                 .build()
         );
     }

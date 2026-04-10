@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportPostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.ReportPostResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PostWithReportsResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.Post;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -287,7 +289,126 @@ public class ReportPostServiceImpl implements ReportPostService {
             response.setResolvedByDisplayName(reportPost.getResolveBy().getDisplayName());
         }
         response.setResolveMessage(reportPost.getResolveMessage());
-        
+
+        return response;
+    }
+
+    @Override
+    public List<PostWithReportsResponse> getAllPostsWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        // Get all report posts for this fan hub
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubId(fanHubId, pageRequest);
+
+        if (reportPostPage.isEmpty()) {
+            return List.of();
+        }
+
+        // Group reports by post
+        Map<Post, List<ReportPost>> postToReportsMap = reportPostPage.getContent().stream()
+                .collect(Collectors.groupingBy(ReportPost::getPost));
+
+        // Convert to response
+        return postToReportsMap.entrySet().stream()
+                .map(entry -> mapToPostWithReportsResponse(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    private PostWithReportsResponse mapToPostWithReportsResponse(Post post, List<ReportPost> reports) {
+        PostWithReportsResponse response = new PostWithReportsResponse();
+
+        // Post information
+        response.setPostId(post.getId());
+        response.setPostType(post.getPostType());
+        response.setTitle(post.getTitle());
+        response.setContent(post.getContent());
+        response.setStatus(post.getStatus());
+        response.setIsPinned(post.getIsPinned());
+        response.setIsAnnouncement(post.getIsAnnouncement());
+        response.setIsSchedule(post.getIsSchedule());
+        response.setPostCreatedAt(post.getCreatedAt());
+        response.setPostUpdatedAt(post.getUpdatedAt());
+
+        // FanHub information
+        FanHub fanHub = post.getHub();
+        response.setFanHubId(fanHub.getId());
+        response.setFanHubName(fanHub.getHubName());
+        response.setFanHubSubdomain(fanHub.getSubdomain());
+
+        // Author information
+        User author = post.getUser();
+        response.setAuthorId(author.getId());
+        response.setAuthorUsername(author.getUsername());
+        response.setAuthorDisplayName(author.getDisplayName());
+        response.setAuthorAvatarUrl(author.getAvatarUrl());
+
+        // Media count
+        List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
+        response.setMediaCount(mediaList.size());
+
+        // Media URLs
+        List<String> mediaUrls = mediaList.stream()
+                .map(PostMedia::getMediaUrl)
+                .collect(Collectors.toList());
+        response.setMediaUrls(mediaUrls);
+
+        // Hashtags
+        List<String> hashtags = postHashtagRepository.findByPostId(post.getId())
+                .stream()
+                .map(PostHashtag::getHashtag)
+                .collect(Collectors.toList());
+        response.setHashtags(hashtags);
+
+        // Convert all reports to SimpleReportResponse
+        List<PostWithReportsResponse.SimpleReportResponse> reportResponses = reports.stream()
+                .map(this::mapToSimpleReportResponse)
+                .collect(Collectors.toList());
+        response.setReports(reportResponses);
+
+        return response;
+    }
+
+    private PostWithReportsResponse.SimpleReportResponse mapToSimpleReportResponse(ReportPost reportPost) {
+        PostWithReportsResponse.SimpleReportResponse response = new PostWithReportsResponse.SimpleReportResponse();
+
+        // Report information
+        response.setReportId(reportPost.getId());
+        response.setReason(reportPost.getReason());
+        response.setReportStatus(reportPost.getStatus());
+        response.setReportCreatedAt(reportPost.getCreatedAt());
+        response.setResolveMessage(reportPost.getResolveMessage());
+
+        // Reporter information
+        response.setReportedByUserId(reportPost.getReportedBy().getId());
+        response.setReportedByUsername(reportPost.getReportedBy().getUsername());
+        response.setReportedByDisplayName(reportPost.getReportedBy().getDisplayName());
+
+        // Resolver information (if resolved)
+        if (reportPost.getResolveBy() != null) {
+            response.setResolvedByUserId(reportPost.getResolveBy().getId());
+            response.setResolvedByUsername(reportPost.getResolveBy().getUsername());
+            response.setResolvedByDisplayName(reportPost.getResolveBy().getDisplayName());
+        }
+
         return response;
     }
 }
