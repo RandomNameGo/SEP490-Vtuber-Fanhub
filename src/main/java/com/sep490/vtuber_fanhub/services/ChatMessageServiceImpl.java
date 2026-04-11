@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.SendMessageRequest;
 import com.sep490.vtuber_fanhub.dto.responses.MessageResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PaginatedResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.models.ChatMessage;
 import com.sep490.vtuber_fanhub.models.ChatSession;
@@ -10,6 +11,9 @@ import com.sep490.vtuber_fanhub.repositories.ChatMessageRepository;
 import com.sep490.vtuber_fanhub.repositories.ChatSessionRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +21,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,16 +61,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             chatMessage.setCreatedAt(Instant.now());
             chatMessage.setContent(message);
             chatMessage.setSession(chatSession);
-            chatMessage = chatMessageRepository.save(chatMessage);
+            chatMessageRepository.save(chatMessage);
 
-            aiResponseService.generateAndSendReply(user, message);
-
-            return MessageResponse.builder()
-                    .id(chatMessage.getId())
-                    .content(chatMessage.getContent())
-                    .createdAt(chatMessage.getCreatedAt())
-                    .senderRole("USER")
-                    .build();
+            return aiResponseService.generateAndSendReply(user, message);
         }
         catch(Exception e){
             throw new RuntimeException("Error while sending message");
@@ -73,8 +71,8 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     }
 
     @Override
-    public List<MessageResponse> getAllMessages(String username) {
-        try{
+    public PaginatedResponse<MessageResponse> getMessagesPaginated(String username, int page, int size) {
+        try {
             Optional<User> tokenUser = userRepository.findByUsernameAndIsActive(username);
             if (tokenUser.isEmpty()) {
                 throw new CustomAuthenticationException("Authentication failed");
@@ -82,28 +80,45 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 
             Optional<ChatSession> chatSession = chatSessionRepository.findByUser_Id(tokenUser.get().getId());
             if (chatSession.isEmpty()) {
-                return null;
-            }
-
-            List<ChatMessage> chatMessages = chatMessageRepository.getAllMessagesBySession_Id(chatSession.get().getId());
-            List<MessageResponse> chatMessageResponses = new ArrayList<>();
-            for (ChatMessage chatMessage : chatMessages) {
-                MessageResponse response = MessageResponse.builder()
-                        .id(chatMessage.getId())
-                        .createdAt(chatMessage.getCreatedAt())
-                        .content(chatMessage.getContent())
-                        .senderRole(chatMessage.getSenderRole())
-                        .thought(chatMessage.getThought())
+                return PaginatedResponse.<MessageResponse>builder()
+                        .data(new ArrayList<>())
+                        .currentPage(page)
+                        .pageSize(size)
+                        .totalElements(0)
+                        .totalPages(0)
+                        .hasNext(false)
+                        .hasPrevious(false)
                         .build();
-                chatMessageResponses.add(response);
             }
-            return chatMessageResponses;
 
-        }catch(Exception e){
-            System.out.println("Error while getting all messages");
+            // Sort by createdAt descending (newest first)
+            PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+            Page<ChatMessage> messagesPage = chatMessageRepository.findAllBySession_Id(chatSession.get().getId(), pageable);
+
+            List<MessageResponse> messageResponses = messagesPage.getContent().stream()
+                    .map(chatMessage -> MessageResponse.builder()
+                            .id(chatMessage.getId())
+                            .createdAt(chatMessage.getCreatedAt())
+                            .content(chatMessage.getContent())
+                            .senderRole(chatMessage.getSenderRole())
+                            .thought(chatMessage.getThought())
+                            .build())
+                    .collect(Collectors.toList());
+
+            return PaginatedResponse.<MessageResponse>builder()
+                    .data(messageResponses)
+                    .currentPage(page)
+                    .pageSize(size)
+                    .totalElements(messagesPage.getTotalElements())
+                    .totalPages(messagesPage.getTotalPages())
+                    .hasNext(messagesPage.hasNext())
+                    .hasPrevious(messagesPage.hasPrevious())
+                    .build();
+
+        } catch (Exception e) {
+            System.out.println("Error while getting paginated messages: " + e.getMessage());
             return null;
         }
     }
-
 
 }
