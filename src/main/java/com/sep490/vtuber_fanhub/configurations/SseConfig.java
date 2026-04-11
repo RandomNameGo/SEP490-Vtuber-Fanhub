@@ -10,26 +10,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class SseConfig implements WebMvcConfigurer {
 
 
-    //Configure async support for SSE connections
     @Override
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
-        // Set timeout to 5 minutes (300000ms) for SSE connections
         configurer.setDefaultTimeout(300000);
     }
 
-    //SSE emitter timeout configuration
     @Bean
     public SseTimeoutConfig sseTimeoutConfig() {
         return new SseTimeoutConfig();
     }
 
-    //Inner class for timeout config
     @Getter
     public static class SseTimeoutConfig {
-        // Timeout in 5 minutes
         private final long timeout = 300000;
         
-        // Reconnection time in 3 seconds
         private final long reconnectionTime = 3000;
 
     }

@@ -29,15 +29,8 @@ public class SseNotificationServiceImpl implements SseNotificationService {
 
     private final SseConfig.SseTimeoutConfig sseTimeoutConfig;
 
-    /**
-     * Map to store active SSE emitters by user ID
-     * ConcurrentHashMap ensures thread-safe access for multiple simultaneous connections
-     */
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-    /**
-     * Map to store the completion flag for each emitter (prevents duplicate sends)
-     */
     private final Map<Long, Boolean> completedEmitters = new ConcurrentHashMap<>();
 
     @Override
@@ -107,7 +100,6 @@ public class SseNotificationServiceImpl implements SseNotificationService {
             try {
                 existingEmitter.complete();
             } catch (IllegalStateException e) {
-                // Already completed, ignore
             }
             log.info("Removed SSE emitter for user: {}", userId);
         }
@@ -117,14 +109,12 @@ public class SseNotificationServiceImpl implements SseNotificationService {
     public void sendNotification(Long userId, NotificationEventResponse event) {
         SseEmitter emitter = emitters.get(userId);
         
-        // Skip if no active connection or already completed
         if (emitter == null || Boolean.TRUE.equals(completedEmitters.get(userId))) {
             log.debug("No active SSE connection for user: {}. Notification not sent.", userId);
             return;
         }
 
         try {
-            // Send the notification event
             SseEmitter.SseEventBuilder eventBuilder = SseEmitter.event()
                     .name("notification")
                     .data(event);
@@ -134,7 +124,6 @@ public class SseNotificationServiceImpl implements SseNotificationService {
             
         } catch (IOException e) {
             log.error("Failed to send notification to user: {}: {}", userId, e.getMessage());
-            // Remove the emitter on error as connection is likely broken
             removeEmitter(userId);
         } catch (IllegalStateException e) {
             log.warn("Emitter already completed for user: {}: {}", userId, e.getMessage());
@@ -222,13 +211,6 @@ public class SseNotificationServiceImpl implements SseNotificationService {
         return emitters.size();
     }
 
-    /**
-     * Helper method to check if a user has an active SSE connection
-     * Useful for conditional notification sending
-     *
-     * @param userId the user ID to check
-     * @return true if user has active connection
-     */
     public boolean hasActiveConnection(Long userId) {
         SseEmitter emitter = emitters.get(userId);
         return emitter != null && !Boolean.TRUE.equals(completedEmitters.get(userId));

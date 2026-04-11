@@ -43,7 +43,7 @@ public class ShopItemController {
     public ResponseEntity<?> getAllShopItems(
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "shopItemId") String sortBy) {
+            @RequestParam(defaultValue = "id") String sortBy) {
 
         List<ShopItemResponse> items = shopItemService.getAllShopItems(pageNo, pageSize, sortBy);
         return ResponseEntity.ok().body(APIResponse.<List<ShopItemResponse>>builder()
