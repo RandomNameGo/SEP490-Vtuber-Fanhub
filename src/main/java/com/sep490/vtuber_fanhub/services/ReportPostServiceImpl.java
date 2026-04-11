@@ -315,9 +315,9 @@ public class ReportPostServiceImpl implements ReportPostService {
             throw new AccessDeniedException("Access denied");
         }
 
-        // Get all report posts for this fan hub
+        // Get all report posts for this fan hub with PENDING status
         PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
-        Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubId(fanHubId, pageRequest);
+        Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubIdAndStatus(fanHubId, "PENDING", pageRequest);
 
         if (reportPostPage.isEmpty()) {
             return List.of();

@@ -605,6 +605,95 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
+    public String approveAiSafePosts(Long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can approve posts");
+        }
+
+        List<Post> aiSafePosts = postRepository.findByHubIdAndAiValidationStatusAndPending(fanHubId, "AI_SAFE");
+
+        if (aiSafePosts.isEmpty()) {
+            return "No AI_SAFE posts found to approve";
+        }
+
+        int approvedCount = 0;
+        for (Post post : aiSafePosts) {
+            post.setStatus("APPROVED");
+            post.setReviewedBy(currentUser);
+            post.setUpdatedAt(Instant.now());
+            postRepository.save(post);
+
+            // Award points when post is APPROVED
+            User postAuthor = post.getUser();
+
+            long currentPoints = postAuthor.getPoints() != null ? postAuthor.getPoints() : 0;
+            postAuthor.setPoints(currentPoints + 10);
+            userRepository.save(postAuthor);
+
+            Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
+                    fanHubId, postAuthor.getId());
+            if (member.isPresent()) {
+                FanHubMember fanHubMember = member.get();
+                int currentScore = fanHubMember.getFanHubScore() != null ? fanHubMember.getFanHubScore() : 0;
+                fanHubMember.setFanHubScore(currentScore + 10);
+                fanHubMemberRepository.save(fanHubMember);
+            }
+            approvedCount++;
+        }
+
+        return "Approved " + approvedCount + " AI_SAFE post(s) successfully";
+    }
+
+    @Override
+    @Transactional
+    public String rejectAiUnsafePosts(Long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can reject posts");
+        }
+
+        List<Post> aiUnsafePosts = postRepository.findByHubIdAndAiValidationStatusAndPending(fanHubId, "AI_UNSAFE");
+
+        if (aiUnsafePosts.isEmpty()) {
+            return "No AI_UNSAFE posts found to reject";
+        }
+
+        int rejectedCount = 0;
+        for (Post post : aiUnsafePosts) {
+            post.setStatus("REJECTED");
+            post.setReviewedBy(currentUser);
+            post.setUpdatedAt(Instant.now());
+            postRepository.save(post);
+
+            rejectedCount++;
+        }
+
+        return "Rejected " + rejectedCount + " AI_UNSAFE post(s) successfully";
+    }
+
+    @Override
+    @Transactional
     public String rejectPost(Long postId, String reason) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 

@@ -118,6 +118,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "order by p.createdAt desc")
     Page<Post> findByHubIdAndStatusNotDeleted(Long fanHubId, Pageable pageable);
 
+    // Find posts by AI validation status
+    @Query("select p from Post p " +
+            "where p.hub.id = :fanHubId " +
+            "and p.aiValidationStatus = :aiStatus " +
+            "and p.status = 'PENDING' " +
+            "order by p.createdAt desc")
+    List<Post> findByHubIdAndAiValidationStatusAndPending(Long fanHubId, String aiStatus);
+
     // Find announcement or schedule posts by hub id
     @Query("select p from Post p " +
             "where p.hub.id = :fanHubId " +

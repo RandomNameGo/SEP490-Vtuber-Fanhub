@@ -92,6 +92,30 @@ public class PostController {
         );
     }
 
+    @PostMapping("/ai-validation/approve-all")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> approveAllAiSafePosts(@RequestParam Long fanHubId) {
+
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.approveAiSafePosts(fanHubId))
+                .build()
+        );
+    }
+
+    @PostMapping("/ai-validation/reject-all")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> rejectAllAiUnsafePosts(@RequestParam Long fanHubId) {
+
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.rejectAiUnsafePosts(fanHubId))
+                .build()
+        );
+    }
+
     @GetMapping("/translate")
     public ResponseEntity<?> translatePost(@RequestParam Long postId) {
 

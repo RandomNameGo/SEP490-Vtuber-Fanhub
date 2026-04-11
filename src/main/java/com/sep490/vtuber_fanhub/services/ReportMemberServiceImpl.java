@@ -287,9 +287,9 @@ public class ReportMemberServiceImpl implements ReportMemberService {
             throw new AccessDeniedException("Access denied");
         }
 
-        // Get all report members for this fan hub
+        // Get all report members for this fan hub with PENDING status
         PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
-        Page<ReportMember> reportMemberPage = reportMemberRepository.findByFanHubId(fanHubId, pageRequest);
+        Page<ReportMember> reportMemberPage = reportMemberRepository.findByHubIdAndStatus(fanHubId, "PENDING", pageRequest);
 
         if (reportMemberPage.isEmpty()) {
             return List.of();

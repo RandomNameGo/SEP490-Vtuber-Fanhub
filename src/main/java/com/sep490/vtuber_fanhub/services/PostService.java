@@ -63,6 +63,10 @@ public interface PostService {
 
     PostResponse getApprovedPostById(Long postId);
 
+    String approveAiSafePosts(Long fanHubId);
+
+    String rejectAiUnsafePosts(Long fanHubId);
+
     List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     PostResponse getTrendingPublicPost();
