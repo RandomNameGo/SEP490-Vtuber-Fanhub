@@ -2,7 +2,6 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.responses.AIMessageResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MessageResponse;
-import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.ChatMessage;
 import com.sep490.vtuber_fanhub.models.ChatSession;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
@@ -10,31 +9,32 @@ import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.ChatMessageRepository;
 import com.sep490.vtuber_fanhub.repositories.ChatSessionRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AiResponseServiceImpl implements AiResponseService{
+public class AiResponseServiceImpl implements AiResponseService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final GeminiAIService geminiAIService;
-    private final SimpMessageSendingOperations messagingTemplate;
     private final ChatPersonalityType AI_CHATBOT_RESPONSE_PERSONALITY_TYPE = ChatPersonalityType.MatikanetannHauser;
 
 
     @Override
-    @Async("aiResponseExecutor")
-    public void generateAndSendReply(User sender, String userMessageContent) {
+    public MessageResponse generateAndSendReply(User sender, String userMessageContent) {
         try{
-            ChatSession chatSession = chatSessionRepository.findByUser_Id(sender.getId())
-                    .orElseThrow(()-> new NotFoundException("Chat session not found"));
+            ChatSession chatSession;
+            Optional<ChatSession> existingSession = chatSessionRepository.findByUser_Id(sender.getId());
+            if(existingSession.isEmpty()){
+                chatSession = new ChatSession();
+                chatSession.setUser(sender);
+                chatSession = chatSessionRepository.save(chatSession);
+            }else chatSession = existingSession.get();
 
             AIMessageResponse aiResponse = smartChat(userMessageContent, sender.getId(), chatSession.getId());
 
@@ -46,25 +46,18 @@ public class AiResponseServiceImpl implements AiResponseService{
             chatMessage.setSession(chatSession);
             chatMessage = chatMessageRepository.save(chatMessage);
 
-            // Send AI response via WebSocket
-            // Note: We send to /topic/ai-response/{username} instead of /user/queue/reply
-            // because @Async runs outside the WebSocket session context
-            MessageResponse response = MessageResponse.builder()
+            return MessageResponse.builder()
                     .id(chatMessage.getId())
                     .createdAt(chatMessage.getCreatedAt())
                     .content(chatMessage.getContent())
                     .senderRole("AI")
                     .build();
-
-            String destination = "/queue/reply/" + sender.getUsername();
-            messagingTemplate.convertAndSend(destination, response);
         }catch(Exception e){
             e.printStackTrace();
             throw new RuntimeException("Error while generating and sending reply to user");
         }
     }
 
-    @Override
     public AIMessageResponse smartChat(String userPrompt, Long userId, Long sessionId) {
         List<ChatMessage> lastMessages = chatMessageRepository.findTop20BySession_Id(sessionId);
 

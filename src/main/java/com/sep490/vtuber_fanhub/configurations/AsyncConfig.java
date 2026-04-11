@@ -24,17 +24,5 @@ public class AsyncConfig implements AsyncConfigurer {
         return executor;
     }
 
-    // this is for Post Validation
-    @Bean(name = "aiResponseExecutor")
-    public Executor aiResponseExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(20);
-        executor.setQueueCapacity(200);
-        executor.setThreadNamePrefix("ai-response");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
-        return executor;
-    }
 
 }
