@@ -39,7 +39,7 @@ public class Banner {
     @Column(name = "banner_img_url")
     private String bannerImgUrl;
 
-    @Column(name = "isActive")
+    @Column(name = "is_active")
     private Boolean isActive;
 
 }
