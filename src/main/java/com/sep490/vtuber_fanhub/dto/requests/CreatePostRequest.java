@@ -21,7 +21,7 @@ public class CreatePostRequest {
     private String postType;
 
     @NotBlank(message = "Title must not be blank")
-    @Size(max = 255, message = "Title must not exceed 255 characters")
+    @Size(max = 50, message = "Title must not exceed 50 characters")
     private String title;
 
 //    @NotBlank(message = "Content must not be blank")

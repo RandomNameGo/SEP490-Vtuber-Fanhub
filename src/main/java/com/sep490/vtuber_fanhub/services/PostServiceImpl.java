@@ -884,7 +884,7 @@ public class PostServiceImpl implements PostService {
             // Calculate last valid page start index
             int totalPages = (int) Math.ceil((double) mergedPosts.size() / pageSize);
             if (totalPages == 0) {
-                return List.of(); // No posts at all
+                return List.of();
             }
             startIndex = (totalPages - 1) * pageSize;
             endIndex = mergedPosts.size();
@@ -1257,7 +1257,7 @@ public class PostServiceImpl implements PostService {
                     post.get().getHub().getId(),
                     post.get().getHub().getHubName()
             );
-            log.info("Sent SSE notification to post author {} for like from user {}", 
+            log.info("Sent SSE notification to post author {} for like from user {}",
                     postAuthor.getId(), currentUser.getId());
         }
 
@@ -1282,7 +1282,6 @@ public class PostServiceImpl implements PostService {
         }
 
         postLikeRepository.delete(existingLike.get());
-
 
         return "Post unliked successfully. 10 points deducted.";
     }
@@ -1317,6 +1316,38 @@ public class PostServiceImpl implements PostService {
         postRepository.save(post.get());
 
         return "Post pinned successfully";
+    }
+
+    @Override
+    @Transactional
+    public String unpinPost(Long postId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        Long fanHubId = post.get().getHub().getId();
+
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHubRepository.findById(fanHubId)
+                        .map(hub -> hub.getOwnerUser().getId().equals(currentUser.getId()))
+                        .orElse(false);
+
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can unpin posts");
+        }
+
+        post.get().setIsPinned(false);
+        post.get().setUpdatedAt(Instant.now());
+        postRepository.save(post.get());
+
+        return "Post unpinned successfully";
     }
 
     @Override

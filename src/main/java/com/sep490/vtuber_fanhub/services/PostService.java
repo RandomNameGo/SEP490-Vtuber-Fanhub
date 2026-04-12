@@ -47,6 +47,8 @@ public interface PostService {
 
     String pinPost(Long postId);
 
+    String unpinPost(Long postId);
+
     String votePost(Long postId, Long optionId);
 
     String unVotePost(Long postId);

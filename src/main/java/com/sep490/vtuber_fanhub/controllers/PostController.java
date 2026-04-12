@@ -251,6 +251,17 @@ public class PostController {
         );
     }
 
+    @PutMapping("/{postId}/unpin")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> unpinPost(@PathVariable long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.unpinPost(postId))
+                .build()
+        );
+    }
+
     @PutMapping("/{postId}/reject")
     @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> rejectPost(@PathVariable long postId,
