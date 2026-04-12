@@ -6,7 +6,8 @@ import lombok.Data;
 @Data
 @Builder
 public class TranslatePostResponse {
-    private String translatedText;
+    private String translatedContent;
+    private String translatedTitle;
     private boolean translate_language_set;
     private String extraComment;
 }
