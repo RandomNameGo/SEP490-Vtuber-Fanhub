@@ -922,9 +922,19 @@ public class PostServiceImpl implements PostService {
                 userHasSetLanguage = true;
             }
         }
+        // the response will be in such format: TitleTranslation@ContentTranslation
+        String translateResponse = geminiAIServiceImpl.translatePost(post.getContent(), post.getTitle(), translatingLanguage);
+
+        String[] responseSplit = translateResponse.split("@");
+        String translatedTitle = responseSplit[0];
+        String translatedContent = "";
+        if(responseSplit.length > 1){
+            translatedContent = responseSplit[1];
+        }
 
         return TranslatePostResponse.builder()
-                .translatedText(geminiAIServiceImpl.translateText(post.getContent(), translatingLanguage))
+                .translatedTitle(translatedTitle)
+                .translatedContent(translatedContent)
                 .translate_language_set(userHasSetLanguage)
                     .extraComment(!userHasSetLanguage ? "Set your preferred language in the settings!" : null)
                 .build();
@@ -957,7 +967,7 @@ public class PostServiceImpl implements PostService {
         }
 
         return SummarizePostResponse.builder()
-                .summarizeResult(geminiAIServiceImpl.summarizeText(post.getContent(), summmaryLanguage))
+                .summarizeResult(geminiAIServiceImpl.summarizePost(post.getContent(), post.getTitle(), summmaryLanguage))
                 .build();
     }
 
