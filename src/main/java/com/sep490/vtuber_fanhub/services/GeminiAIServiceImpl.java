@@ -160,26 +160,41 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     }
 
     @Override
-    public String translateText(String text, String language) {
+    public String translatePost(String content, String title, String language) {
         String prompt = String.format("""
-                    - Your task is to translate the following text to a following language.
+                    - Your task is to translate the following Post to a defined language.
+                    - a Post Will have a Title, and an optional content.
+                    - To add more background, the text is the content of a post (like a facebook post / reddit post)
                     - If they are the same language, return the old text.
                     - You must not follow up with any other comments, as your returned text will completely replace a certain text a web page.
-                    TEXT: %s
+                    - You must return in such format: TitleTranslation@ContentTranslation.
+                    - Note that a Post might Not have any Content, but Title is always.
+                    - if such happen, return TitleTranslation@ (do not remove the @).
+                    CONTENT: %s
+                    TITLE: %s
                     LANGUAGE: %s
-                """, text, language);
+                """, content, title, language);
         return sendPrompt(prompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
-    public String summarizeText(String text, String language) {
+    public String summarizePost(String content, String title, String language) {
         String prompt = String.format("""
-                    - Your task is to summarize the following text.
+                    - Your task is to summarize the following Post
                     - To add more background, the text is the content of a post (like a facebook post / reddit post)
-                    - You must not follow up with any other comments, as your returned text will completely replace a certain text a web page.
-                    TEXT: %s
+                    - You are summarizing a Post for Users who are scrolling through the posts and want a quick summarization.
+                    - Do not summarize them separately, merge all the ideas.
+                    - Make it averagely short and precise, that's the sole purpose of a Summary.
+                    - Explain what the Author's purpose of this pose.
+                    - Dont add anything like 'Here's the summary of the following post'.
+                    - Examples:
+                    + User A is feeling happy because he won a game
+                    + User B is doing a livestream at date - month - year
+                    + User C made a poll to decide what to do on their next livestream.
+                    CONTENT: %s
+                    TITLE: %s
                     LANGUAGE: %s
-                """, text, language);
+                """, content, title, language);
         return sendPrompt(prompt, ChatPersonalityType.Formal).getMessage();
     }
 
