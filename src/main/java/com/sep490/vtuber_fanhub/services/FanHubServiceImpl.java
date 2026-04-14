@@ -327,11 +327,31 @@ public class FanHubServiceImpl implements FanHubService {
 
     private FanHubResponse mapToFanHubResponseWithMemberCount(FanHub fanHub) {
         FanHubResponse response = mapToFanHubResponse(fanHub);
-        
+
         long memberCount = fanHubMemberRepository.findByHubIdAndStatus(fanHub.getId(), "JOINED", Pageable.unpaged())
                 .getTotalElements();
         response.setMemberCount(memberCount);
 
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return List.of();
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<FanHub> pagedFanHubs = fanHubRepository.searchFanHubs(keyword.trim(), paging);
+
+        if (pagedFanHubs.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedFanHubs.getContent().stream()
+                .map(this::mapToFanHubResponseWithMemberCount)
+                .collect(Collectors.toList());
     }
 }

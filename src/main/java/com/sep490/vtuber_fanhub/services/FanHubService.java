@@ -26,4 +26,6 @@ public interface FanHubService {
     List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy);
 
     FanHubResponse getMyHubAsOwner();
+
+    List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy);
 }

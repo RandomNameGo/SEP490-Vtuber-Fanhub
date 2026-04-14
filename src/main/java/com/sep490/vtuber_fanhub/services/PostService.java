@@ -72,4 +72,6 @@ public interface PostService {
     List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     PostResponse getTrendingPublicPost();
+
+    List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy);
 }

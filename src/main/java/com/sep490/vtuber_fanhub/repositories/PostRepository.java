@@ -135,4 +135,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Long fanHubId,
             String status,
             Pageable pageable);
+
+    // Search posts by title or content containing keyword
+    @Query("select p from Post p " +
+            "where p.status = 'APPROVED' " +
+            "and (lower(p.title) like lower(concat('%', :keyword, '%')) " +
+            "or lower(p.content) like lower(concat('%', :keyword, '%')))")
+    Page<Post> searchPosts(String keyword, Pageable pageable);
 }

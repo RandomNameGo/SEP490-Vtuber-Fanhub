@@ -1641,4 +1641,24 @@ public class PostServiceImpl implements PostService {
 
         return mapToPostResponse(post);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return List.of();
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<Post> pagedPosts = postRepository.searchPosts(keyword.trim(), paging);
+
+        if (pagedPosts.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedPosts.getContent().stream()
+                .map(this::mapToPostResponse)
+                .collect(Collectors.toList());
+    }
 }

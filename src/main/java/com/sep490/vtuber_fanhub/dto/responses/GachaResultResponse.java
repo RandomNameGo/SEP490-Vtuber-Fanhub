@@ -15,5 +15,6 @@ public class GachaResultResponse {
     private Integer multiplier;
     private String type;
     private Integer cost;
+    private Integer pointsRefunded;
     private Instant obtainedAt;
 }

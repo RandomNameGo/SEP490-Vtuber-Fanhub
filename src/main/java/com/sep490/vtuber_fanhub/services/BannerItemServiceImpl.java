@@ -178,15 +178,31 @@ public class BannerItemServiceImpl implements BannerItemService {
             return convertToGachaResponseForGoodLuck(selectedBannerItem, gachaCost, user.getId());
         }
 
-        // For other types, create UserItem entry
+        // For MAIN_REWARD type, check if user already owns this item
+        Item selectedItem = selectedBannerItem.getItem();
+        List<Item> ownedItems = userItemRepository.findOwnedItemsByUserAndItems(user, List.of(selectedItem));
+
+        if (!ownedItems.isEmpty()) {
+            // User already has this MAIN_REWARD item, refund half the cost (floored)
+            int pointsRefunded = (int) Math.floor(gachaCost / 2.0);
+            user.setPoints(user.getPoints() + pointsRefunded);
+            userRepository.save(user);
+
+            log.info("User {} already owned item {} from banner {}, refunded {} points",
+                    user.getId(), selectedItem.getId(), banner.getId(), pointsRefunded);
+
+            return convertToGachaResponseForDuplicateReward(selectedBannerItem, gachaCost, pointsRefunded, user.getId());
+        }
+
+        // User doesn't own this item yet, create UserItem entry
         UserItem userItem = new UserItem();
         userItem.setUser(user);
-        userItem.setItem(selectedBannerItem.getItem());
+        userItem.setItem(selectedItem);
         userItem.setPurchasedAt(Instant.now());
         userItemRepository.save(userItem);
 
         log.info("User {} performed gacha on banner {} and got item {} for {} points",
-                user.getId(), banner.getId(), selectedBannerItem.getItem().getId(), gachaCost);
+                user.getId(), banner.getId(), selectedItem.getId(), gachaCost);
 
         return convertToGachaResponse(userItem, selectedBannerItem, gachaCost);
     }
@@ -223,6 +239,7 @@ public class BannerItemServiceImpl implements BannerItemService {
         response.setMultiplier(bannerItem.getMultiplier());
         response.setType(bannerItem.getType());
         response.setCost(gachaCost);
+        response.setPointsRefunded(0);
         response.setObtainedAt(userItem.getPurchasedAt());
         return response;
     }
@@ -237,6 +254,22 @@ public class BannerItemServiceImpl implements BannerItemService {
         response.setMultiplier(bannerItem.getMultiplier());
         response.setType("GOOD_LUCK");
         response.setCost(gachaCost);
+        response.setPointsRefunded(0);
+        response.setObtainedAt(Instant.now());
+        return response;
+    }
+
+    private GachaResultResponse convertToGachaResponseForDuplicateReward(BannerItem bannerItem, int gachaCost, int pointsRefunded, Long userId) {
+        GachaResultResponse response = new GachaResultResponse();
+        response.setUserItemId(null); // No new UserItem created
+        response.setUserId(userId);
+        response.setItemId(bannerItem.getItem().getId());
+        response.setItemName(bannerItem.getItem().getItemName() + " (Duplicate)");
+        response.setImageUrl(bannerItem.getItem().getImageUrl());
+        response.setMultiplier(bannerItem.getMultiplier());
+        response.setType("MAIN_REWARD");
+        response.setCost(gachaCost);
+        response.setPointsRefunded(pointsRefunded);
         response.setObtainedAt(Instant.now());
         return response;
     }
