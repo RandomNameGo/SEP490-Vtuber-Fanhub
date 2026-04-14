@@ -38,11 +38,10 @@ public interface FanHubRepository extends JpaRepository<FanHub, Long> {
     @Query("SELECT fh FROM FanHub fh WHERE fh.isActive = true AND fh.isPrivate = false")
     List<FanHub> findPublicActiveFanHubs(Pageable pageable);
 
-    // Search fan hubs by hub name or description containing keyword
+    // Search fan hubs by hub name containing keyword
     @Query("SELECT fh FROM FanHub fh " +
             "WHERE fh.isActive = true " +
             "AND fh.isPrivate = false " +
-            "AND (lower(fh.hubName) like lower(concat('%', :keyword, '%')) " +
-            "OR lower(fh.description) like lower(concat('%', :keyword, '%')))")
-    Page<FanHub> searchFanHubs(String keyword, Pageable pageable);
+            "AND LOWER(fh.hubName) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<FanHub> searchFanHubs(@Param("keyword") String keyword, Pageable pageable);
 }
