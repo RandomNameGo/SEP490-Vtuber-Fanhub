@@ -496,7 +496,7 @@ public class PostController {
                                                    @RequestParam(defaultValue = "10") int pageSize,
                                                    @RequestParam(defaultValue = "createdAt") String sortBy) {
 
-        return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
+        return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
                 .data(postService.getAllPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))

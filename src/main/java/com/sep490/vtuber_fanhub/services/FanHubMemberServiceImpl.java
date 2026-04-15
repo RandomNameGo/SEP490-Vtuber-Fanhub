@@ -354,8 +354,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new AccessDeniedException("Only active members can leave the FanHub");
         }
 
-        fanHubMember.setStatus("LEFT");
-        fanHubMemberRepository.save(fanHubMember);
+        fanHubMemberRepository.delete(fanHubMember);
 
         return "Left FanHub successfully";
     }
@@ -406,8 +405,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new AccessDeniedException("Cannot kick members with MODERATOR or VTUBER role");
         }
 
-        target.setStatus("LEFT");
-        fanHubMemberRepository.save(target);
+        fanHubMemberRepository.delete(target);
+
 
         return "Member kicked successfully";
     }

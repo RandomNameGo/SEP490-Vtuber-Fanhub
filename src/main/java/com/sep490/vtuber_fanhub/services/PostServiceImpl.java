@@ -1514,7 +1514,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -1544,7 +1544,7 @@ public class PostServiceImpl implements PostService {
         }
 
         return pagedPosts.getContent().stream()
-                .map(this::mapToPostResponse)
+                .map(this::mapToPostWithMediaResponse)
                 .collect(Collectors.toList());
     }
 

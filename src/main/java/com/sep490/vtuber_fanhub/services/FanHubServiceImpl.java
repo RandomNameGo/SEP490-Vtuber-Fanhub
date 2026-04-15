@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -252,26 +253,35 @@ public class FanHubServiceImpl implements FanHubService {
     public List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
-
         List<FanHubMember> joinedMembers = fanHubMemberRepository.findByUserIdAndStatus(currentUser.getId(), "JOINED");
+        List<FanHub> fanHubs = new ArrayList<>(joinedMembers.stream()
+                .map(FanHubMember::getHub)
+                .toList());
 
-        if (joinedMembers.isEmpty()) {
+        if ("VTUBER".equals(currentUser.getRole())) {
+            fanHubRepository.findByOwnerUserId(currentUser.getId()).ifPresent(ownedHub -> {
+                if (fanHubs.stream().noneMatch(hub -> hub.getId().equals(ownedHub.getId()))) {
+                    fanHubs.add(ownedHub);
+                }
+            });
+        }
+
+        if (fanHubs.isEmpty()) {
             return List.of();
         }
 
-        // Apply pagination manually since we need to filter by status
-        int start = Math.min(pageNo * pageSize, joinedMembers.size());
-        int end = Math.min(start + pageSize, joinedMembers.size());
+        // Apply pagination manually
+        int start = Math.min(pageNo * pageSize, fanHubs.size());
+        int end = Math.min(start + pageSize, fanHubs.size());
 
-        if (start >= joinedMembers.size()) {
+        if (start >= fanHubs.size()) {
             return List.of();
         }
 
-        List<FanHubMember> pagedMembers = joinedMembers.subList(start, end);
+        List<FanHub> pagedHubs = fanHubs.subList(start, end);
 
-        return pagedMembers.stream()
-                .map(member -> mapToFanHubResponseWithMemberCount(member.getHub()))
+        return pagedHubs.stream()
+                .map(this::mapToFanHubResponseWithMemberCount)
                 .collect(Collectors.toList());
     }
 

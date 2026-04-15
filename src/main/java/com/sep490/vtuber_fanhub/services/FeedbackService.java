@@ -14,5 +14,7 @@ public interface FeedbackService {
 
     List<FeedbackResponse> getCurrentUserFeedback(int pageNo, int pageSize, String sortBy);
 
+    FeedbackResponse getFeedbackDetail(Long id);
+
     List<FeedbackCategory> getAllFeedbackCategories();
 }

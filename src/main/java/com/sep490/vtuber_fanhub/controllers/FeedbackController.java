@@ -64,6 +64,17 @@ public class FeedbackController {
         );
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getMyFeedbackDetail(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<FeedbackResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(feedbackService.getFeedbackDetail(id))
+                .build()
+        );
+    }
+
+
     @GetMapping("/categories")
     public ResponseEntity<?> getAllFeedbackCategories() {
         List<FeedbackCategory> categories = feedbackService.getAllFeedbackCategories();

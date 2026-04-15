@@ -77,6 +77,17 @@ public class FeedbackServiceImpl implements FeedbackService {
     }
 
     @Override
+    public FeedbackResponse getFeedbackDetail(Long id) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+        UserFeedback feedback = userFeedbackRepository.findByIdAndUserId(id, currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Feedback not found or you don't have permission to access it"));
+
+        return mapToFeedbackResponse(feedback);
+    }
+
+
+
+    @Override
     public List<FeedbackCategory> getAllFeedbackCategories() {
         return feedbackCategoryRepository.findAll();
     }

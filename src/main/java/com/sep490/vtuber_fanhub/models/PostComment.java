@@ -37,7 +37,7 @@ public class PostComment {
     @Column(name = "status")
     private String status;
 
-    @Column(name = "created_at")
+@Column(name = "created_at")
     private Instant createdAt;
 
     @Column(name = "member_id")
