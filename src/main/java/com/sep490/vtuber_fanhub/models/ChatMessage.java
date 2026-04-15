@@ -28,6 +28,10 @@ public class ChatMessage {
     @Column(name = "thought")
     private String thought;
 
+    @Lob
+    @Column(name = "has_metadata")
+    private Boolean hasMetadata;
+
     @Column(name = "created_at")
     private Instant createdAt;
 

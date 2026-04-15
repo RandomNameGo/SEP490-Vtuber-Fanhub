@@ -3,19 +3,26 @@ package com.sep490.vtuber_fanhub.services;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.genai.Client;
 import com.google.genai.types.*;
+import com.sep490.vtuber_fanhub.dto.internal.AiInteractionResult;
 import com.sep490.vtuber_fanhub.dto.responses.AIMessageResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
+import com.sep490.vtuber_fanhub.models.Enum.MetadataType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+// it was a pain coding this
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GeminiAIServiceImpl implements GeminiAIService {
 
     @Value("${google.api-key}")
@@ -25,13 +32,15 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     private final String MODEL_ID = "gemini-3.1-flash-lite-preview";
 
     private final ThinkingConfig THINKING_CONFIG = ThinkingConfig.builder()
-            .includeThoughts(false)
-//            .thinkingLevel("MEDIUM")
+            .includeThoughts(true)
+            .thinkingLevel("MEDIUM")
             .build();
 
     private final FunctionCallingService functionCallingService;
 
-
+    // After using function calling, the result can return Multiple metadata
+    // Now? no. right now I expect it to return only one metadata. i mean we have like 1 function to call
+    // but here i am writing to handle multiple if there is. i have standards.
     @PostConstruct
     public void init() {
         this.client = Client.builder()
@@ -46,12 +55,12 @@ public class GeminiAIServiceImpl implements GeminiAIService {
 
     @Override
     public AIMessageResponse sendPrompt(String prompt, ChatPersonalityType type) {
-        GenerateContentResponse response = sendPromptFullResponse(prompt, type);
-        return extractAIMessage(response);
+        GenerateContentResponse response = sendPromptFullResponse(prompt, type).getResponse();
+        return extractAIMessage(new AiInteractionResult(response, new ArrayList<>()));
     }
 
     @Override
-    public GenerateContentResponse sendPromptFullResponse(String prompt, ChatPersonalityType type) {
+    public AiInteractionResult sendPromptFullResponse(String prompt, ChatPersonalityType type) {
         try {
             String personality = switch (type) {
                 case MatikanetannHauser -> "You are Matikanetannhauser from Uma Musume. talk like her.";
@@ -83,8 +92,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     contents,
                     config
             );
-
-            return response;
+            return new AiInteractionResult(response, new ArrayList<>());
         } catch (Exception e) {
             throw new RuntimeException("Gemini Error: " + e.getMessage());
         }
@@ -92,12 +100,12 @@ public class GeminiAIServiceImpl implements GeminiAIService {
 
     @Override
     public AIMessageResponse sendPromptFunctionCalling(String prompt, ChatPersonalityType type, Long userId) {
-        GenerateContentResponse response = sendPromptFunctionCallingFullResponse(prompt, type, userId);
-        return extractAIMessage(response);
+        AiInteractionResult interactionResult = sendPromptFunctionCallingFullResponse(prompt, type, userId);
+        return extractAIMessage(interactionResult);
     }
 
     @Override
-    public GenerateContentResponse sendPromptFunctionCallingFullResponse(String prompt, ChatPersonalityType type, Long userId) {
+    public AiInteractionResult sendPromptFunctionCallingFullResponse(String prompt, ChatPersonalityType type, Long userId) {
         try {
             String personality = switch (type) {
                 case MatikanetannHauser -> "You are Matikanetannhauser from Uma Musume. talk like her.";
@@ -116,9 +124,10 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     .description("A test function that returns a specific string")
                     .build();
             FunctionDeclaration getRandomPost = FunctionDeclaration.builder()
-                    .name("get_random_post")
-                    .description("A function that return a random post.")
+                    .name("get_trending_post")
+                    .description("A function that returns a trending post.")
                     .build();
+
 
             Tool tool = Tool.builder()
                     .functionDeclarations(List.of(getDisplayNameFunc, testFunctionCallFunc, getRandomPost))
@@ -149,11 +158,12 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     contents,
                     config
             );
+            AiInteractionResult interactionResult;
 
             // Handle function calls if present
-            response = handleFunctionCalls(response, config, contents, userId);
+            interactionResult = handleFunctionCalls(response, config, contents, userId);
 
-            return response;
+            return interactionResult;
         } catch (Exception e) {
             throw new RuntimeException("Gemini Error: " + e.getMessage());
         }
@@ -198,15 +208,16 @@ public class GeminiAIServiceImpl implements GeminiAIService {
         return sendPrompt(prompt, ChatPersonalityType.Formal).getMessage();
     }
 
-    private GenerateContentResponse handleFunctionCalls(GenerateContentResponse response,
+    private AiInteractionResult handleFunctionCalls(GenerateContentResponse response,
                                                          GenerateContentConfig config,
                                                          List<Content> contents, Long userId) {
         try{
             // Check if there are function calls in the response
             List<FunctionCall> functionCalls = response.functionCalls();
+            List<Map<String, Object>> metadataList = new ArrayList<>();
 
             if (functionCalls == null || functionCalls.isEmpty()) {
-                return response;
+                return new AiInteractionResult(response, new ArrayList<>());
             }
 
             // Add the model's response to contents
@@ -217,9 +228,21 @@ public class GeminiAIServiceImpl implements GeminiAIService {
             contents.add(response.candidates().get().get(0).content().get());
 
             // Process each function call and create function responses
+            // When using function calling with GeminiAPI, one of its Perks is that it can call multiple functions at once
+            // And since they can do so, despite the fact we are expecting to see only One function call, we must
+            // still calculate for when they return multiple
+
+            // When we're using function calling, the result of those function calls are not returned in the
+            // GenerateContentResponse. they are stuffed into the context and they're gone.
+            // But here i try to Return the result of the function call (return the post id) so i could use it.
             List<FunctionResponse> functionResponses = new ArrayList<>();
             for (FunctionCall functionCall : functionCalls) {
                 FunctionResponse functionResponse = functionCallingService.handleFunctionCall(functionCall, userId);
+
+                if(functionResponse.response().isPresent()){
+                    metadataList.add(functionResponse.response().get());
+                }
+
                 functionResponses.add(functionResponse);
             }
 
@@ -234,14 +257,18 @@ public class GeminiAIServiceImpl implements GeminiAIService {
             contents.add(Content.fromParts(responseParts.toArray(new Part[0])));
 
             // Send the function responses back to the model for final response
-            return client.models.generateContent(MODEL_ID, contents, config);
+            return new AiInteractionResult(client.models.generateContent(MODEL_ID, contents, config), metadataList);
         }catch(Exception e){
             throw new RuntimeException("Error at handleFunctionCalls: " + e.getMessage());
         }
     }
 
-    private AIMessageResponse extractAIMessage(GenerateContentResponse response) {
+    private AIMessageResponse extractAIMessage(AiInteractionResult interactionResult) {
         try{
+            AIMessageResponse.AIMessageResponseBuilder responseBuilder = AIMessageResponse.builder();
+            GenerateContentResponse response = interactionResult.getResponse();
+
+
             StringBuilder messageBuilder = new StringBuilder();
             StringBuilder thoughtBuilder = new StringBuilder();
 
@@ -272,10 +299,52 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                 }
             });
 
-            return AIMessageResponse.builder()
+
+            // ================ METADATA PROCESSING ================ //
+            // Not every function call requires metadata.
+            // The sole reason metadata even exists is that i need to return the post data and save it.
+            // But the function calling step will only put the data returned into the context, and the
+            // returned GenerateContentResponse does not include the result of the function call
+            MetadataType metadataType = null;
+            boolean hasMetadata = false;
+            Long metadataTargetId = null;
+
+            List<Map<String, Object>> metadataList = interactionResult.getMetadataList();
+
+            if( metadataList != null && !metadataList.isEmpty()){
+                hasMetadata = true;
+                if(metadataList.size()>1){
+                    log.info("Multiple Function Calls Detected: {} actions captured for message. Current" +
+                            "version does Not support multiple functions call. Returning only the result of" +
+                            "the first function call.", metadataList.size());
+                }
+
+                Map<String, Object> metadata = metadataList.get(0);
+                String callType = String.valueOf(metadata.get("functionCallType"));
+                switch(callType){
+                    case "POST" -> {
+                        metadataType = MetadataType.POST;
+                        metadataTargetId = (Long) metadata.get("postId");
+                    }
+                    case "ERROR" -> {
+                        log.error("AI reported a function error: {}", metadata.get("errorMessage"));
+                    }
+                    default -> {
+                        log.info("No metadata");
+                    }
+
+                }
+            }
+            if(hasMetadata){
+                responseBuilder.metadataTargetId(metadataTargetId);
+                responseBuilder.metadataType(metadataType);
+            }
+            return responseBuilder
                     .message(messageBuilder.toString().trim())
                     .thought(thoughtBuilder.toString().trim())
+                    .hasMetadata(hasMetadata)
                     .build();
+
         }catch(Exception e){
             System.out.println("error while extracting ai message");
             return AIMessageResponse.builder().message("").thought("").build();
