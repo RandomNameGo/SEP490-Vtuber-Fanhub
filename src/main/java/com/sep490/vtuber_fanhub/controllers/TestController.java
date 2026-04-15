@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.genai.types.GenerateContentResponse;
+import com.sep490.vtuber_fanhub.dto.internal.AiInteractionResult;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
@@ -46,12 +47,12 @@ public class TestController {
     }
 
     @GetMapping("/gemini/custom/fullResponse")
-    public ResponseEntity<APIResponse<GenerateContentResponse>> testGeminiPromptCustomFull(@RequestBody String text){
+    public ResponseEntity<APIResponse<AiInteractionResult>> testGeminiPromptCustomFull(@RequestBody String text){
         return ResponseEntity.ok(
-                APIResponse.<GenerateContentResponse>builder()
+                APIResponse.<AiInteractionResult>builder()
                         .message("Test Gemini Success")
                         .success(true)
-                        .data(geminiAIService.sendPromptFullResponse(text, ChatPersonalityType.MatikanetannHauser))
+                        .data(geminiAIService.sendPromptFunctionCallingFullResponse(text, ChatPersonalityType.MatikanetannHauser, Long.parseLong("1")))
                         .build()
         );
     }

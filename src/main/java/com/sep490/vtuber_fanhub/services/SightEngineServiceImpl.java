@@ -132,11 +132,12 @@ public class SightEngineServiceImpl implements SightEngineService{
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiUrl)
                     .queryParam("stream_url", url)
                     .queryParam("workflow", videoWorkflowId)
-                    .queryParam("callback_url", appHost + "vhub/api/v1/webhooks/sightengine/video-result")
+                    .queryParam("callback_url", appHost + "/vhub/api/v1/webhooks/sightengine/video-result")
                     .queryParam("api_user", apiUser)
                     .queryParam("api_secret", apiSecret);
 
             ResponseEntity<JsonNode> response = restTemplate.getForEntity(builder.toUriString(), JsonNode.class);
+            System.out.println("SightEngine Initial Response: " + response.getBody());
             return response.getBody();
 
         } catch (Exception e) {
