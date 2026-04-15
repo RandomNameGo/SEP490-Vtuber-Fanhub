@@ -13,6 +13,7 @@ import java.time.Instant;
 @Table(name = "fan_hub_report")
 public class FanHubReport {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "report_id", nullable = false)
     private Long id;
 
@@ -35,5 +36,13 @@ public class FanHubReport {
 
     @Column(name = "created_at")
     private Instant createdAt;
+
+    @Lob
+    @Column(name = "resolve_message")
+    private String resolveMessage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "resolve_by")
+    private User resolveBy;
 
 }

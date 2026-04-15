@@ -207,6 +207,25 @@ public class SseNotificationServiceImpl implements SseNotificationService {
     }
 
     @Override
+    public void sendFanHubStrikeNotification(Long ownerUserId, Long hubId, String hubName, int strikeCount, String reason) {
+        log.info("Sending FanHub strike notification to owner {}: hubId={}, strikeCount={}", 
+                ownerUserId, hubId, strikeCount);
+
+        NotificationEventResponse notification = NotificationEventResponse.builder()
+                .id(System.currentTimeMillis())
+                .type("FAN_HUB_STRIKE")
+                .title("FanHub Strike Alert! ⚠️")
+                .message(String.format("Your FanHub \"%s\" has received a strike. Total strikes: %d. Reason: %s",
+                        hubName, strikeCount, reason != null ? reason : "Violation of community guidelines"))
+                .relatedHubId(hubId)
+                .relatedHubName(hubName)
+                .createdAt(Instant.now())
+                .build();
+
+        sendNotification(ownerUserId, notification);
+    }
+
+    @Override
     public int getActiveEmitterCount() {
         return emitters.size();
     }

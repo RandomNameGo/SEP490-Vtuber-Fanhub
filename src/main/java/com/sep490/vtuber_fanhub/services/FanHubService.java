@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateFanHubRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateFanHubRequest;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubAnalyticsResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubResponse;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +27,10 @@ public interface FanHubService {
     List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy);
 
     FanHubResponse getMyHubAsOwner();
+
+    FanHubAnalyticsResponse getFanHubAnalytics(Long fanHubId);
+
+    String deleteFanHub(Long fanHubId);
 
     List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy);
 }

@@ -93,6 +93,24 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public SystemAccount getSystemAccountFromToken(HttpServletRequest httpServletRequest) {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+
+        if (token == null) {
+            throw new CustomAuthenticationException("Invalid token");
+        }
+
+        String tokenUsername = jwtService.getUsernameFromToken(token);
+
+        Optional<SystemAccount> tokenSystemAccount = systemAccountRepository.findByUsername(tokenUsername);
+        if (tokenSystemAccount.isEmpty()) {
+            throw new CustomAuthenticationException("Authentication failed");
+        }
+
+        return tokenSystemAccount.get();
+    }
+
+    @Override
     public TokenValidationResponse validateToken() {
         String token = jwtService.getCurrentToken(httpServletRequest);
 

@@ -283,4 +283,25 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("Sent post comment notification to user {} from user {} for post {} in hub {}", 
                 postAuthorId, commentedByUserId, postId, fanHubId);
     }
+
+    @Override
+    @Transactional
+    public void sendFanHubStrikeNotification(Long ownerUserId, Long hubId, String hubName, int strikeCount, String reason) {
+        User owner = userRepository.findById(ownerUserId)
+                .orElseThrow(() -> new NotFoundException("FanHub owner not found"));
+
+        FanHub hub = fanHubRepository.findById(hubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        String type = "FAN_HUB_STRIKE";
+        String title = "FanHub Strike Alert! ⚠️";
+        String message = String.format("Your FanHub \"%s\" has received a strike. Total strikes: %d. Reason: %s",
+                hubName, strikeCount, reason != null ? reason : "Violation of community guidelines");
+
+        // Create and persist notification
+        createNotification(owner, type, title, message, hub, null, null);
+
+        log.info("Sent FanHub strike notification to owner {} for hub {}. Total strikes: {}", 
+                ownerUserId, hubId, strikeCount);
+    }
 }

@@ -13,12 +13,14 @@ import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+    @Query("select p from Post p where p.hub.id = :fanHubId and p.status = :status and p.hub.isActive = true")
     Page<Post> findByHubIdAndStatus(Long fanHubId, String status, Pageable pageable);
 
     @Query("select distinct p from Post p " +
             "left join PostHashtag ph on p.id = ph.post.id " +
             "where p.hub.id = :fanHubId " +
             "and p.status = :status " +
+            "and p.hub.isActive = true " +
             "and (:hashtag is null or ph.hashtag = :hashtag)")
     Page<Post> findByHubIdAndStatusAndHashtag(
             Long fanHubId,
@@ -30,6 +32,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "left join PostHashtag ph on p.id = ph.post.id " +
             "where p.hub.id = :fanHubId " +
             "and p.status = :status " +
+            "and p.hub.isActive = true " +
             "and (:hashtag is null or ph.hashtag = :hashtag) " +
             "and (:authorUsername is null or p.user.username = :authorUsername)")
     Page<Post> findByHubIdAndStatusAndHashtagAndAuthor(
@@ -43,6 +46,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("select p from Post p " +
             "where p.hub.id in :hubIds " +
             "and p.status = 'APPROVED' " +
+            "and p.hub.isActive = true " +
             "order by p.createdAt desc")
     Page<Post> findByHubIdInAndStatusApproved(List<Long> hubIds, Pageable pageable);
 
@@ -50,6 +54,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("select distinct p from Post p " +
             "join FanHubCategory fc on p.hub.id = fc.hub.id " +
             "where p.hub.isPrivate = false " +
+            "and p.hub.isActive = true " +
             "and p.hub.id not in :excludedHubIds " +
             "and p.status = 'APPROVED' " +
             "and fc.categoryName in :categories " +
@@ -62,6 +67,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     //Find any public posts (fallback for suggestions)
     @Query("select p from Post p " +
             "where p.hub.isPrivate = false " +
+            "and p.hub.isActive = true " +
             "and p.hub.id not in :excludedHubIds " +
             "and p.status = 'APPROVED' " +
             "order by p.createdAt desc")
@@ -74,6 +80,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "left join PostLike pl on p.id = pl.post.id " +
             "left join PostComment pc on p.id = pc.post.id " +
             "where p.hub.isPrivate = false " +
+            "and p.hub.isActive = true " +
             "and p.status = 'APPROVED' " +
             "group by p.id " +
             "order by count(distinct pl.id) + count(distinct pc.id) desc, p.createdAt desc")
@@ -82,7 +89,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
      //Get categories from user's followed hubs
     @Query("select distinct fc.categoryName from FanHubCategory fc " +
-            "where fc.hub.id in :hubIds")
+            "where fc.hub.id in :hubIds and fc.hub.isActive = true")
     List<String> findCategoriesByHubIds(List<Long> hubIds);
 
     // Find trending posts by FanHub: APPROVED posts ordered by likes + comments count desc
@@ -91,6 +98,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "left join PostComment pc on p.id = pc.post.id " +
             "where p.hub.id = :fanHubId " +
             "and p.status = 'APPROVED' " +
+            "and p.hub.isActive = true " +
             "group by p.id " +
             "order by count(distinct pl.id) + count(distinct pc.id) desc, p.createdAt desc")
     Page<Post> findTrendingPostsByFanHub(Long fanHubId, Pageable pageable);
@@ -100,6 +108,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "left join PostLike pl on p.id = pl.post.id " +
             "left join PostComment pc on p.id = pc.post.id " +
             "where p.hub.isPrivate = false " +
+            "and p.hub.isActive = true " +
             "and p.status = 'APPROVED' " +
             "and p.createdAt >= :oneDayAgo " +
             "group by p.id " +
@@ -109,6 +118,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // Find posts by username with pagination
     @Query("select p from Post p " +
             "where p.user.username = :username " +
+            "and p.hub.isActive = true " +
             "order by p.createdAt desc")
     Page<Post> findByUsername(String username, Pageable pageable);
 
@@ -116,6 +126,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("select p from Post p " +
             "where p.hub.id = :fanHubId " +
             "and p.status != 'DELETED' " +
+            "and p.hub.isActive = true " +
             "order by p.createdAt desc")
     Page<Post> findByHubIdAndStatusNotDeleted(Long fanHubId, Pageable pageable);
 
@@ -124,6 +135,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "where p.hub.id = :fanHubId " +
             "and p.aiValidationStatus = :aiStatus " +
             "and p.status = 'PENDING' " +
+            "and p.hub.isActive = true " +
             "order by p.createdAt desc")
     List<Post> findByHubIdAndAiValidationStatusAndPending(Long fanHubId, String aiStatus);
 
@@ -131,16 +143,21 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("select p from Post p " +
             "where p.hub.id = :fanHubId " +
             "and p.status = :status " +
+            "and p.hub.isActive = true " +
             "and (p.isAnnouncement = true or p.isSchedule = true)")
     Page<Post> findByHubIdAndStatusAndAnnouncementOrSchedule(
             Long fanHubId,
             String status,
             Pageable pageable);
 
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.hub.id = :fanHubId AND p.status != 'DELETED' AND p.status != 'REJECTED' AND p.hub.isActive = true")
+    long countPostsByHubId(@Param("fanHubId") Long fanHubId);
+
     // Search posts by title or content containing keyword
     // Note: Using CAST on content because it's a @Lob field and cannot use LIKE directly
     @Query("SELECT p FROM Post p " +
             "WHERE p.status = 'APPROVED' " +
+            "AND p.hub.isActive = true " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(CAST(p.content AS STRING)) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Post> searchPosts(@Param("keyword") String keyword, Pageable pageable);

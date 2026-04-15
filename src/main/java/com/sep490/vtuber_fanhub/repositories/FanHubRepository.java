@@ -12,7 +12,9 @@ import java.util.Optional;
 
 public interface FanHubRepository extends JpaRepository<FanHub, Long> {
 
-    Optional<FanHub> findByOwnerUserId(Long ownerUserId);
+    Optional<FanHub> findByOwnerUserIdAndIsActive(Long ownerUserId, Boolean isActive);
+
+    Optional<FanHub> findByIdAndIsActive(Long id, Boolean isActive);
 
     Optional<FanHub> findBySubdomainAndIsActive(String subdomain, Boolean isActive);
 

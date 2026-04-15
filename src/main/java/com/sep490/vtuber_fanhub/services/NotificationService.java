@@ -45,4 +45,6 @@ public interface NotificationService {
     void sendPostCommentNotification(Long postAuthorId, Long commentedByUserId, String commentedByUsername,
                                       String commentedByAvatarUrl, Long postId, String postTitle,
                                       Long fanHubId, String fanHubName);
+
+    void sendFanHubStrikeNotification(Long ownerUserId, Long hubId, String hubName, int strikeCount, String reason);
 }

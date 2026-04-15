@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreateFanHubRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateFanHubRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubAnalyticsResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubResponse;
 import com.sep490.vtuber_fanhub.services.FanHubService;
 import jakarta.validation.Valid;
@@ -118,6 +119,28 @@ public class FanHubController {
                 .success(true)
                 .message("Success")
                 .data(fanHubService.getMyHubAsOwner())
+                .build()
+        );
+    }
+
+    @GetMapping("/analytics/{fanHubId}")
+    @PreAuthorize("hasRole('VTUBER')")
+    public ResponseEntity<?> getFanHubAnalytics(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<FanHubAnalyticsResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.getFanHubAnalytics(fanHubId))
+                .build()
+        );
+    }
+
+    @DeleteMapping("/delete/{fanHubId}")
+    @PreAuthorize("hasRole('VTUBER')")
+    public ResponseEntity<?> deleteFanHub(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.deleteFanHub(fanHubId))
                 .build()
         );
     }

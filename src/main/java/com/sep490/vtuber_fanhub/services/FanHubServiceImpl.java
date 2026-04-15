@@ -15,6 +15,9 @@ import com.sep490.vtuber_fanhub.repositories.FanHubCategoryRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubAnalyticsResponse;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
+import com.sep490.vtuber_fanhub.repositories.PostRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -54,6 +57,8 @@ public class FanHubServiceImpl implements FanHubService {
 
     private final FanHubBackgroundRepository fanHubBackgroundRepository;
 
+    private final PostRepository postRepository;
+
     @Override
     @Transactional
     public String createFanHub(CreateFanHubRequest request) {
@@ -91,9 +96,9 @@ public class FanHubServiceImpl implements FanHubService {
     public String updateFanHub(Long fanHubId, UpdateFanHubRequest request) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        Optional<FanHub> fanHubOptional = fanHubRepository.findById(fanHubId);
+        Optional<FanHub> fanHubOptional = fanHubRepository.findByIdAndIsActive(fanHubId, true);
         if (fanHubOptional.isEmpty()) {
-            throw new NotFoundException("FanHub not found");
+            throw new NotFoundException("FanHub not found or is inactive");
         }
 
         FanHub fanHub = fanHubOptional.get();
@@ -152,9 +157,9 @@ public class FanHubServiceImpl implements FanHubService {
     public String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, List<MultipartFile> highlight, MultipartFile avatar) throws IOException {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        Optional<FanHub> fanHub = fanHubRepository.findByIdAndIsActive(fanHubId, true);
         if (fanHub.isEmpty()) {
-            throw new NotFoundException("FanHub not found");
+            throw new NotFoundException("FanHub not found or is inactive");
         }
 
         if (!fanHub.get().getOwnerUser().getId().equals(currentUser.getId())) {
@@ -259,7 +264,7 @@ public class FanHubServiceImpl implements FanHubService {
                 .toList());
 
         if ("VTUBER".equals(currentUser.getRole())) {
-            fanHubRepository.findByOwnerUserId(currentUser.getId()).ifPresent(ownedHub -> {
+            fanHubRepository.findByOwnerUserIdAndIsActive(currentUser.getId(), true).ifPresent(ownedHub -> {
                 if (fanHubs.stream().noneMatch(hub -> hub.getId().equals(ownedHub.getId()))) {
                     fanHubs.add(ownedHub);
                 }
@@ -294,8 +299,8 @@ public class FanHubServiceImpl implements FanHubService {
             throw new CustomAuthenticationException("Only VTUBER users can access this endpoint");
         }
 
-        FanHub fanHub = fanHubRepository.findByOwnerUserId(currentUser.getId())
-                .orElseThrow(() -> new NotFoundException("FanHub not found for this owner"));
+        FanHub fanHub = fanHubRepository.findByOwnerUserIdAndIsActive(currentUser.getId(), true)
+                .orElseThrow(() -> new NotFoundException("FanHub not found for this owner or is inactive"));
 
         return mapToFanHubResponseWithMemberCount(fanHub);
     }
@@ -343,6 +348,67 @@ public class FanHubServiceImpl implements FanHubService {
         response.setMemberCount(memberCount);
 
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FanHubAnalyticsResponse getFanHubAnalytics(Long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        FanHub fanHub = fanHubRepository.findByIdAndIsActive(fanHubId, true)
+                .orElseThrow(() -> new NotFoundException("FanHub not found or is inactive"));
+
+        if (!fanHub.getOwnerUser().getId().equals(currentUser.getId())) {
+            throw new CustomAuthenticationException("Access denied. Only the owner can view analytics for this FanHub.");
+        }
+
+        long totalJoinedMembers = fanHubMemberRepository.countJoinedMembers(fanHubId);
+        long totalPosts = postRepository.countPostsByHubId(fanHubId);
+        
+        List<FanHubMember> topMembersRaw = fanHubMemberRepository.findTop3ByHubIdOrderByFanHubScoreDesc(fanHubId, PageRequest.of(0, 3));
+        List<FanHubMemberResponse> topMembers = topMembersRaw.stream()
+                .map(this::mapToFanHubMemberResponse)
+                .collect(Collectors.toList());
+
+        return FanHubAnalyticsResponse.builder()
+                .totalJoinedMembers(totalJoinedMembers)
+                .totalPosts(totalPosts)
+                .topMembers(topMembers)
+                .build();
+    }
+
+    private FanHubMemberResponse mapToFanHubMemberResponse(FanHubMember member) {
+        FanHubMemberResponse response = new FanHubMemberResponse();
+        response.setId(member.getId());
+        response.setHubId(member.getHub().getId());
+        response.setHubName(member.getHub().getHubName());
+        response.setUserId(member.getUser().getId());
+        response.setUsername(member.getUser().getUsername());
+        response.setDisplayName(member.getUser().getDisplayName());
+        response.setRoleInHub(member.getRoleInHub());
+        response.setStatus(member.getStatus());
+        response.setFanHubScore(member.getFanHubScore());
+        response.setJoinedAt(member.getJoinedAt());
+        response.setTitle(member.getTitle());
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public String deleteFanHub(Long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        FanHub fanHub = fanHubRepository.findByIdAndIsActive(fanHubId, true)
+                .orElseThrow(() -> new NotFoundException("FanHub not found or already inactive"));
+
+        if (!fanHub.getOwnerUser().getId().equals(currentUser.getId())) {
+            throw new CustomAuthenticationException("Access denied. Only the owner can delete this FanHub.");
+        }
+
+        fanHub.setIsActive(false);
+        fanHubRepository.save(fanHub);
+
+        return "Deleted FanHub successfully";
     }
 
     @Override

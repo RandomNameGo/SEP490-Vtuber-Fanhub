@@ -28,5 +28,7 @@ public interface SseNotificationService {
                                       String commentedByAvatarUrl, Long postId, String postTitle,
                                       Long fanHubId, String fanHubName);
 
+    void sendFanHubStrikeNotification(Long ownerUserId, Long hubId, String hubName, int strikeCount, String reason);
+
     int getActiveEmitterCount();
 }
