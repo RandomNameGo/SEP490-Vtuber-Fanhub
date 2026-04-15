@@ -98,6 +98,8 @@ public class PostServiceImpl implements PostService {
 
     private final UserDailyMissionService userDailyMissionService;
 
+    private final UserBookmarkRepository userBookmarkRepository;
+
     @Override
     @Transactional
     public String createPost(CreatePostRequest request, List<MultipartFile> images, MultipartFile video) {
@@ -1490,6 +1492,24 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<PostWithMediaResponse> getBookmarkPosts(int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+
+        Page<UserBookmark> pagedBookmarks = userBookmarkRepository.findByUserId(currentUser.getId(), paging);
+
+        if (pagedBookmarks.isEmpty()) {
+            return List.of();
+        }
+
+        return pagedBookmarks.getContent().stream()
+                .map(bookmark -> mapToPostWithMediaResponse(bookmark.getPost()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
@@ -1634,12 +1654,31 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public PostResponse getTrendingPublicPost() {
+        // Try to get trending post from last 24 hours
         Instant oneDayAgo = Instant.now().minus(1, ChronoUnit.DAYS);
+        Optional<Post> post = postRepository.findTopTrendingPublicPostLast24Hours(oneDayAgo);
 
-        Post post = postRepository.findTopTrendingPublicPostLast24Hours(oneDayAgo)
-                .orElseThrow(() -> new NotFoundException("No trending posts found in the last 24 hours"));
+        // Fallback 1: Get top trending post ever (based on interactions)
+        if (post.isEmpty()) {
+            Page<Post> trendingPosts = postRepository.findPublicPostsOrderByInteractions(PageRequest.of(0, 1));
+            if (!trendingPosts.isEmpty()) {
+                post = Optional.of(trendingPosts.getContent().get(0));
+            }
+        }
 
-        return mapToPostResponse(post);
+        // Fallback 2: Get any most recent public approved post
+        if (post.isEmpty()) {
+            Page<Post> recentPosts = postRepository.findPublicPosts(Collections.emptyList(), PageRequest.of(0, 1));
+            if (!recentPosts.isEmpty()) {
+                post = Optional.of(recentPosts.getContent().get(0));
+            }
+        }
+
+        if (post.isEmpty()) {
+            throw new NotFoundException("No public posts available");
+        }
+
+        return mapToPostResponse(post.get());
     }
 
     @Override

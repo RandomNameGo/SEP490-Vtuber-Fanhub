@@ -55,6 +55,8 @@ public interface PostService {
 
     String deletePost(Long postId);
 
+    List<PostWithMediaResponse> getBookmarkPosts(int pageNo, int pageSize, String sortBy);
+
     List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy);
 
     List<PostWithMediaResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);

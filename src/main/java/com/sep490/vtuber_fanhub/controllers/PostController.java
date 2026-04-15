@@ -275,7 +275,7 @@ public class PostController {
     }
 
     @PutMapping("delete/{postId}")
-    @PreAuthorize("hasAnyRole('USER', 'VTUBER', 'MODERATOR')")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> deletePost(@PathVariable long postId) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
@@ -292,6 +292,20 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(userBookmarkService.createUserBookmark(postId))
+                .build()
+        );
+    }
+
+    @GetMapping("/bookmark")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getBookmarkPosts(@RequestParam(defaultValue = "0") int pageNo,
+                                               @RequestParam(defaultValue = "10") int pageSize,
+                                               @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getBookmarkPosts(pageNo, pageSize, sortBy))
                 .build()
         );
     }
