@@ -26,7 +26,7 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     @Async("validationExecutor")
     public void validatePost(Post post) {
         try {
-            // validate text first
+            System.out.println("Post validation async fired");
             String textValidation = contentValidationService.validateText(post.getContent());
             String[] text_validation_split = textValidation.split("@");
             if(text_validation_split.length<2){
@@ -110,6 +110,7 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     @Override
     public void finalizeValidation(Post post){
         try{
+            System.out.println("Finalizing validation: ");
             List<PostMedia> postMediaList = postMediaRepository.findByPostId(post.getId());
             boolean mediaSafe = true;
             for(PostMedia postMedia : postMediaList) {

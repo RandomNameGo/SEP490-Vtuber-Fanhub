@@ -5,6 +5,7 @@ import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.repositories.PostRepository;
 import com.sep490.vtuber_fanhub.services.PostValidationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -17,7 +18,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class PostValidationListener {
 
-    private final PostValidationService postValidationServiceImplSync;
+    private final PostValidationService postValidationServiceImplAsync;
     private final PostRepository postRepository;
 
     // after committing the post completely do we fire the ai validation job
@@ -28,7 +29,7 @@ public class PostValidationListener {
             Post post = event.getPost();
             post.setAiValidationLastSentAt(Instant.now());
             postRepository.save(post);
-            postValidationServiceImplSync.validatePost(event.getPost());
+            postValidationServiceImplAsync.validatePost(event.getPost());
         }
         catch(Exception e){
             throw new RuntimeException("Error while firing post validation job");

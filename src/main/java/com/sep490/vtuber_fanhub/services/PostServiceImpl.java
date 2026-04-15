@@ -87,6 +87,8 @@ public class PostServiceImpl implements PostService {
 
     private final PostCommentRepository postCommentRepository;
 
+    private final PostValidationService postValidationServiceImplAsync;
+
     private final JWTService jwtService;
 
     private static final double FOLLOWED_RATIO = 0.7;
@@ -729,10 +731,6 @@ public class PostServiceImpl implements PostService {
         return "Post rejected successfully";
     }
 
-    @Override
-    public Boolean AIValidate(Long postId) {
-        return null;
-    }
 
     @Override
     @Transactional
@@ -786,10 +784,9 @@ public class PostServiceImpl implements PostService {
             }
         }
         post.setAiValidationLastSentAt(Instant.now());
-        postRepository.save(post);
-        
-        // Trigger validation asynchronously (post already exists, so media is committed)
-        eventPublisher.publishEvent(new PostCreatedEvent(post));
+        post = postRepository.save(post);
+
+        postValidationServiceImplAsync.validatePost(post);
 
         return "Job sent successfully!";
     }

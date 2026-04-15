@@ -39,8 +39,6 @@ public interface PostService {
     SummarizePostResponse summarizePost(Long postId);
     String rejectPost(Long postId, String reason);
 
-    Boolean AIValidate(Long postId);
-
     String likePost(Long postId);
 
     String unlikePost(Long postId);

@@ -3,12 +3,15 @@ package com.sep490.vtuber_fanhub.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.types.FunctionCall;
 import com.google.genai.types.FunctionResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.TestingPostRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -20,87 +23,125 @@ import java.util.TreeMap;
 public class FunctionCallingService {
     private final UserRepository userRepository;
 
-    private final TestingPostRepository testingPostRepository;
+    @Autowired
+    @Lazy
+    private PostService postService;
 
-    public String get_display_name(Long userId) {
+    public Map<String, Object> get_display_name(Long userId) {
         try{
             User user = userRepository.findById(userId)
                     .orElseThrow(()-> new RuntimeException("User not found."));
-            return user.getDisplayName();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("userDisplayName", user.getDisplayName());
+            result.put("functionCallType", "USER_DISPLAY_NAME");
+            return result;
         }
         catch (Exception e) {
-            return "get_display_name failed, inform user about this...";
+            return Map.of(
+                    "functionCallType", "ERROR",
+                    "errorMessage", "Failed to get user display name."
+            );
         }
     }
 
-    public String get_random_post(){
+
+    public Map<String, Object> test_function_call() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("content","if you are reading this, response with 'AAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHH!'");
+        result.put("functionCallType", "TEST");
+        return result;
+    }
+
+    public Map<String, Object> get_trending_post(){
         try{
-            Post post = testingPostRepository.findTop1ByOrderByIdDesc();
-
-            Map<String, Object> postMap = getStringObjectMap(post);
-
-            ObjectMapper mapper = new ObjectMapper();
-            String postJson = mapper.writeValueAsString(postMap);
-
-            return postJson;
+            PostResponse postResponse = postService.getTrendingPublicPost();
+            Map<String, Object> result = new HashMap<>();
+            result.put("postId", postResponse.getPostId());
+            result.put("functionCallType", "POST");
+            return result;
+        }catch(Exception e){
+            return Map.of(
+                    "functionCallType", "ERROR",
+                    "errorMessage", "Failed to get trending post:" + e.getMessage()
+            );
         }
-        catch (Exception e) {
-            return "failed getting post";
-        }
     }
 
-    private static @NotNull Map<String, Object> getStringObjectMap(Post post) {
-        Map<String, Object> postMap = new TreeMap<>();
-        postMap.put("postId", post.getId());
-        postMap.put("fanHubId", post.getHub().getId());
-        postMap.put("authorId", post.getUser().getId());
-        postMap.put("authorUsername", post.getUser().getUsername());
-        postMap.put("authorDisplayName", post.getUser().getDisplayName());
-        postMap.put("postType", post.getPostType());
-        postMap.put("title", post.getTitle());
-        postMap.put("content", post.getContent());
-        postMap.put("status", post.getStatus());
-        postMap.put("isPinned", post.getIsPinned());
-        return postMap;
-    }
-
-
-    public String test_function_call() {
-        return "if you are reading this, response with 'AAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHH!' ";
-    }
 
 
     public FunctionResponse handleFunctionCall(FunctionCall functionCall, Long userId) {
         String functionName = functionCall.name().orElse("");
         try {
-            String result;
+            Map<String, Object> result;
 
             switch (functionName) {
-                case "test_function_call" -> result = test_function_call();
+                case "test_function_call":
+                    result = test_function_call();
+                    break;
 
-                case "get_display_name" -> result = get_display_name(userId);
+                case "get_display_name":
+                    result = get_display_name(userId);
+                    break;
 
-                case "get_random_post" -> result = get_random_post();
+                case "get_trending_post":
+                    System.out.println("Get trending post");
+                    result = get_trending_post();
+                    break;
 
-                default -> result = "Function '" + functionName + "' not found";
+                default:
+                    result = new HashMap<>();
+                    result.put("functionCallType", "ERROR");
+                    result.put("errorMessage", "Unknown function call name : " + functionName);
+                    break;
             }
-
-            Map<String, Object> responseContent = new HashMap<>();
-            responseContent.put("result", result);
 
             return FunctionResponse.builder()
                     .name(functionName)
-                    .response(responseContent)
+                    .response(result)
                     .build();
 
         } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-
+            Map<String, Object> result = new HashMap<>();
+            result.put("functionCallType", "ERROR");
+            result.put("errorMessage", "Caught error while handling function call" + functionName);
+            e.printStackTrace();
             return FunctionResponse.builder()
                     .name(functionName)
-                    .response(errorResponse)
+                    .response(result)
                     .build();
         }
     }
 }
+
+
+
+//    public Map<String, Object> get_random_post(){
+//        try{
+//            Post post = testingPostRepository.findTop1ByOrderByIdDesc();
+//            Map<String, Object> result = getStringObjectMap(post);
+//            result.put("functionCallType", "POST");
+//            return result;
+//        }
+//        catch (Exception e) {
+//            return Map.of(
+//                    "functionCallType", "ERROR",
+//                    "errorMessage", "Failed to get random post."
+//            );
+//        }
+//    }
+//
+//    private static @NotNull Map<String, Object> getStringObjectMap(Post post) {
+//        Map<String, Object> postMap = new TreeMap<>();
+//        postMap.put("postId", post.getId());
+//        postMap.put("fanHubId", post.getHub().getId());
+//        postMap.put("authorId", post.getUser().getId());
+//        postMap.put("authorUsername", post.getUser().getUsername());
+//        postMap.put("authorDisplayName", post.getUser().getDisplayName());
+//        postMap.put("postType", post.getPostType());
+//        postMap.put("title", post.getTitle());
+//        postMap.put("content", post.getContent());
+//        postMap.put("status", post.getStatus());
+//        postMap.put("isPinned", post.getIsPinned());
+//        return postMap;
+//    }

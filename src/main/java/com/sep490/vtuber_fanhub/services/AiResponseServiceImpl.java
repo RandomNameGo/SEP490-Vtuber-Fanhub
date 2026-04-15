@@ -3,13 +3,17 @@ package com.sep490.vtuber_fanhub.services;
 import com.sep490.vtuber_fanhub.dto.responses.AIMessageResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MessageResponse;
 import com.sep490.vtuber_fanhub.models.ChatMessage;
+import com.sep490.vtuber_fanhub.models.ChatMessageMetadata;
 import com.sep490.vtuber_fanhub.models.ChatSession;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
+import com.sep490.vtuber_fanhub.models.Enum.MetadataType;
 import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.repositories.ChatMessageMetadataRepository;
 import com.sep490.vtuber_fanhub.repositories.ChatMessageRepository;
 import com.sep490.vtuber_fanhub.repositories.ChatSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -23,9 +27,10 @@ public class AiResponseServiceImpl implements AiResponseService {
     private final ChatSessionRepository chatSessionRepository;
     private final GeminiAIService geminiAIService;
     private final ChatPersonalityType AI_CHATBOT_RESPONSE_PERSONALITY_TYPE = ChatPersonalityType.MatikanetannHauser;
-
+    private final ChatMessageMetadataRepository chatMessageMetadataRepository;
 
     @Override
+    @Transactional
     public MessageResponse generateAndSendReply(User sender, String userMessageContent) {
         try{
             ChatSession chatSession;
@@ -46,12 +51,37 @@ public class AiResponseServiceImpl implements AiResponseService {
             chatMessage.setSession(chatSession);
             chatMessage = chatMessageRepository.save(chatMessage);
 
-            return MessageResponse.builder()
+            if(aiResponse.isHasMetadata()){
+                ChatMessageMetadata chatMessageMetadata = new ChatMessageMetadata();
+                chatMessageMetadata.setMessage(chatMessage);
+                chatMessageMetadata.setMetadataType(MetadataType.POST);
+                chatMessageMetadata.setTargetId(aiResponse.getMetadataTargetId());
+                chatMessageMetadataRepository.save(chatMessageMetadata);
+
+                chatMessage.setHasMetadata(true);
+                chatMessage = chatMessageRepository.save(chatMessage);
+            }
+
+            MessageResponse.MessageResponseBuilder responseBuilder = MessageResponse.builder();
+            responseBuilder
                     .id(chatMessage.getId())
                     .createdAt(chatMessage.getCreatedAt())
                     .content(chatMessage.getContent())
-                    .senderRole("AI")
-                    .build();
+                    .senderRole("AI");
+
+            if(aiResponse.getThought()!=null){
+                responseBuilder.thought(aiResponse.getThought());
+            }
+
+            if(aiResponse.isHasMetadata()){
+                responseBuilder
+                        .hasMetadata(true)
+                        .metadataTargetId(aiResponse.getMetadataTargetId())
+                        .metadataType(aiResponse.getMetadataType());
+            }else responseBuilder.hasMetadata(false);
+
+            return responseBuilder.build();
+            
         }catch(Exception e){
             e.printStackTrace();
             throw new RuntimeException("Error while generating and sending reply to user");

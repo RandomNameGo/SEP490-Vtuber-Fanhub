@@ -46,7 +46,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/comments/{parentCommentId}/replies").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/fan-hub/subdomain/{subdomain}").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/fan-hub/*").permitAll()
-                        .requestMatchers("vhub/api/v1/search/**").permitAll()
+                        .requestMatchers("/vhub/api/v1/search/**").permitAll()
+                        .requestMatchers("/vhub/api/v1/webhooks/sightengine/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).
