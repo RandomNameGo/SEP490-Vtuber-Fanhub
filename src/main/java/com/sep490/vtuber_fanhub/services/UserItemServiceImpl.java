@@ -85,6 +85,18 @@ public class UserItemServiceImpl implements UserItemService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserItemResponse> getMyFrames(HttpServletRequest httpRequest) {
+        User user = authService.getUserFromToken(httpRequest);
+
+        List<UserItem> userFrames = userItemRepository.findByUserAndItem_Category(user, "FRAME");
+
+        return userFrames.stream()
+                .map(this::convertToUserItemResponse)
+                .toList();
+    }
+
     private PurchaseResponse convertToResponse(UserItem userItem, Long price) {
         PurchaseResponse response = new PurchaseResponse();
         response.setUserItemId(userItem.getId());

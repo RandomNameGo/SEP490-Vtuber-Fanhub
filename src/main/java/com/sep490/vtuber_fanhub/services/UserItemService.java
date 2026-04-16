@@ -12,4 +12,6 @@ public interface UserItemService {
     PurchaseResponse purchaseItem(PurchaseItemRequest request, HttpServletRequest httpRequest);
 
     List<UserItemResponse> getItemsByCurrentUser(HttpServletRequest httpRequest, int pageNo, int pageSize, String sortBy);
+
+    List<UserItemResponse> getMyFrames(HttpServletRequest httpRequest);
 }

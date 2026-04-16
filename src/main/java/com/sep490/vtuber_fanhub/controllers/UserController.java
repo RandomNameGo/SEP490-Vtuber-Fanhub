@@ -69,11 +69,11 @@ public class UserController {
 
     @PostMapping("/upload-avatar-frame")
     public ResponseEntity<?> uploadAvatarFrame(@RequestParam(value = "avatar", required = false) MultipartFile avatarFile,
-                                               @RequestParam(value = "frame", required = false) MultipartFile frameFile) throws IOException {
+                                               @RequestParam(value = "frame", required = false) String frameUrl) throws IOException {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
-                .data(userService.uploadAvatarFrame(avatarFile, frameFile))
+                .data(userService.uploadAvatarFrame(avatarFile, frameUrl))
                 .build()
         );
     }
@@ -173,6 +173,16 @@ public class UserController {
                 .success(true)
                 .message("Success")
                 .data(userService.getMyDailyMission())
+                .build()
+        );
+    }
+
+    @GetMapping("/frames")
+    public ResponseEntity<?> getAllFrames(HttpServletRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<List<UserItemResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(userItemService.getMyFrames(request))
                 .build()
         );
     }

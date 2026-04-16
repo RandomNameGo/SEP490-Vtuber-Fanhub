@@ -16,4 +16,6 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
 
     @Query("SELECT ui.item FROM UserItem ui WHERE ui.user = :user AND ui.item IN :items")
     List<Item> findOwnedItemsByUserAndItems(@Param("user") User user, @Param("items") List<Item> items);
+
+    List<UserItem> findByUserAndItem_Category(User user, String category);
 }

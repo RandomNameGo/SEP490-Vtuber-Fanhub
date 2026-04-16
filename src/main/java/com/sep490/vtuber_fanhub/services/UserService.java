@@ -18,7 +18,7 @@ public interface UserService {
 
     String updateUser(UpdateUserRequest updateUserRequest);
 
-    String uploadAvatarFrame(MultipartFile avatarFile, MultipartFile frameFile) throws IOException;
+    String uploadAvatarFrame(MultipartFile avatarFile, String frameUrl) throws IOException;
 
     UserResponse getUserDetailWithBadge(Long userId);
 

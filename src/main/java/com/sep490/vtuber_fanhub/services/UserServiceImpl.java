@@ -95,17 +95,18 @@ public class UserServiceImpl implements UserService{
 
     @Override
     @Transactional
-    public String uploadAvatarFrame(MultipartFile avatarFile, MultipartFile frameFile) throws IOException {
+    public String uploadAvatarFrame(MultipartFile avatarFile, String frameUrl) throws IOException {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         if(avatarFile != null && !avatarFile.isEmpty()){
             String avatarUrl = cloudinaryService.uploadFile(avatarFile);
             currentUser.setAvatarUrl(avatarUrl);
         }
-        if(frameFile != null && !frameFile.isEmpty()){
-            String frameUrl = cloudinaryService.uploadFile(frameFile);
+        if(frameUrl != null && !frameUrl.isEmpty()){
             currentUser.setFrameUrl(frameUrl);
         }
+
+        userRepository.save(currentUser);
 
         return "Uploaded successfully";
     }
