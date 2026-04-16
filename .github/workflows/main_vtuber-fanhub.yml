@@ -30,6 +30,7 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           SIGHTENGINE_USER: ${{ secrets.SIGHTENGINE_USER }}
           SIGHTENGINE_SECRET: ${{ secrets.SIGHTENGINE_SECRET}}
+          APP_HOST: ${{ secrets.APP_HOST}}
         run: mvn clean install
 
       - name: Rename executable JAR to app.jar
