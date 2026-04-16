@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
 import com.sep490.vtuber_fanhub.dto.responses.BanMemberResponse;
+import com.sep490.vtuber_fanhub.dto.responses.MemberWithBansResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.BanMember;
 import com.sep490.vtuber_fanhub.models.FanHub;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -203,5 +205,90 @@ public class BanMemberServiceImpl implements BanMemberService {
             banMemberRepository.saveAll(expiredBans);
             log.info("Successfully deactivated {} expired bans", expiredBans.size());
         }
+    }
+
+    @Override
+    public List<MemberWithBansResponse> getAllMembersWithBans(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
+        if (fanHub.isEmpty()) {
+            throw new NotFoundException("FanHub not found");
+        }
+
+        // Check if user is VTUBER and owns this FanHub
+        boolean isOwner = "VTUBER".equals(currentUser.getRole()) &&
+                fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Page<BanMember> pagedBans = banMemberRepository.findByHubId(fanHubId, paging);
+
+        if (pagedBans.isEmpty()) {
+            return List.of();
+        }
+
+        // Group bans by user
+        Map<User, List<BanMember>> userToBansMap = pagedBans.getContent().stream()
+                .collect(Collectors.groupingBy(BanMember::getUser));
+
+        return userToBansMap.entrySet().stream()
+                .map(entry -> {
+                    User user = entry.getKey();
+                    List<BanMember> bans = entry.getValue();
+                    Optional<FanHubMember> fanHubMember = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, user.getId());
+                    return mapToMemberWithBansResponse(user, fanHubMember, fanHub.get(), bans);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private MemberWithBansResponse mapToMemberWithBansResponse(User user, Optional<FanHubMember> fanHubMemberOpt, FanHub fanHub, List<BanMember> bans) {
+        MemberWithBansResponse response = new MemberWithBansResponse();
+
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setDisplayName(user.getDisplayName());
+        response.setAvatarUrl(user.getAvatarUrl());
+
+        if (fanHubMemberOpt.isPresent()) {
+            FanHubMember fanHubMember = fanHubMemberOpt.get();
+            response.setMemberId(fanHubMember.getId());
+            response.setRoleInHub(fanHubMember.getRoleInHub());
+            response.setMemberStatus(fanHubMember.getStatus());
+            response.setJoinedAt(fanHubMember.getJoinedAt());
+        }
+
+        response.setFanHubId(fanHub.getId());
+        response.setFanHubName(fanHub.getHubName());
+        response.setFanHubSubdomain(fanHub.getSubdomain());
+
+        List<MemberWithBansResponse.SimpleMemberBanResponse> banResponses = bans.stream()
+                .map(this::mapToSimpleMemberBanResponse)
+                .collect(Collectors.toList());
+        response.setBans(banResponses);
+
+        return response;
+    }
+
+    private MemberWithBansResponse.SimpleMemberBanResponse mapToSimpleMemberBanResponse(BanMember banMember) {
+        MemberWithBansResponse.SimpleMemberBanResponse response = new MemberWithBansResponse.SimpleMemberBanResponse();
+        response.setBanId(banMember.getId());
+        response.setBannedByUserId(banMember.getBannedBy().getId());
+        response.setBannedByUsername(banMember.getBannedBy().getUsername());
+        response.setBannedByDisplayName(banMember.getBannedBy().getDisplayName());
+        response.setReason(banMember.getReason());
+        response.setBanType(banMember.getBanType());
+        response.setBannedUntil(banMember.getBannedUntil());
+        response.setIsActive(banMember.getIsActive());
+        response.setCreatedAt(banMember.getCreatedAt());
+        return response;
     }
 }

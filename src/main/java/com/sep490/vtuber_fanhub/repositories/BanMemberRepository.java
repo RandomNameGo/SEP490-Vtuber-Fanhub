@@ -26,4 +26,7 @@ public interface BanMemberRepository extends JpaRepository<BanMember, Long> {
 
     @Query("SELECT b FROM BanMember b WHERE b.isActive = true AND b.bannedUntil IS NOT NULL AND b.bannedUntil < :now")
     List<BanMember> findExpiredBans(@Param("now") Instant now);
+
+    @Query("SELECT b FROM BanMember b WHERE b.hub.id = :hubId")
+    Page<BanMember> findByHubId(@Param("hubId") Long hubId, Pageable pageable);
 }

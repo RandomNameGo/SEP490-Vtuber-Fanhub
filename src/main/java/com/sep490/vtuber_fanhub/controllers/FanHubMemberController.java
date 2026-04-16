@@ -9,6 +9,7 @@ import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberWithReportsResponse;
+import com.sep490.vtuber_fanhub.dto.responses.MemberWithBansResponse;
 import com.sep490.vtuber_fanhub.services.BanMemberService;
 import com.sep490.vtuber_fanhub.services.FanHubMemberService;
 import com.sep490.vtuber_fanhub.services.ReportMemberService;
@@ -287,6 +288,22 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(reportMemberService.getAllMembersWithReports(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
+    @GetMapping("/bans/members-with-bans/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getAllMembersWithBans(
+            @PathVariable Long fanHubId,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<MemberWithBansResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(banMemberService.getAllMembersWithBans(fanHubId, pageNo, pageSize, sortBy))
                 .build()
         );
     }
