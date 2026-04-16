@@ -14,4 +14,6 @@ public interface BanMemberService {
     List<BanMemberResponse> getActiveBansByHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
     String revokeBan(Long banId);
+
+    void deactivateExpiredBans();
 }

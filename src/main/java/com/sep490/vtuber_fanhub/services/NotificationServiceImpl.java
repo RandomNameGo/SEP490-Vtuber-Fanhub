@@ -52,39 +52,58 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final AuthService authService;
 
-    /**
-     * Get current user from JWT token in request
-     */
+
     private User getCurrentUser(HttpServletRequest request) {
         return authService.getUserFromToken(request);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Notification> getUserNotifications(HttpServletRequest request, int pageNo, int pageSize, String sortBy) {
+    public List<NotificationEventResponse> getUserNotifications(HttpServletRequest request, int pageNo, int pageSize, String sortBy) {
         User user = getCurrentUser(request);
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
         Page<Notification> notificationPage = notificationRepository.findByUser(user, paging);
 
         if (notificationPage.hasContent()) {
-            return notificationPage.getContent();
+            return notificationPage.getContent().stream()
+                    .map(this::convertToEventResponse)
+                    .toList();
         }
         return List.of();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Notification> getUnreadNotifications(HttpServletRequest request, int pageNo, int pageSize, String sortBy) {
+    public List<NotificationEventResponse> getUnreadNotifications(HttpServletRequest request, int pageNo, int pageSize, String sortBy) {
         User user = getCurrentUser(request);
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
         Page<Notification> notificationPage = notificationRepository.findByUserAndIsReadFalse(user, paging);
 
         if (notificationPage.hasContent()) {
-            return notificationPage.getContent();
+            return notificationPage.getContent().stream()
+                    .map(this::convertToEventResponse)
+                    .toList();
         }
         return List.of();
+    }
+
+    private NotificationEventResponse convertToEventResponse(Notification notification) {
+        return NotificationEventResponse.builder()
+                .id(notification.getId())
+                .type(notification.getType())
+                .title(notification.getTitle())
+                .message(notification.getMessage())
+                .relatedHubId(notification.getRelatedHub() != null ? notification.getRelatedHub().getId() : null)
+                .relatedHubName(notification.getRelatedHub() != null ? notification.getRelatedHub().getHubName() : null)
+                .relatedPostId(notification.getRelatedPost() != null ? notification.getRelatedPost().getId() : null)
+                .relatedPostTitle(notification.getRelatedPost() != null ? notification.getRelatedPost().getTitle() : null)
+                .triggeredByUserId(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getId() : null)
+                .triggeredByUsername(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getUsername() : null)
+                .triggeredByAvatarUrl(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getAvatarUrl() : null)
+                .createdAt(notification.getCreatedAt())
+                .build();
     }
 
     @Override

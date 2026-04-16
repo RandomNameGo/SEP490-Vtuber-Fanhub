@@ -188,6 +188,7 @@ public class BanMemberServiceImpl implements BanMemberService {
     /**
      * Runs daily at midnight (00:00) UTC+7 to deactivate expired bans.
      */
+    @Override
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Ho_Chi_Minh")
     @org.springframework.transaction.annotation.Transactional
     public void deactivateExpiredBans() {

@@ -22,7 +22,7 @@ public class UserDailyMissionServiceImpl implements UserDailyMissionService {
 
     @Override
     @Transactional
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Ho_Chi_Minh")
     public void resetDailyMission() {
 
         List<UserDailyMission> userDailyMissions = userDailyMissionRepository.findAll();

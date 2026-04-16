@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.sep490.vtuber_fanhub.dto.responses.NotificationEventResponse;
 import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.Notification;
 import com.sep490.vtuber_fanhub.models.Post;
@@ -11,10 +12,10 @@ import java.util.List;
 public interface NotificationService {
 
 
-    List<Notification> getUserNotifications(HttpServletRequest request, int pageNo, int pageSize, String sortBy);
+    List<NotificationEventResponse> getUserNotifications(HttpServletRequest request, int pageNo, int pageSize, String sortBy);
 
 
-    List<Notification> getUnreadNotifications(HttpServletRequest request, int pageNo, int pageSize, String sortBy);
+    List<NotificationEventResponse> getUnreadNotifications(HttpServletRequest request, int pageNo, int pageSize, String sortBy);
 
 
     Long getUnreadNotificationCount(HttpServletRequest request);
