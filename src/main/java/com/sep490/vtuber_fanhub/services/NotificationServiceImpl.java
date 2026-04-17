@@ -102,6 +102,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .triggeredByUserId(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getId() : null)
                 .triggeredByUsername(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getUsername() : null)
                 .triggeredByAvatarUrl(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getAvatarUrl() : null)
+                .isRead(notification.getIsRead())
                 .createdAt(notification.getCreatedAt())
                 .build();
     }
@@ -207,6 +208,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .triggeredByUserId(triggeredBy != null ? triggeredBy.getId() : null)
                 .triggeredByUsername(triggeredBy != null ? triggeredBy.getUsername() : null)
                 .triggeredByAvatarUrl(triggeredBy != null ? triggeredBy.getAvatarUrl() : null)
+                .isRead(false)
                 .createdAt(Instant.now())
                 .build();
         
@@ -227,7 +229,7 @@ public class NotificationServiceImpl implements NotificationService {
         String title = isAccepted ? "Congratulations! 🎉" : "VTuber Application Update";
         String message = isAccepted 
                 ? "Your VTuber application has been approved! You can now create your FanHub."
-                : "Your VTuber application has been reviewed. Reason: " + (reason != null ? reason : "No reason provided");
+                : "Your VTuber application has been rejected. Reason: " + (reason != null ? reason : "No reason provided");
         
         // Create and persist notification, also sends via SSE
         createNotification(user, type, title, message, null, null, null);
@@ -256,10 +258,8 @@ public class NotificationServiceImpl implements NotificationService {
 
         String type = "POST_LIKE";
         String title = "New Like on Your Post";
-        String message = String.format("%s liked your post \"%s\" in %s",
-                likedByUsername,
-                postTitle != null ? postTitle : "Untitled Post",
-                fanHubName != null ? fanHubName : "FanHub");
+        String message = String.format("%s liked your post",
+                likedByUsername);
 
         // Create notification with related Post and FanHub entities
         // This ensures the notification properly references the post and fanhub in database
@@ -290,10 +290,8 @@ public class NotificationServiceImpl implements NotificationService {
 
         String type = "POST_COMMENT";
         String title = "New Comment on Your Post";
-        String message = String.format("%s commented on your post \"%s\" in %s",
-                commentedByUsername,
-                postTitle != null ? postTitle : "Untitled Post",
-                fanHubName != null ? fanHubName : "FanHub");
+        String message = String.format("%s commented on your post ",
+                commentedByUsername);
 
         // Create notification with related Post and FanHub entities
         // This ensures the notification properly references the post and fanhub in database
@@ -322,5 +320,90 @@ public class NotificationServiceImpl implements NotificationService {
 
         log.info("Sent FanHub strike notification to owner {} for hub {}. Total strikes: {}", 
                 ownerUserId, hubId, strikeCount);
+    }
+
+    @Override
+    @Transactional
+    public void sendMemberBannedNotification(Long userId, Long fanHubId, String fanHubName, String reason) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        FanHub hub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        String type = "MEMBER_BANNED";
+        String title = "Banned from FanHub";
+        String message = String.format("You have been banned from FanHub \"%s\". Reason: %s",
+                fanHubName, reason != null ? reason : "Violation of community guidelines");
+
+        createNotification(user, type, title, message, hub, null, null);
+
+        log.info("Sent member banned notification to user {} for hub {}", userId, fanHubId);
+    }
+
+    @Override
+    @Transactional
+    public void sendMemberAcceptedNotification(Long userId, Long fanHubId, String fanHubName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        FanHub hub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        String type = "MEMBER_ACCEPTED";
+        String title = "Welcome to the FanHub! 🎉";
+        String message = String.format("Your request to join FanHub \"%s\" has been accepted. Welcome aboard!",
+                fanHubName);
+
+        createNotification(user, type, title, message, hub, null, null);
+
+        log.info("Sent member accepted notification to user {} for hub {}", userId, fanHubId);
+    }
+
+    @Override
+    @Transactional
+    public void sendReportPostResolvedNotification(Long reporterId, Long postId, String postTitle, String resolution, Long resolvedByUserId) {
+        User reporter = userRepository.findById(reporterId)
+                .orElseThrow(() -> new NotFoundException("Reporter not found"));
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        User resolvedBy = userRepository.findById(resolvedByUserId)
+                .orElseThrow(() -> new NotFoundException("Moderator not found"));
+
+        String type = "REPORT_POST_RESOLVED";
+        String title = "Report Update";
+        String message = String.format("Your report on post \"%s\" has been resolved. Resolution: %s",
+                postTitle, resolution != null ? resolution : "The issue has been addressed by a moderator.");
+
+        createNotification(reporter, type, title, message, post.getHub(), post, resolvedBy);
+
+        log.info("Sent report post resolved notification to user {} for post {} resolved by {}", reporterId, postId, resolvedByUserId);
+    }
+
+    @Override
+    @Transactional
+    public void sendReportMemberResolvedNotification(Long reporterId, Long reportedMemberId, Long fanHubId, String resolution, Long resolvedByUserId) {
+        User reporter = userRepository.findById(reporterId)
+                .orElseThrow(() -> new NotFoundException("Reporter not found"));
+
+        User reportedMember = userRepository.findById(reportedMemberId)
+                .orElseThrow(() -> new NotFoundException("Reported member not found"));
+
+        User resolvedBy = userRepository.findById(resolvedByUserId)
+                .orElseThrow(() -> new NotFoundException("Moderator not found"));
+
+        FanHub relatedHub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        String type = "REPORT_MEMBER_RESOLVED";
+        String title = "Report Update";
+        String message = String.format("Your report on user %s in \"%s\" has been resolved. Resolution: %s",
+                reportedMember.getDisplayName(), relatedHub.getHubName(), resolution != null ? resolution : "The issue has been addressed by a moderator.");
+
+        createNotification(reporter, type, title, message, relatedHub, null, resolvedBy);
+
+        log.info("Sent report member resolved notification to user {} for reported user {} in hub {} resolved by {}", reporterId, reportedMemberId, fanHubId, resolvedByUserId);
     }
 }

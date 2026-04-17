@@ -42,6 +42,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     private final BanMemberService banMemberService;
 
+    private final NotificationService notificationService;
+
     @Override
     @Transactional
     public String joinFanHubMember(long fanHubId) {
@@ -262,6 +264,13 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         if ("APPROVED".equals(normalizedStatus)) {
             member.get().setStatus("JOINED");
             member.get().setRoleInHub("MEMBER");
+            
+            // Send notification to the user
+            notificationService.sendMemberAcceptedNotification(
+                    member.get().getUser().getId(),
+                    fanHubId,
+                    member.get().getHub().getHubName()
+            );
         } else {
             member.get().setStatus("REJECTED");
         }

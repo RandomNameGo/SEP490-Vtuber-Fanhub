@@ -25,4 +25,6 @@ public interface PostCommentService {
 
     String sendCommentGift(Long commentId);
 
+    String hideComment(Long commentId);
+
 }

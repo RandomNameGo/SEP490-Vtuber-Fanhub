@@ -143,6 +143,14 @@ public class PostCommentServiceImpl implements PostCommentService {
     @Override
     @Transactional(readOnly = true)
     public List<PostCommentResponse> getPostCommentsByPostId(Long postId) {
+        User currentUser = null;
+        try {
+            currentUser = authService.getUserFromToken(httpServletRequest);
+        } catch (Exception e) {
+            // User not logged in or invalid token, treat as guest
+            currentUser = null;
+        }
+
         Optional<Post> post = postRepository.findById(postId);
         if (post.isEmpty()) {
             throw new NotFoundException("Post not found");
@@ -150,7 +158,26 @@ public class PostCommentServiceImpl implements PostCommentService {
 
         List<PostComment> comments = postCommentRepository.findByPostIdAndParentCommentIsNullOrderByCreatedAtAsc(postId);
 
-        return comments.stream()
+        if (currentUser == null) {
+            return comments.stream()
+                    .map(this::mapToResponse)
+                    .collect(Collectors.toList());
+        }
+
+        // Prioritize current user's comments to the top
+        final Long currentUserId = currentUser.getId();
+        
+        List<PostComment> prioritizedComments = comments.stream()
+                .filter(c -> c.getUser().getId().equals(currentUserId))
+                .collect(Collectors.toList());
+        
+        List<PostComment> otherComments = comments.stream()
+                .filter(c -> !c.getUser().getId().equals(currentUserId))
+                .collect(Collectors.toList());
+
+        prioritizedComments.addAll(otherComments);
+
+        return prioritizedComments.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -348,5 +375,35 @@ public class PostCommentServiceImpl implements PostCommentService {
         userRepository.save(receiver);
 
         return "Gift sent successfully!";
+    }
+
+    @Override
+    @Transactional
+    public String hideComment(Long commentId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        PostComment comment = postCommentRepository.findById(commentId)
+                .orElseThrow(() -> new NotFoundException("Comment not found"));
+
+        FanHub hub = comment.getPost().getHub();
+        Long hubId = hub.getId();
+
+        // Check if user is the VTuber owner of this FanHub
+        boolean isOwner = hub.getOwnerUser().getId().equals(currentUser.getId());
+
+        // Check if user is a member with MODERATOR role in this hub
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(hubId, currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isOwner && !isModerator) {
+            throw new AccessDeniedException("Only the FanHub owner or a moderator can hide comments");
+        }
+
+        comment.setStatus("HIDDEN");
+        postCommentRepository.save(comment);
+
+        log.info("Comment {} in hub {} has been hidden by user {}", commentId, hubId, currentUser.getId());
+        return "Comment hidden successfully";
     }
 }

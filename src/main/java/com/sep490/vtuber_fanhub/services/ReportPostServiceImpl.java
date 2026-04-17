@@ -50,6 +50,8 @@ public class ReportPostServiceImpl implements ReportPostService {
 
     private final PostHashtagRepository postHashtagRepository;
 
+    private final NotificationService notificationService;
+
     @Override
     public String createReportPost(CreateReportPostRequest createReportPostRequest) {
 
@@ -136,6 +138,15 @@ public class ReportPostServiceImpl implements ReportPostService {
         reportPost.setResolveMessage(resolveMessage);
         reportPostRepository.save(reportPost);
 
+        // Send notification to the reporter
+        notificationService.sendReportPostResolvedNotification(
+                reportPost.getReportedBy().getId(),
+                reportPost.getPost().getId(),
+                reportPost.getPost().getTitle(),
+                resolveMessage,
+                currentUser.getId()
+        );
+
         return "Report resolved successfully";
     }
 
@@ -221,6 +232,16 @@ public class ReportPostServiceImpl implements ReportPostService {
             reportPost.setResolveBy(currentUser);
             reportPost.setResolveMessage(resolveMessage);
             reportPostRepository.save(reportPost);
+
+            // Send notification to the reporter
+            notificationService.sendReportPostResolvedNotification(
+                    reportPost.getReportedBy().getId(),
+                    reportPost.getPost().getId(),
+                    reportPost.getPost().getTitle(),
+                    resolveMessage,
+                    currentUser.getId()
+            );
+
             resolvedCount++;
         }
 

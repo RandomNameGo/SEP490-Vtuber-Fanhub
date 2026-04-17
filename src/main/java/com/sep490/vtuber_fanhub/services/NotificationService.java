@@ -48,4 +48,12 @@ public interface NotificationService {
                                       Long fanHubId, String fanHubName);
 
     void sendFanHubStrikeNotification(Long ownerUserId, Long hubId, String hubName, int strikeCount, String reason);
+
+    void sendMemberBannedNotification(Long userId, Long fanHubId, String fanHubName, String reason);
+
+    void sendMemberAcceptedNotification(Long userId, Long fanHubId, String fanHubName);
+
+    void sendReportPostResolvedNotification(Long reporterId, Long postId, String postTitle, String resolution, Long resolvedByUserId);
+
+    void sendReportMemberResolvedNotification(Long reporterId, Long reportedMemberId, Long fanHubId, String resolution, Long resolvedByUserId);
 }

@@ -43,6 +43,8 @@ public class ReportMemberServiceImpl implements ReportMemberService {
 
     private final PostCommentRepository postCommentRepository;
 
+    private final NotificationService notificationService;
+
     @Override
     public String createReportMember(CreateReportMemberRequest createReportMemberRequest) {
 
@@ -137,6 +139,15 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         reportMember.setResolveMessage(resolveMessage);
         reportMemberRepository.save(reportMember);
 
+        // Send notification to the reporter
+        notificationService.sendReportMemberResolvedNotification(
+                reportMember.getReportedBy().getId(),
+                reportMember.getUser().getId(),
+                reportMember.getHub().getId(),
+                resolveMessage,
+                currentUser.getId()
+        );
+
         return "Report resolved successfully";
     }
 
@@ -221,6 +232,16 @@ public class ReportMemberServiceImpl implements ReportMemberService {
             reportMember.setResolveBy(currentUser);
             reportMember.setResolveMessage(resolveMessage);
             reportMemberRepository.save(reportMember);
+
+            // Send notification to the reporter
+            notificationService.sendReportMemberResolvedNotification(
+                    reportMember.getReportedBy().getId(),
+                    reportMember.getUser().getId(),
+                    reportMember.getHub().getId(),
+                    resolveMessage,
+                    currentUser.getId()
+            );
+
             resolvedCount++;
         }
 

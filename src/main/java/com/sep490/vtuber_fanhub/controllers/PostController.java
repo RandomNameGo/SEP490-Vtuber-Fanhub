@@ -396,6 +396,17 @@ public class PostController {
         );
     }
 
+    @PutMapping("/comment/{commentId}/hide")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> hideComment(@PathVariable Long commentId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.hideComment(commentId))
+                .build()
+        );
+    }
+
     @PostMapping("/vote")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> votePost(@RequestParam long postId, @RequestParam long optionId) {

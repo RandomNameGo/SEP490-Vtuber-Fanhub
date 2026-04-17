@@ -43,6 +43,8 @@ public class BanMemberServiceImpl implements BanMemberService {
 
     private final HttpServletRequest httpServletRequest;
 
+    private final NotificationService notificationService;
+
     @Override
     public String banFanHubMember(CreateBanMemberRequest request) {
 
@@ -78,6 +80,14 @@ public class BanMemberServiceImpl implements BanMemberService {
         banMember.setIsActive(true);
         banMember.setCreatedAt(Instant.now());
         banMemberRepository.save(banMember);
+
+        // Send notification to the banned user
+        notificationService.sendMemberBannedNotification(
+                fanHubMember.getUser().getId(),
+                fanHubId,
+                fanHubMember.getHub().getHubName(),
+                request.getReason()
+        );
 
         return "Member banned successfully";
     }

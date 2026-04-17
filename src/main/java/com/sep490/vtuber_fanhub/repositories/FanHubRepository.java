@@ -46,4 +46,12 @@ public interface FanHubRepository extends JpaRepository<FanHub, Long> {
             "AND fh.isPrivate = false " +
             "AND LOWER(fh.hubName) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<FanHub> searchFanHubs(@Param("keyword") String keyword, Pageable pageable);
-}
+
+    long countByIsActiveTrue();
+
+    @Query("SELECT SUM(fh.strikeCount) FROM FanHub fh WHERE fh.isActive = true")
+    Long sumTotalStrikes();
+
+    @Query("SELECT COUNT(fh) FROM FanHub fh WHERE fh.isActive = true AND fh.strikeCount > 0")
+    long countByIsActiveTrueAndStrikeCountGreaterThanZero();
+    }

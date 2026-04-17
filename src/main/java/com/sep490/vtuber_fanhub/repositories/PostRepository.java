@@ -161,4 +161,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(CAST(p.content AS STRING)) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Post> searchPosts(@Param("keyword") String keyword, Pageable pageable);
-}
+
+    long countByStatus(String status);
+
+    @Query("SELECT ph.hashtag FROM PostHashtag ph GROUP BY ph.hashtag ORDER BY COUNT(ph.post.id) DESC")
+    List<String> findTrendingHashtags(Pageable pageable);
+    }
