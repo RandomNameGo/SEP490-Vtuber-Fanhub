@@ -328,6 +328,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     }
                     case "ERROR" -> {
                         log.error("AI reported a function error: {}", metadata.get("errorMessage"));
+                        hasMetadata=false;
                     }
                     default -> {
                         log.info("No metadata");

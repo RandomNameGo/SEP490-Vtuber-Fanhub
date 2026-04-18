@@ -2,15 +2,11 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.responses.AIMessageResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MessageResponse;
-import com.sep490.vtuber_fanhub.models.ChatMessage;
-import com.sep490.vtuber_fanhub.models.ChatMessageMetadata;
-import com.sep490.vtuber_fanhub.models.ChatSession;
+import com.sep490.vtuber_fanhub.dto.responses.MetadataResponse;
+import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.Enum.MetadataType;
-import com.sep490.vtuber_fanhub.models.User;
-import com.sep490.vtuber_fanhub.repositories.ChatMessageMetadataRepository;
-import com.sep490.vtuber_fanhub.repositories.ChatMessageRepository;
-import com.sep490.vtuber_fanhub.repositories.ChatSessionRepository;
+import com.sep490.vtuber_fanhub.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +21,8 @@ import java.util.stream.Collectors;
 public class AiResponseServiceImpl implements AiResponseService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
+    private final PostRepository postRepository;
+    private final PostMediaRepository postMediaRepository;
     private final GeminiAIService geminiAIService;
     private final ChatPersonalityType AI_CHATBOT_RESPONSE_PERSONALITY_TYPE = ChatPersonalityType.MatikanetannHauser;
     private final ChatMessageMetadataRepository chatMessageMetadataRepository;
@@ -74,11 +72,30 @@ public class AiResponseServiceImpl implements AiResponseService {
             }
 
             if(aiResponse.isHasMetadata()){
-                responseBuilder
-                        .hasMetadata(true)
-                        .metadataTargetId(aiResponse.getMetadataTargetId())
-                        .metadataType(aiResponse.getMetadataType());
-            }else responseBuilder.hasMetadata(false);
+                // currently i use if statement, but if soon do we have multiple metadata types, it'll be a switch case instead
+                if(aiResponse.getMetadataType().equals(MetadataType.POST)){
+                    postRepository.findById(aiResponse.getMetadataTargetId())
+                            .ifPresent(post -> {
+                                // if the post is image type, return additional preview image url
+                                String mediaPreviewUrl = "";
+                                if(post.getPostType().equals("IMAGE")){
+                                    List<PostMedia> medias = postMediaRepository.findByPostId(post.getId());
+                                    if(!medias.isEmpty()){
+                                        mediaPreviewUrl = medias.get(0).getMediaUrl();
+                                    }
+
+                                }
+                                responseBuilder.metadataResponse(MetadataResponse.builder()
+                                                .metadataType(aiResponse.getMetadataType())
+                                                .postId(post.getId())
+                                                .postTitle(post.getTitle())
+                                                .postContent(post.getContent())
+                                                .imagePreviewUrl(mediaPreviewUrl)
+                                        .build());
+                            });
+                }
+
+            }
 
             return responseBuilder.build();
             

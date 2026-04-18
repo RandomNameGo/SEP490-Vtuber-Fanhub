@@ -15,7 +15,5 @@ public class MessageResponse {
     String content;
     String senderRole;
     String thought;
-    Boolean hasMetadata;
-    MetadataType metadataType;
-    Long metadataTargetId;
+    MetadataResponse metadataResponse;
 }

@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface PostMediaRepository extends JpaRepository<PostMedia, Long> {
 
     List<PostMedia> findByPostId(Long postId);
+    List<PostMedia> findByPostIdIn(List<Long> postIds);
     Optional<PostMedia> findBySightEngineMediaId(String sightEngineMediaId);
 }

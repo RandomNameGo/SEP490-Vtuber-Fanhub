@@ -58,7 +58,25 @@ public class FunctionCallingService {
             PostResponse postResponse = postService.getTrendingPublicPost();
             Map<String, Object> result = new HashMap<>();
             result.put("postId", postResponse.getPostId());
+            result.put("fanHubName", postResponse.getFanHubName());
+            result.put("authorDisplayName", postResponse.getAuthorDisplayName());
+            result.put("postType", postResponse.getPostType());
+            result.put("title", postResponse.getTitle());
+            result.put("content", postResponse.getContent());
+            result.put("hashtags", postResponse.getHashtags());
+            result.put("voteOptions", postResponse.getVoteOptions());
+            result.put("voteCounts", postResponse.getVoteCounts());
+            result.put("totalVotes", postResponse.getTotalVotes());
+            result.put("createdAt", postResponse.getCreatedAt());
+            result.put("updatedAt", postResponse.getUpdatedAt());
+            result.put("likeCount", postResponse.getLikeCount());
+            result.put("commentCount", postResponse.getCommentCount());
+
+
             result.put("functionCallType", "POST");
+            result.put("extraInstruction","User called for get_trending_post, you'll respond with something short" +
+                    "and concise like 'Here's a trending post as you requested!' and maybe a lil addons" +
+                    "if the postType is poll then there'll be voteOptions, otherwise the wont be any");
             return result;
         }catch(Exception e){
             return Map.of(
