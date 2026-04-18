@@ -126,7 +126,7 @@ public class SightEngineServiceImpl implements SightEngineService{
     @Override
     public JsonNode checkVideoUrlAsync(String url) {
         String apiUrl = "https://api.sightengine.com/1.0/video/check-workflow.json";
-
+        System.out.println("callback set: " + appHost + "/vhub/api/v1/webhooks/sightengine/video-result");
         RestTemplate restTemplate = new RestTemplate();
         try {
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiUrl)
