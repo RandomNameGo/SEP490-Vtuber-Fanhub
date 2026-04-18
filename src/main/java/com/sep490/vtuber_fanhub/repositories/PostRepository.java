@@ -103,17 +103,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "order by count(distinct pl.id) + count(distinct pc.id) desc, p.createdAt desc")
     Page<Post> findTrendingPostsByFanHub(Long fanHubId, Pageable pageable);
 
-    // Find the most recent trending post across all public FanHubs from the last 24 hours: APPROVED posts ordered by likes + comments count desc
+    // Find the most interacted post across all public FanHubs in the last 24 hours
     @Query("select p from Post p " +
-            "left join PostLike pl on p.id = pl.post.id " +
-            "left join PostComment pc on p.id = pc.post.id " +
+            "left join PostLike pl on p.id = pl.post.id and pl.createdAt >= :oneDayAgo " +
+            "left join PostComment pc on p.id = pc.post.id and pc.createdAt >= :oneDayAgo " +
+            "left join VoteOption vo on p.id = vo.post.id " +
+            "left join PostVote pv on vo.id = pv.option.id and pv.votedAt >= :oneDayAgo " +
             "where p.hub.isPrivate = false " +
             "and p.hub.isActive = true " +
             "and p.status = 'APPROVED' " +
-            "and p.createdAt >= :oneDayAgo " +
             "group by p.id " +
-            "order by count(distinct pl.id) + count(distinct pc.id) desc, p.createdAt desc")
-    Optional<Post> findTopTrendingPublicPostLast24Hours(Instant oneDayAgo);
+            "order by (count(distinct pl.id) + count(distinct pc.id) + count(distinct pv.id)) desc, p.createdAt desc")
+    List<Post> findTrendingPost(@Param("oneDayAgo") Instant oneDayAgo, Pageable pageable);
 
     // Find posts by username with pagination
     @Query("select p from Post p " +

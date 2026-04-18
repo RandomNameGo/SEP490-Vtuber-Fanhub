@@ -1651,31 +1651,15 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public PostResponse getTrendingPublicPost() {
-        // Try to get trending post from last 24 hours
-        Instant oneDayAgo = Instant.now().minus(1, ChronoUnit.DAYS);
-        Optional<Post> post = postRepository.findTopTrendingPublicPostLast24Hours(oneDayAgo);
+        Instant oneDayAgo = Instant.now().minus(24, ChronoUnit.HOURS);
+        // We use Pageable to enforce LIMIT 1 in the database query
+        List<Post> trendingPosts = postRepository.findTrendingPost(oneDayAgo, PageRequest.of(0, 1));
 
-        // Fallback 1: Get top trending post ever (based on interactions)
-        if (post.isEmpty()) {
-            Page<Post> trendingPosts = postRepository.findPublicPostsOrderByInteractions(PageRequest.of(0, 1));
-            if (!trendingPosts.isEmpty()) {
-                post = Optional.of(trendingPosts.getContent().get(0));
-            }
-        }
-
-        // Fallback 2: Get any most recent public approved post
-        if (post.isEmpty()) {
-            Page<Post> recentPosts = postRepository.findPublicPosts(Collections.emptyList(), PageRequest.of(0, 1));
-            if (!recentPosts.isEmpty()) {
-                post = Optional.of(recentPosts.getContent().get(0));
-            }
-        }
-
-        if (post.isEmpty()) {
+        if (trendingPosts.isEmpty()) {
             throw new NotFoundException("No public posts available");
         }
 
-        return mapToPostResponse(post.get());
+        return mapToPostResponse(trendingPosts.get(0));
     }
 
     @Override
