@@ -73,5 +73,7 @@ public interface PostService {
 
     PostResponse getTrendingPublicPost();
 
+    PostResponse getLatestPublicApprovedPost();
+
     List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy);
 }

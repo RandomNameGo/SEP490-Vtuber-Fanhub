@@ -1664,6 +1664,18 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
+    public PostResponse getLatestPublicApprovedPost() {
+        List<Post> posts = postRepository.findLatestPublicApprovedPost(PageRequest.of(0, 1));
+
+        if (posts.isEmpty()) {
+            throw new NotFoundException("No public posts available");
+        }
+
+        return mapToPostResponse(posts.get(0));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return List.of();

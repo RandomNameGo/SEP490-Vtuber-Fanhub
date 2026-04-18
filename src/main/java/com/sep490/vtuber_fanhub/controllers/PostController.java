@@ -218,6 +218,15 @@ public class PostController {
                 .build());
     }
 
+    @GetMapping("/latest")
+    public ResponseEntity<?> getLatestPublicApprovedPost() {
+        return ResponseEntity.ok().body(APIResponse.<PostResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getLatestPublicApprovedPost())
+                .build());
+    }
+
     @PostMapping("/like")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> likePost(@RequestParam long postId) {

@@ -167,4 +167,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT ph.hashtag FROM PostHashtag ph GROUP BY ph.hashtag ORDER BY COUNT(ph.post.id) DESC")
     List<String> findTrendingHashtags(Pageable pageable);
+
+    @Query("select p from Post p " +
+            "where p.hub.isPrivate = false " +
+            "and p.hub.isActive = true " +
+            "and p.status = 'APPROVED' " +
+            "order by p.createdAt desc")
+    List<Post> findLatestPublicApprovedPost(Pageable pageable);
     }
