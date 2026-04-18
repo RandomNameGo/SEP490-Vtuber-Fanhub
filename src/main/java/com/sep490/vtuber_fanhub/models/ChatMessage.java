@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -31,6 +33,9 @@ public class ChatMessage {
     @Lob
     @Column(name = "has_metadata")
     private Boolean hasMetadata;
+
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ChatMessageMetadata> metadataList = new ArrayList<>();
 
     @Column(name = "created_at")
     private Instant createdAt;

@@ -8,6 +8,7 @@ import com.sep490.vtuber_fanhub.repositories.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -24,6 +25,7 @@ public class PostValidationServiceImplAsync implements PostValidationService {
 
     @Override
     @Async("validationExecutor")
+    @Transactional
     public void validatePost(Post post) {
         try {
             System.out.println("Post validation async fired");
@@ -108,6 +110,7 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     }
 
     @Override
+    @Transactional
     public void finalizeValidation(Post post){
         try{
             System.out.println("Finalizing validation: ");
