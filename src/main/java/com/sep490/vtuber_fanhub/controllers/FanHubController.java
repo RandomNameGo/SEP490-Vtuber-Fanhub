@@ -144,4 +144,30 @@ public class FanHubController {
                 .build()
         );
     }
+
+    @PutMapping("/deactivate/{fanHubId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> deactivateFanHub(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.deactivateFanHub(fanHubId))
+                .build()
+        );
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchFanHubs(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.searchFanHubs(keyword, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
 }

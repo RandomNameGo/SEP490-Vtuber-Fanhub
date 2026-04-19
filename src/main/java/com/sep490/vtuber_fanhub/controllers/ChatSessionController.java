@@ -1,7 +1,6 @@
 package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
-import com.sep490.vtuber_fanhub.dto.responses.MessageResponse;
 import com.sep490.vtuber_fanhub.services.ChatSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

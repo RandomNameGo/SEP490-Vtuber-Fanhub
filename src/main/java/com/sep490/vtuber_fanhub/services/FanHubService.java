@@ -32,5 +32,7 @@ public interface FanHubService {
 
     String deleteFanHub(Long fanHubId);
 
+    String deactivateFanHub(Long fanHubId);
+
     List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy);
 }

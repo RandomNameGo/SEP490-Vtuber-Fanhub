@@ -10,6 +10,7 @@ import com.sep490.vtuber_fanhub.models.FanHubBackground;
 import com.sep490.vtuber_fanhub.models.FanHubCategory;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.models.SystemAccount;
 import com.sep490.vtuber_fanhub.repositories.FanHubBackgroundRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubCategoryRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
@@ -18,6 +19,7 @@ import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubAnalyticsResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
 import com.sep490.vtuber_fanhub.repositories.PostRepository;
+import com.sep490.vtuber_fanhub.repositories.FanHubStrikeRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -58,6 +60,8 @@ public class FanHubServiceImpl implements FanHubService {
     private final FanHubBackgroundRepository fanHubBackgroundRepository;
 
     private final PostRepository postRepository;
+
+    private final FanHubStrikeRepository fanHubStrikeRepository;
 
     @Override
     @Transactional
@@ -364,16 +368,27 @@ public class FanHubServiceImpl implements FanHubService {
 
         long totalJoinedMembers = fanHubMemberRepository.countJoinedMembers(fanHubId);
         long totalPosts = postRepository.countPostsByHubId(fanHubId);
+        long totalStrikes = fanHubStrikeRepository.countByHubIdAndIsActiveTrue(fanHubId);
         
         List<FanHubMember> topMembersRaw = fanHubMemberRepository.findTop3ByHubIdOrderByFanHubScoreDesc(fanHubId, PageRequest.of(0, 3));
         List<FanHubMemberResponse> topMembers = topMembersRaw.stream()
                 .map(this::mapToFanHubMemberResponse)
                 .collect(Collectors.toList());
 
+        List<FanHubAnalyticsResponse.StrikeDetails> strikes = fanHubStrikeRepository.findByHubIdAndIsActiveTrueOrderByCreatedAtDesc(fanHubId)
+                .stream()
+                .map(s -> FanHubAnalyticsResponse.StrikeDetails.builder()
+                        .reason(s.getReason())
+                        .createdAt(s.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
         return FanHubAnalyticsResponse.builder()
                 .totalJoinedMembers(totalJoinedMembers)
                 .totalPosts(totalPosts)
+                .totalStrikes(totalStrikes)
                 .topMembers(topMembers)
+                .strikes(strikes)
                 .build();
     }
 
@@ -409,6 +424,24 @@ public class FanHubServiceImpl implements FanHubService {
         fanHubRepository.save(fanHub);
 
         return "Deleted FanHub successfully";
+    }
+
+    @Override
+    @Transactional
+    public String deactivateFanHub(Long fanHubId) {
+        SystemAccount systemAccount = authService.getSystemAccountFromToken(httpServletRequest);
+
+        if (!"ADMIN".equals(systemAccount.getRole()) && !"MODERATOR".equals(systemAccount.getRole())) {
+            throw new CustomAuthenticationException("Access denied. Only ADMIN or MODERATOR can deactivate FanHubs.");
+        }
+
+        FanHub fanHub = fanHubRepository.findByIdAndIsActive(fanHubId, true)
+                .orElseThrow(() -> new NotFoundException("FanHub not found or already inactive"));
+
+        fanHub.setIsActive(false);
+        fanHubRepository.save(fanHub);
+
+        return "Deactivated FanHub successfully";
     }
 
     @Override
