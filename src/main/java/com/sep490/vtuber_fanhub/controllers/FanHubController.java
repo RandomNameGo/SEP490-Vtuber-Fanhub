@@ -32,6 +32,21 @@ public class FanHubController {
         );
     }
 
+    @PostMapping("/create/v2")
+    @PreAuthorize("hasRole('VTUBER')")
+    public ResponseEntity<?> createFanHubV2(
+            @RequestPart("request") @Valid CreateFanHubRequest request,
+            @RequestParam(value = "banner", required = false) MultipartFile banner,
+            @RequestParam(value = "backgrounds", required = false) List<MultipartFile> backgrounds,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar) throws Exception {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.createFanHubV2(request, banner, backgrounds, avatar))
+                .build()
+        );
+    }
+
     @PutMapping("/update/{fanHubId}")
     @PreAuthorize("hasRole('VTUBER')")
     public ResponseEntity<?> updateFanHub(@PathVariable Long fanHubId, @RequestBody @Valid UpdateFanHubRequest request) {

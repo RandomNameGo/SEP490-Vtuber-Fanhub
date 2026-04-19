@@ -102,6 +102,72 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional
+    public String createFanHubV2(CreateFanHubRequest request, MultipartFile banner, List<MultipartFile> backgrounds, MultipartFile avatar) throws IOException {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<User> Vtuber = userRepository.findByUsernameAndIsActive(currentUser.getUsername());
+
+        if(!Vtuber.get().getRole().equals("VTUBER")){
+            throw new org.springframework.security.access.AccessDeniedException("Only Vtuber can access this method");
+        }
+
+        FanHub fanHub = new FanHub();
+        fanHub.setOwnerUser(currentUser);
+        fanHub.setHubName(request.getHubName());
+        fanHub.setSubdomain(request.getSubdomain());
+        fanHub.setThemeColor(request.getThemeColor());
+        fanHub.setDescription(request.getDescription());
+        fanHub.setIsPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : false);
+        fanHub.setRequiresApproval(request.getRequiresApproval() != null ? request.getRequiresApproval() : false);
+        fanHub.setIsActive(true);
+        fanHub.setStrikeCount(0);
+        fanHub.setCreatedAt(Instant.now());
+
+        fanHubRepository.save(fanHub);
+
+        if (request.getCategory() != null && !request.getCategory().isEmpty()) {
+            for (String categoryName : request.getCategory()) {
+                FanHubCategory category = new FanHubCategory();
+                category.setHub(fanHub);
+                category.setCategoryName(categoryName);
+                fanHubCategoryRepository.save(category);
+            }
+        }
+
+        if (banner != null && !banner.isEmpty()) {
+            String bannerUrl = cloudinaryService.uploadFile(banner);
+            fanHub.setBannerUrl(bannerUrl);
+        }
+
+        if (backgrounds != null && !backgrounds.isEmpty()) {
+            if (backgrounds.size() > 4) {
+                throw new IllegalArgumentException("Maximum 4 background images are allowed");
+            }
+
+            for (MultipartFile background : backgrounds) {
+                if (background != null && !background.isEmpty()) {
+                    String backgroundUrl = cloudinaryService.uploadFile(background);
+
+                    FanHubBackground fanHubBackground = new FanHubBackground();
+                    fanHubBackground.setHub(fanHub);
+                    fanHubBackground.setImageUrl(backgroundUrl);
+                    fanHubBackgroundRepository.save(fanHubBackground);
+                }
+            }
+        }
+
+        if (avatar != null && !avatar.isEmpty()) {
+            String avatarUrl = cloudinaryService.uploadFile(avatar);
+            fanHub.setAvatarUrl(avatarUrl);
+        }
+
+        fanHubRepository.save(fanHub);
+
+        return "Created FanHub successfully";
+    }
+
+    @Override
+    @Transactional
     public String updateFanHub(Long fanHubId, UpdateFanHubRequest request) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 

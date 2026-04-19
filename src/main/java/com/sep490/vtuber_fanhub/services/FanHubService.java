@@ -14,6 +14,8 @@ public interface FanHubService {
 
     String createFanHub(CreateFanHubRequest request);
 
+    String createFanHubV2(CreateFanHubRequest request, MultipartFile banner, List<MultipartFile> backgrounds, MultipartFile avatar) throws IOException;
+
     String updateFanHub(Long fanHubId, UpdateFanHubRequest request);
 
     String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, List<MultipartFile> highlight, MultipartFile avatar) throws IOException;
