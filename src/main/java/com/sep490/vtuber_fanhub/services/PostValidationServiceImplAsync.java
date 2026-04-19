@@ -86,6 +86,7 @@ public class PostValidationServiceImplAsync implements PostValidationService {
 
     @Override
     @Async("validationExecutor")
+    @Transactional
     public void handleVideoCallback(JsonNode node){
         try{
             String mediaId = node.path("media").path("id").asText();

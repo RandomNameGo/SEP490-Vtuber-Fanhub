@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -9,8 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class ContentValidationServiceImpl implements ContentValidationService{
-
-    private final GroqAIService groqAIService;
+    private final GeminiAIService geminiAIService;
     private final SightEngineService sightEngineService;
 
     @Override
@@ -32,9 +32,7 @@ public class ContentValidationServiceImpl implements ContentValidationService{
 
             """, text);
 
-        String result = groqAIService.sendPrompt(intentPrompt).trim();
-        System.out.println(result);
-        return result;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -55,8 +53,7 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             Text: "%s"
 
             """, mediaValidationResult.toString());
-        String result = groqAIService.sendPrompt(intentPrompt).trim();
-        return result;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -77,8 +74,7 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             SightEngine Result: "%s"
 
             """, mediaValidationResult.toString());
-        String result = groqAIService.sendPrompt(intentPrompt).trim();
-        return result;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -99,8 +95,7 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             SightEngine Result: "%s"
 
             """, mediaValidationResult.toString());
-        String result = groqAIService.sendPrompt(intentPrompt).trim();
-        return result;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -125,7 +120,6 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             SightEngine Result: "%s"
 
             """, result.toString());
-        String res = groqAIService.sendPrompt(intentPrompt).trim();
-        return res;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 }

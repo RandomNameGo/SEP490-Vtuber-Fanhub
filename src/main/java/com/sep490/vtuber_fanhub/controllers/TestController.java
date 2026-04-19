@@ -8,7 +8,6 @@ import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
 import com.sep490.vtuber_fanhub.services.ContentValidationService;
 import com.sep490.vtuber_fanhub.services.GeminiAIService;
-import com.sep490.vtuber_fanhub.services.GroqAIService;
 import com.sep490.vtuber_fanhub.services.SightEngineService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class TestController {
     private final GeminiAIService geminiAIService;
-    private final GroqAIService groqAIService;
     private final SightEngineService sightEngineService;
     private final ContentValidationService contentValidationService;
 
@@ -123,15 +121,5 @@ public class TestController {
         );
     }
 
-    @GetMapping("/groq")
-    public ResponseEntity<APIResponse<String>> testGroqPrompt() {
-        return ResponseEntity.ok(
-                APIResponse.<String>builder()
-                        .message("Test Groq Success")
-                        .success(true)
-                        .data(groqAIService.test())
-                        .build()
-        );
-    }
 
 }
