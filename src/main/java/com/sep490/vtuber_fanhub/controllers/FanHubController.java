@@ -23,7 +23,6 @@ public class FanHubController {
     private final FanHubService fanHubService;
 
     @PostMapping("/create")
-    @PreAuthorize("hasRole('VTUBER')")
     public ResponseEntity<?> createSystemAccount(@RequestBody @Valid CreateFanHubRequest request) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)

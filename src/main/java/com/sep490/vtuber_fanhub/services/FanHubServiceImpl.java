@@ -68,6 +68,11 @@ public class FanHubServiceImpl implements FanHubService {
     public String createFanHub(CreateFanHubRequest request) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
+        Optional<User> Vtuber = userRepository.findByUsernameAndIsActive(currentUser.getUsername());
+
+        if(!Vtuber.get().getRole().equals("VTUBER")){
+            throw new org.springframework.security.access.AccessDeniedException("Only Vtuber can access this method");
+        }
 
         FanHub fanHub = new FanHub();
         fanHub.setOwnerUser(currentUser);
