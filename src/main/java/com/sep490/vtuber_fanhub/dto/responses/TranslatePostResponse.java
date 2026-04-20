@@ -8,6 +8,6 @@ import lombok.Data;
 public class TranslatePostResponse {
     private String translatedContent;
     private String translatedTitle;
-    private boolean translate_language_set;
+    private boolean translateLanguageSet;
     private String extraComment;
 }

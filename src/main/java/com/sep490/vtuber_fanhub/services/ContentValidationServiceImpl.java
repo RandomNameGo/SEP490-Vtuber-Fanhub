@@ -3,15 +3,21 @@ package com.sep490.vtuber_fanhub.services;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
+import com.sep490.vtuber_fanhub.models.Post;
+import com.sep490.vtuber_fanhub.models.VoteOption;
+import com.sep490.vtuber_fanhub.repositories.VoteOptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ContentValidationServiceImpl implements ContentValidationService{
     private final GeminiAIService geminiAIService;
     private final SightEngineService sightEngineService;
+    private final VoteOptionRepository voteOptionRepository;
 
     @Override
     public String validatePostContent(String title, String content) {
@@ -123,6 +129,36 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             SightEngine Result: "%s"
 
             """, result.toString());
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
+    }
+
+    @Override
+    public String validatePostPollOptions(Post post) {
+        List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(post.getId());
+        String[] voteOptionStrings = {"", "", "", ""};
+        for(int i = 0; i <voteOptions.size(); i++ ){
+            voteOptionStrings[i] = voteOptions.get(i).getOptionText();
+        }
+        String intentPrompt = String.format("""
+            Your task is to validate each of the poll options.
+            A post may have up to 4 poll options, minimum is 2.
+
+            Poll option text must not contain any inappropriate languages, hate, or discrimination
+            But at the same time, dont be too strict.
+
+            The respond Must Not be in quotes. Only text.
+            Keep your answer as short as possible, while maintaining all key points.
+            !!!IMPORTANT: Your answer must be in format: "comment@status"
+            !!!IMPORTANT: status must be either "AI_SAFE" or "AI_UNSAFE"
+            example: All options' content are safe.@AI_SAFE
+            example: At Option 1, user said "...".@AI_UNSAFE
+
+            Option 1: "%s"
+            Option 2: "%s"
+            Option 3: "%s"
+            Option 4: "%s"
+
+            """, voteOptionStrings[0], voteOptionStrings[1], voteOptionStrings[2], voteOptionStrings[3]);
         return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 }
