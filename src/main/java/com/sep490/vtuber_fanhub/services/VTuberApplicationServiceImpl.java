@@ -95,6 +95,15 @@ public class VTuberApplicationServiceImpl implements VTuberApplicationService {
     }
 
     @Override
+    public List<VTuberApplicationResponse> getMyVTuberApplications() {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+        List<VTuberApplication> applications = vTuberApplicationRepository.findByUserId(currentUser.getId());
+        return applications.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public String reviewVTuberApplication(long vTuberApplicationId, String status, String reason) {
 
