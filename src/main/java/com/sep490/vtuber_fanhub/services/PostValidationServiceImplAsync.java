@@ -29,25 +29,26 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     public void validatePost(Post post) {
         try {
             System.out.println("Post validation async fired");
-            String textValidation = contentValidationService.validateText(post.getContent());
+
+            // Set initial status to PENDING
+            post.setFinalAiValidationStatus("PENDING");
+            post.setContentAiValidationStatus("PENDING");
+            postRepository.save(post);
+
+            String textValidation = contentValidationService.validatePostContent(post.getTitle(),post.getContent());
             String[] text_validation_split = textValidation.split("@");
             if(text_validation_split.length<2){
                 throw new RuntimeException("AI returned incorrect form");
             }
-            if(text_validation_split[1].equals("AI_UNSAFE")){
-                post.setAiValidationStatus("AI_UNSAFE");
-            }else if(text_validation_split[1].equals("AI_SAFE")){
-                post.setAiValidationStatus("AI_SAFE");
-            }
-            else throw new RuntimeException("AI returned incorrect form");
 
-            post.setAiValidationComment(textValidation);
+            post.setContentAiValidationStatus(text_validation_split[1]);
+            post.setAiValidationComment(text_validation_split[0]);
 
             postRepository.save(post);
 
             // validate media
             // if media is image type, we can solve it synchronously
-            if(post.getPostType().equals("IMAGE")) {
+            if("IMAGE".equals(post.getPostType())) {
                 List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
                 for(PostMedia postMedia : postMediaList) {
                     String ai_validation = contentValidationService.validateImageUrl(postMedia.getMediaUrl());
@@ -58,11 +59,10 @@ public class PostValidationServiceImplAsync implements PostValidationService {
                     postMedia.setAiValidationComment(media_validation_split[0]);
                     postMedia.setAiValidationStatus(media_validation_split[1]);
                     mediaRepository.save(postMedia);
-
-                    finalizeValidation(post);
                 }
+                finalizeValidation(post);
 
-            }else if(post.getPostType().equals("VIDEO")){
+            }else if("VIDEO".equals(post.getPostType())){
                 // if a post is video type, there suppose to be only 1 video
                 // but if somehow user sent multiple, we still are able to solve it
                 List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
@@ -73,12 +73,11 @@ public class PostValidationServiceImplAsync implements PostValidationService {
                     if(sight_engine_media_id.isEmpty()){
                         throw new RuntimeException("cannot find sight engine's media id");
                     }
-                    postMedia.setAiValidationStatus("PROCESSING");
+                    postMedia.setAiValidationStatus("PENDING");
                     postMedia.setSightEngineMediaId(sight_engine_media_id);
                     mediaRepository.save(postMedia);
                 }
             }
-
         } catch (Exception ermWhatTheSigma) {
             ermWhatTheSigma.printStackTrace();
         }
@@ -114,29 +113,53 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     @Transactional
     public void finalizeValidation(Post post){
         try{
-            System.out.println("Finalizing validation: ");
+            System.out.println("Finalizing validation for post: " + post.getId());
+
+            // Check content validation status
+            String contentStatus = post.getContentAiValidationStatus();
+            if (contentStatus == null || "PENDING".equalsIgnoreCase(contentStatus)) {
+                System.out.println("Content validation not finished yet for post " + post.getId());
+                return;
+            }
+
             List<PostMedia> postMediaList = postMediaRepository.findByPostId(post.getId());
-            boolean mediaSafe = true;
+            boolean allMediaProcessed = true;
+            boolean anyMediaUnsafe = false;
+
             for(PostMedia postMedia : postMediaList) {
-                if(postMedia.getAiValidationStatus().equals("PENDING") ||
-                        postMedia.getAiValidationStatus().equals("PROCESSING")){
-                    throw new RuntimeException("Some medias are not validated yet. finalize failed.");
+                String status = postMedia.getAiValidationStatus();
+                if(status == null || "Pending".equalsIgnoreCase(status)){
+                    allMediaProcessed = false;
+                    break;
                 }
-                if(postMedia.getAiValidationStatus().equals("AI_UNSAFE")){
-                    mediaSafe = false;
+                if("AI_UNSAFE".equals(status)){
+                    anyMediaUnsafe = true;
                 }
             }
-            if(!mediaSafe){
-                String oldAiComment = post.getAiValidationComment();
-                post.setAiValidationStatus(oldAiComment + MEDIA_UNSAFE_COMMENT);
-                post.setAiValidationStatus("AI_UNSAFE");
-                postRepository.save(post);
+
+            if(!allMediaProcessed){
+                System.out.println("Some medias are not validated yet for post " + post.getId() + ". Finalize deferred.");
+                return;
+            }
+
+            boolean isContentUnsafe = "AI_UNSAFE".equals(contentStatus);
+            String currentComment = post.getAiValidationComment() != null ? post.getAiValidationComment() : "";
+
+            if(isContentUnsafe || anyMediaUnsafe){
+                post.setFinalAiValidationStatus("AI_UNSAFE");
+                if (anyMediaUnsafe && !currentComment.contains(MEDIA_UNSAFE_COMMENT)) {
+                    post.setAiValidationComment(currentComment + MEDIA_UNSAFE_COMMENT);
+                }
             }else{
-                String oldAiComment = post.getAiValidationComment();
-                post.setAiValidationComment(oldAiComment + MEDIA_SAFE_COMMENT);
-                postRepository.save(post);
+                post.setFinalAiValidationStatus("AI_SAFE");
+                if (!currentComment.contains(MEDIA_SAFE_COMMENT)) {
+                    post.setAiValidationComment(currentComment + MEDIA_SAFE_COMMENT);
+                }
             }
+            postRepository.save(post);
+            System.out.println("Post " + post.getId() + " finalized with status: " + post.getFinalAiValidationStatus());
         }catch(Exception ermWhatTheSigma){
+            ermWhatTheSigma.printStackTrace();
         }
     }
 }

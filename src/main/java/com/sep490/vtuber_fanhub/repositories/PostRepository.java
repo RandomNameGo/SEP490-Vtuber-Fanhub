@@ -134,7 +134,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // Find posts by AI validation status
     @Query("select p from Post p " +
             "where p.hub.id = :fanHubId " +
-            "and p.aiValidationStatus = :aiStatus " +
+            "and p.finalAiValidationStatus = :aiStatus " +
             "and p.status = 'PENDING' " +
             "and p.hub.isActive = true " +
             "order by p.createdAt desc")

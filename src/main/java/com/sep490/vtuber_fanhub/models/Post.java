@@ -56,12 +56,10 @@ public class Post {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @Lob
     @ColumnDefault("'PENDING'")
     @Column(name = "final_ai_validation_status")
     private String finalAiValidationStatus;
 
-    @Lob
     @ColumnDefault("'PENDING'")
     @Column(name = "content_ai_validation_status")
     private String contentAiValidationStatus;

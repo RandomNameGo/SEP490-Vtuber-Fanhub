@@ -110,16 +110,5 @@ public class TestController {
         );
     }
 
-    @PostMapping("/textValidation")
-    public ResponseEntity<APIResponse<String>> textValidationTest(@RequestBody String text) {
-        return ResponseEntity.ok(
-                APIResponse.<String>builder()
-                        .message("nice")
-                        .success(true)
-                        .data(contentValidationService.validateText(text))
-                        .build()
-        );
-    }
-
 
 }

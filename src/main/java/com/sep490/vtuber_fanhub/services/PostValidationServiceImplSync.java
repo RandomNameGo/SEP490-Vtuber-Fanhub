@@ -60,7 +60,7 @@ public class PostValidationServiceImplSync implements PostValidationService {
                 throw new RuntimeException("Unknown post validation type: " + post.getPostType());
             }
 
-            String textValidation = contentValidationService.validateText(post.getContent());
+            String textValidation = contentValidationService.validatePostContent(post.getTitle(), post.getContent());
             String[] text_validation_split = textValidation.split("@");
             if(text_validation_split.length<2){
                 throw new RuntimeException("AI returned incorrect form");
@@ -71,8 +71,8 @@ public class PostValidationServiceImplSync implements PostValidationService {
             totalComments.append(text_validation_split[0]);
             post.setAiValidationComment(totalComments.toString());
 
-            if(isSafe) post.setAiValidationStatus("AI_SAFE");
-            else post.setAiValidationStatus("AI_UNSAFE");
+            if(isSafe) post.setFinalAiValidationStatus("AI_SAFE");
+            else post.setFinalAiValidationStatus("AI_UNSAFE");
             postRepository.save(post);
 
         } catch (Exception ermWhatTheSigma) {

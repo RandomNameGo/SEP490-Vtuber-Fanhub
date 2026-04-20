@@ -14,9 +14,11 @@ public class ContentValidationServiceImpl implements ContentValidationService{
     private final SightEngineService sightEngineService;
 
     @Override
-    public String validateText(String text) {
+    public String validatePostContent(String title, String content) {
         String intentPrompt = String.format("""
-            Your task is to validate the following text from user
+            Your task is to validate the following content from a post.
+            A post contains of title, and content.
+            
             Text must not contain any inappropriate languages, hate, or discrimination
             But at the same time, dont be too strict.
 
@@ -25,12 +27,13 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             !!!IMPORTANT: Your answer must be in format: "comment@status"
             !!!IMPORTANT: status must be either "AI_SAFE" or "AI_UNSAFE"
 
-            Example: This commment is safe@AI_SAFE
-            Example: this comment is not safe. bad keywords found are: abc.@AI_UNSAFE
+            Example: This post's content is safe@AI_SAFE
+            Example: this post's content is not safe. bad keywords found are: ... know what, *Fuck* you an...@AI_UNSAFE
 
-            Text: "%s"
+            Title: "%s"
+            Content: "%s"
 
-            """, text);
+            """, title, content);
 
         return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }

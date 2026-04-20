@@ -260,7 +260,7 @@ public class PostServiceImpl implements PostService {
         post.setContent(request.getContent());
         post.setIsPinned(false);
         post.setStatus("PENDING");
-        post.setAiValidationStatus("PENDING");
+        post.setFinalAiValidationStatus("PENDING");
         post.setCreatedAt(Instant.now());
         post.setUpdatedAt(Instant.now());
 
@@ -1198,7 +1198,7 @@ public class PostServiceImpl implements PostService {
         }
 
         // AI Validation fields (Post level)
-        response.setAiValidationStatus(post.getAiValidationStatus());
+        response.setAiValidationStatus(post.getFinalAiValidationStatus());
         response.setAiValidationComment(post.getAiValidationComment());
 
         return response;
