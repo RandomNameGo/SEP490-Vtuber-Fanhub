@@ -22,6 +22,8 @@ public class PostValidationServiceImplAsync implements PostValidationService {
     private final PostMediaRepository postMediaRepository;
     private final String MEDIA_SAFE_COMMENT = " All medias are found safe.";
     private final String MEDIA_UNSAFE_COMMENT = " Some medias are found Unsafe.";
+    private final String VOTE_OPTION_SAFE_COMMENT = " All vote options are found safe.";
+    private final String VOTE_OPTION_UNSAFE_COMMENT = " Some vote options are found Unsafe.";
 
     @Override
     @Async("validationExecutor")
@@ -48,34 +50,42 @@ public class PostValidationServiceImplAsync implements PostValidationService {
 
             // validate media
             // if media is image type, we can solve it synchronously
-            if("IMAGE".equals(post.getPostType())) {
-                List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
-                for(PostMedia postMedia : postMediaList) {
-                    String ai_validation = contentValidationService.validateImageUrl(postMedia.getMediaUrl());
-                    String[] media_validation_split = ai_validation.split("@");
-                    if(media_validation_split.length<2){
-                        throw new RuntimeException("AI returned incorrect form");
+            switch(post.getPostType()){
+                case "IMAGE" -> {
+                    List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
+                    for(PostMedia postMedia : postMediaList) {
+                        String ai_validation = contentValidationService.validateImageUrl(postMedia.getMediaUrl());
+                        String[] media_validation_split = ai_validation.split("@");
+                        if(media_validation_split.length<2){
+                            throw new RuntimeException("AI returned incorrect form");
+                        }
+                        postMedia.setAiValidationComment(media_validation_split[0]);
+                        postMedia.setAiValidationStatus(media_validation_split[1]);
+                        mediaRepository.save(postMedia);
                     }
-                    postMedia.setAiValidationComment(media_validation_split[0]);
-                    postMedia.setAiValidationStatus(media_validation_split[1]);
-                    mediaRepository.save(postMedia);
+                    finalizeValidation(post);
                 }
-                finalizeValidation(post);
-
-            }else if("VIDEO".equals(post.getPostType())){
-                // if a post is video type, there suppose to be only 1 video
-                // but if somehow user sent multiple, we still are able to solve it
-                List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
-                for(PostMedia postMedia : postMediaList) {
-                    // send to api, api will then call back to handleVideoCallback, where it will call finalize
-                    JsonNode response = contentValidationService.validateVideoUrlAsync(postMedia.getMediaUrl());
-                    String sight_engine_media_id = response.path("media").path("id").asText();
-                    if(sight_engine_media_id.isEmpty()){
-                        throw new RuntimeException("cannot find sight engine's media id");
+                case "VIDEO" -> {
+                    // if a post is video type, there suppose to be only 1 video
+                    // but if somehow user sent multiple, we still are able to solve it
+                    List<PostMedia> postMediaList = mediaRepository.findByPostId(post.getId());
+                    for(PostMedia postMedia : postMediaList) {
+                        // send to api, api will then call back to handleVideoCallback, where it will call finalize
+                        JsonNode response = contentValidationService.validateVideoUrlAsync(postMedia.getMediaUrl());
+                        String sight_engine_media_id = response.path("media").path("id").asText();
+                        if(sight_engine_media_id.isEmpty()){
+                            throw new RuntimeException("cannot find sight engine's media id");
+                        }
+                        postMedia.setAiValidationStatus("PENDING");
+                        postMedia.setSightEngineMediaId(sight_engine_media_id);
+                        mediaRepository.save(postMedia);
                     }
-                    postMedia.setAiValidationStatus("PENDING");
-                    postMedia.setSightEngineMediaId(sight_engine_media_id);
-                    mediaRepository.save(postMedia);
+                }
+                case "TEXT", "POLL" ->{
+                    finalizeValidation(post);
+                }
+                default ->{
+                    throw new RuntimeException("Invalid post type received.");
                 }
             }
         } catch (Exception ermWhatTheSigma) {
@@ -122,18 +132,33 @@ public class PostValidationServiceImplAsync implements PostValidationService {
                 return;
             }
 
-            List<PostMedia> postMediaList = postMediaRepository.findByPostId(post.getId());
             boolean allMediaProcessed = true;
             boolean anyMediaUnsafe = false;
+            boolean anyPollUnsafe = false;
+            String pollComment = "";
 
-            for(PostMedia postMedia : postMediaList) {
-                String status = postMedia.getAiValidationStatus();
-                if(status == null || "Pending".equalsIgnoreCase(status)){
-                    allMediaProcessed = false;
-                    break;
+            if ("POLL".equals(post.getPostType())) {
+                String pollResult = contentValidationService.validatePostPollOptions(post);
+                String[] pollSplit = pollResult.split("@");
+                if (pollSplit.length >= 2) {
+                    pollComment = pollSplit[0];
+                    if ("AI_UNSAFE".equals(pollSplit[1])) {
+                        anyPollUnsafe = true;
+                    }
                 }
-                if("AI_UNSAFE".equals(status)){
-                    anyMediaUnsafe = true;
+            }
+
+            if ("IMAGE".equals(post.getPostType()) || "VIDEO".equals(post.getPostType())) {
+                List<PostMedia> postMediaList = postMediaRepository.findByPostId(post.getId());
+                for(PostMedia postMedia : postMediaList) {
+                    String status = postMedia.getAiValidationStatus();
+                    if(status == null || "Pending".equalsIgnoreCase(status)){
+                        allMediaProcessed = false;
+                        break;
+                    }
+                    if("AI_UNSAFE".equals(status)){
+                        anyMediaUnsafe = true;
+                    }
                 }
             }
 
@@ -142,20 +167,27 @@ public class PostValidationServiceImplAsync implements PostValidationService {
                 return;
             }
 
-            boolean isContentUnsafe = "AI_UNSAFE".equals(contentStatus);
-            String currentComment = post.getAiValidationComment() != null ? post.getAiValidationComment() : "";
+            StringBuilder commentBuilder = new StringBuilder(post.getAiValidationComment() != null ? post.getAiValidationComment() : "");
+            if (!pollComment.isEmpty()) {
+                commentBuilder.append("/n").append("Poll options: ").append(pollComment);
+            }
 
-            if(isContentUnsafe || anyMediaUnsafe){
+            boolean isContentUnsafe = "AI_UNSAFE".equals(contentStatus);
+
+            if (isContentUnsafe || anyMediaUnsafe || anyPollUnsafe) {
                 post.setFinalAiValidationStatus("AI_UNSAFE");
-                if (anyMediaUnsafe && !currentComment.contains(MEDIA_UNSAFE_COMMENT)) {
-                    post.setAiValidationComment(currentComment + MEDIA_UNSAFE_COMMENT);
-                }
-            }else{
+            } else {
                 post.setFinalAiValidationStatus("AI_SAFE");
-                if (!currentComment.contains(MEDIA_SAFE_COMMENT)) {
-                    post.setAiValidationComment(currentComment + MEDIA_SAFE_COMMENT);
+            }
+
+            if ("IMAGE".equals(post.getPostType()) || "VIDEO".equals(post.getPostType())) {
+                String mediaComment = anyMediaUnsafe ? MEDIA_UNSAFE_COMMENT : MEDIA_SAFE_COMMENT;
+                if (commentBuilder.indexOf(mediaComment) == -1) {
+                    commentBuilder.append("/n").append(mediaComment);
                 }
             }
+
+            post.setAiValidationComment(commentBuilder.toString());
             postRepository.save(post);
             System.out.println("Post " + post.getId() + " finalized with status: " + post.getFinalAiValidationStatus());
         }catch(Exception ermWhatTheSigma){

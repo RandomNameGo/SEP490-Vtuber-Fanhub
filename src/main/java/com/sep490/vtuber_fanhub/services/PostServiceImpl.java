@@ -934,7 +934,7 @@ public class PostServiceImpl implements PostService {
         return TranslatePostResponse.builder()
                 .translatedTitle(translatedTitle)
                 .translatedContent(translatedContent)
-                .translate_language_set(userHasSetLanguage)
+                .translateLanguageSet(userHasSetLanguage)
                     .extraComment(!userHasSetLanguage ? "Set your preferred language in the settings!" : null)
                 .build();
     }
