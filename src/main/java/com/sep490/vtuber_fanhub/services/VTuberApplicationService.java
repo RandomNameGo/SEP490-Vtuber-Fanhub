@@ -10,5 +10,7 @@ public interface VTuberApplicationService {
 
     List<VTuberApplicationResponse> getAllVTuberApplications(int pageNo, int pageSize, String sortBy);
 
+    List<VTuberApplicationResponse> getMyVTuberApplications();
+
     String reviewVTuberApplication (long vTuberApplicationId, String status, String reason);
 }

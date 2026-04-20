@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateFeedbackRequest;
 import com.sep490.vtuber_fanhub.dto.responses.FeedbackResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.FeedbackCategory;
+import com.sep490.vtuber_fanhub.models.SystemAccount;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.models.UserFeedback;
 import com.sep490.vtuber_fanhub.repositories.FeedbackCategoryRepository;
@@ -54,7 +55,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     public List<FeedbackResponse> getAllFeedback(int pageNo, int pageSize, String sortBy) {
-        User currentUser = authService.getUserFromToken(httpServletRequest);
+        SystemAccount currentUser = authService.getSystemAccountFromToken(httpServletRequest);
 
         PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
         Page<UserFeedback> feedbackPage = userFeedbackRepository.findAll(pageRequest);

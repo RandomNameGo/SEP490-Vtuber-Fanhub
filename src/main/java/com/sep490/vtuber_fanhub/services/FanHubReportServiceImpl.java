@@ -74,7 +74,6 @@ public class FanHubReportServiceImpl implements FanHubReportService {
 
             FanHubReport report = reportOpt.get();
             report.setStatus("RESOLVED");
-            report.setResolveBy(currentUser);
             report.setResolveMessage(resolveMessage);
             fanHubReportRepository.save(report);
             resolvedCount++;
@@ -147,13 +146,6 @@ public class FanHubReportServiceImpl implements FanHubReportService {
         response.setReportedByUsername(reporter.getUsername());
         response.setReportedByDisplayName(reporter.getDisplayName());
 
-        // Resolver information (if resolved)
-        if (report.getResolveBy() != null) {
-            User resolver = report.getResolveBy();
-            response.setResolvedByUserId(resolver.getId());
-            response.setResolvedByUsername(resolver.getUsername());
-            response.setResolvedByDisplayName(resolver.getDisplayName());
-        }
 
         return response;
     }

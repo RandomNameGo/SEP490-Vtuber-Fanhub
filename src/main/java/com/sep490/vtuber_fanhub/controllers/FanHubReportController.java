@@ -31,7 +31,7 @@ public class FanHubReportController {
     }
 
     @GetMapping("/with-reports")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
     public ResponseEntity<?> getAllFanHubsWithReports(
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
@@ -46,7 +46,7 @@ public class FanHubReportController {
     }
 
     @PutMapping("/bulk-resolve")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
     public ResponseEntity<?> bulkResolveFanHubReports(
             @RequestParam List<Long> reportIds,
             @RequestParam(required = false) String resolveMessage) {

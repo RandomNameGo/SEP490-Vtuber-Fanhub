@@ -31,6 +31,17 @@ public class VTuberApplicationController {
         );
     }
 
+    @GetMapping("/my-applications")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyVTuberApplications() {
+        return ResponseEntity.ok().body(APIResponse.<List<VTuberApplicationResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(vtuberApplicationService.getMyVTuberApplications())
+                .build()
+        );
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
     public ResponseEntity<?> getAllVTuberApplications(@RequestParam(defaultValue = "0") int pageNo,
