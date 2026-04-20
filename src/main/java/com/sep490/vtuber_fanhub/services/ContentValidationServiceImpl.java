@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -9,14 +10,15 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class ContentValidationServiceImpl implements ContentValidationService{
-
-    private final GroqAIService groqAIService;
+    private final GeminiAIService geminiAIService;
     private final SightEngineService sightEngineService;
 
     @Override
-    public String validateText(String text) {
+    public String validatePostContent(String title, String content) {
         String intentPrompt = String.format("""
-            Your task is to validate the following text from user
+            Your task is to validate the following content from a post.
+            A post contains of title, and content.
+            
             Text must not contain any inappropriate languages, hate, or discrimination
             But at the same time, dont be too strict.
 
@@ -25,16 +27,15 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             !!!IMPORTANT: Your answer must be in format: "comment@status"
             !!!IMPORTANT: status must be either "AI_SAFE" or "AI_UNSAFE"
 
-            Example: This commment is safe@AI_SAFE
-            Example: this comment is not safe. bad keywords found are: abc.@AI_UNSAFE
+            Example: This post's content is safe@AI_SAFE
+            Example: this post's content is not safe. bad keywords found are: ... know what, *Fuck* you an...@AI_UNSAFE
 
-            Text: "%s"
+            Title: "%s"
+            Content: "%s"
 
-            """, text);
+            """, title, content);
 
-        String result = groqAIService.sendPrompt(intentPrompt).trim();
-        System.out.println(result);
-        return result;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -55,8 +56,7 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             Text: "%s"
 
             """, mediaValidationResult.toString());
-        String result = groqAIService.sendPrompt(intentPrompt).trim();
-        return result;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -77,8 +77,7 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             SightEngine Result: "%s"
 
             """, mediaValidationResult.toString());
-        String result = groqAIService.sendPrompt(intentPrompt).trim();
-        return result;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -99,8 +98,7 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             SightEngine Result: "%s"
 
             """, mediaValidationResult.toString());
-        String result = groqAIService.sendPrompt(intentPrompt).trim();
-        return result;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     @Override
@@ -125,7 +123,6 @@ public class ContentValidationServiceImpl implements ContentValidationService{
             SightEngine Result: "%s"
 
             """, result.toString());
-        String res = groqAIService.sendPrompt(intentPrompt).trim();
-        return res;
+        return geminiAIService.sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 }

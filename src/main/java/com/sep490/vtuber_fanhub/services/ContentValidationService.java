@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ContentValidationService {
-    String validateText(String text);
+    String validatePostContent(String title, String content);
     String validateImageFile(MultipartFile file);
     String validateImageUrl(String url);
     String validateVideoUrl(String url);

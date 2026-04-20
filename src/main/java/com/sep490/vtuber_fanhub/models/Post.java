@@ -56,16 +56,18 @@ public class Post {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    @Lob
     @ColumnDefault("'PENDING'")
-    @Column(name = "ai_validation_status")
-    private String aiValidationStatus;
+    @Column(name = "final_ai_validation_status")
+    private String finalAiValidationStatus;
+
+    @ColumnDefault("'PENDING'")
+    @Column(name = "content_ai_validation_status")
+    private String contentAiValidationStatus;
 
     @Lob
     @Column(name = "ai_validation_comment")
     private String aiValidationComment;
 
-    // Since Moderators can send ai validation requests for post, we must prevent them from spamming the request.
     @Lob
     @Column(name = "ai_validation_last_sent_at")
     private Instant aiValidationLastSentAt;
