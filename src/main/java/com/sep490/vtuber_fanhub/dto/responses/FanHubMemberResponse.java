@@ -15,6 +15,7 @@ public class FanHubMemberResponse {
     private Long userId;
     private String username;
     private String displayName;
+    private String avatarUrl;
 
     private String roleInHub;
     private String status;

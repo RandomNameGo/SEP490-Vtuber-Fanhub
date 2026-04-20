@@ -471,6 +471,7 @@ public class FanHubServiceImpl implements FanHubService {
         response.setUserId(member.getUser().getId());
         response.setUsername(member.getUser().getUsername());
         response.setDisplayName(member.getUser().getDisplayName());
+        response.setAvatarUrl(member.getUser().getAvatarUrl());
         response.setRoleInHub(member.getRoleInHub());
         response.setStatus(member.getStatus());
         response.setFanHubScore(member.getFanHubScore());
