@@ -9,6 +9,7 @@ import com.sep490.vtuber_fanhub.models.SystemAccount;
 import com.sep490.vtuber_fanhub.models.User;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -20,6 +21,8 @@ import java.util.Date;
 @Service
 @RequiredArgsConstructor
 public class JWTService {
+    private final StringRedisTemplate redisTemplate;
+
     private SecretKey getSecretKey() {
         String secret = "aec5162f0ed647d4bb3cc9c926b2fb6af809992b56055bed2130adb9a1c3de8da55bfd2ef287029cb7a7e36b0d15b14b04d68cde8b060c3e5fbc6fcc7891bbe9";
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA512");
@@ -106,6 +109,11 @@ public class JWTService {
 
     public boolean isTokenValid(String token) {
         try {
+            // Check if token is blacklisted in Redis
+            if (Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + token))) {
+                return false;
+            }
+
             SignedJWT signedJWT = SignedJWT.parse(token);
             Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
             

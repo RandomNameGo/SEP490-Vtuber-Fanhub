@@ -66,4 +66,15 @@ public class AuthController {
                 .build()
         );
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        authService.logout();
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Logout successful")
+                .data("Token has been blacklisted")
+                .build()
+        );
+    }
 }

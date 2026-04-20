@@ -9,6 +9,7 @@ import com.sep490.vtuber_fanhub.repositories.SystemAccountRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,8 @@ public class AuthServiceImpl implements AuthService {
     private final SystemAccountRepository systemAccountRepository;
 
     private final HttpServletRequest httpServletRequest;
+
+    private final StringRedisTemplate redisTemplate;
 
     @Override
     public LoginResponse login(String username, String password) {
@@ -143,6 +147,26 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return builder.build();
+    }
+
+    @Override
+    public void logout() {
+        String token = jwtService.getCurrentToken(httpServletRequest);
+        if (token != null) {
+            Date expirationTime = jwtService.getExpirationTimeFromToken(token);
+            if (expirationTime != null) {
+                long ttl = expirationTime.getTime() - System.currentTimeMillis();
+                if (ttl > 0) {
+
+                    redisTemplate.opsForValue().set(
+                            "blacklist:" + token,
+                            "blacklisted",
+                            ttl + 60000,
+                            TimeUnit.MILLISECONDS
+                    );
+                }
+            }
+        }
     }
 
 

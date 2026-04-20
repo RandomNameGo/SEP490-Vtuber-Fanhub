@@ -16,4 +16,6 @@ public interface AuthService {
     SystemAccount getSystemAccountFromToken(HttpServletRequest httpServletRequest);
 
     TokenValidationResponse validateToken();
+
+    void logout();
 }

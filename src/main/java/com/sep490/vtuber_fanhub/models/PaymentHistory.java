@@ -30,4 +30,8 @@ public class PaymentHistory {
     @Column(name = "created_at")
     private Instant createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "package_id")
+    private PaidPackage packageField;
+
 }
