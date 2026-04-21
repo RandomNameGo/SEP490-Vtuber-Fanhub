@@ -7,9 +7,6 @@ import lombok.Data;
 @Data
 public class UpdateUserRequest {
 
-    @Email(message = "Invalid email format")
-    private String email;
-
     @Size(max = 100, message = "Display name must not exceed 100 characters")
     private String displayName;
 

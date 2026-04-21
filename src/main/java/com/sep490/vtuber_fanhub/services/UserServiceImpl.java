@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateEmailRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserDailyMissionResponse;
@@ -118,13 +119,6 @@ public class UserServiceImpl implements UserService{
 
         User user = authService.getUserFromToken(httpServletRequest);
 
-        if (updateUserRequest.getEmail() != null && !updateUserRequest.getEmail().isEmpty()) {
-            if (!user.getEmail().equals(updateUserRequest.getEmail()) && userRepository.existsByEmail(updateUserRequest.getEmail())) {
-                return "Email is already in use";
-            }
-            user.setEmail(updateUserRequest.getEmail());
-        }
-
         if (updateUserRequest.getDisplayName() != null) {
             user.setDisplayName(updateUserRequest.getDisplayName());
         }
@@ -142,6 +136,26 @@ public class UserServiceImpl implements UserService{
         userRepository.save(user);
 
         return "Updated user successfully";
+    }
+
+    @Override
+    @Transactional
+    public String updateEmail(UpdateEmailRequest updateEmailRequest) {
+        User user = authService.getUserFromToken(httpServletRequest);
+
+        if (!passwordEncoder.matches(updateEmailRequest.getPassword(), user.getPasswordHash())) {
+            return "Incorrect password";
+        }
+
+        if (!user.getEmail().equals(updateEmailRequest.getEmail()) && userRepository.existsByEmail(updateEmailRequest.getEmail())) {
+            return "Email is already in use";
+        }
+
+        user.setEmail(updateEmailRequest.getEmail());
+        user.setUpdatedAt(Instant.now());
+        userRepository.save(user);
+
+        return "Updated email successfully";
     }
 
     @Override

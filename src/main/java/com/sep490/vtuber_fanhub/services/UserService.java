@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateEmailRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserDailyMissionResponse;
@@ -18,6 +19,8 @@ public interface UserService {
     String createUser(CreateUserRequest createUserRequest);
 
     String updateUser(UpdateUserRequest updateUserRequest);
+
+    String updateEmail(UpdateEmailRequest updateEmailRequest);
 
     String changePassword(ChangePasswordRequest changePasswordRequest);
 

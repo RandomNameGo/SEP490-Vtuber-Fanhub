@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateEmailRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateUserRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.UserDetailResponse;
@@ -85,6 +86,26 @@ public class UserController {
                 .success(true)
                 .message("Success")
                 .data(userService.updateUser(request))
+                .build()
+        );
+    }
+
+    @PutMapping("/update-email")
+    public ResponseEntity<?> updateEmail(@RequestBody @Valid UpdateEmailRequest request) {
+        if(otpService.verifyOtp(request.getEmail(), request.getOtp())){
+            String result = userService.updateEmail(request);
+            boolean success = "Updated email successfully".equals(result);
+            return ResponseEntity.ok().body(APIResponse.<String>builder()
+                    .success(success)
+                    .message(success ? "Success" : "Fail")
+                    .data(result)
+                    .build()
+            );
+        }
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(false)
+                .message("Fail")
+                .data("Invalid OTP")
                 .build()
         );
     }
