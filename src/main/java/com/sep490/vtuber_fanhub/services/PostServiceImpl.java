@@ -1214,12 +1214,6 @@ public class PostServiceImpl implements PostService {
             throw new NotFoundException("Post not found");
         }
 
-        // Check if user is banned from interacting with posts in this hub
-        banMemberService.checkBanStatus(
-                post.get().getHub().getId(),
-                currentUser.getId(),
-                List.of("INTERACT"));
-
         Long userId = currentUser.getId();
 
         // Check if user already liked this post

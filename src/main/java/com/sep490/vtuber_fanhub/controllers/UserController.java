@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.controllers;
 
+import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
@@ -84,6 +85,18 @@ public class UserController {
                 .success(true)
                 .message("Success")
                 .data(userService.updateUser(request))
+                .build()
+        );
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody @Valid ChangePasswordRequest request) {
+        String result = userService.changePassword(request);
+        boolean success = "Changed password successfully".equals(result);
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(success)
+                .message(success ? "Success" : "Fail")
+                .data(result)
                 .build()
         );
     }

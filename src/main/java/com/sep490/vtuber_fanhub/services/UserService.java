@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
@@ -17,6 +18,8 @@ public interface UserService {
     String createUser(CreateUserRequest createUserRequest);
 
     String updateUser(UpdateUserRequest updateUserRequest);
+
+    String changePassword(ChangePasswordRequest changePasswordRequest);
 
     String uploadAvatarFrame(MultipartFile avatarFile, String frameUrl) throws IOException;
 

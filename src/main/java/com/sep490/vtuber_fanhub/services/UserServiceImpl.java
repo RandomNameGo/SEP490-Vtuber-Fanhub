@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
@@ -141,6 +142,26 @@ public class UserServiceImpl implements UserService{
         userRepository.save(user);
 
         return "Updated user successfully";
+    }
+
+    @Override
+    @Transactional
+    public String changePassword(ChangePasswordRequest changePasswordRequest) {
+        User user = authService.getUserFromToken(httpServletRequest);
+
+        if (!passwordEncoder.matches(changePasswordRequest.getOldPassword(), user.getPasswordHash())) {
+            return "Old password is incorrect";
+        }
+
+        if (!changePasswordRequest.getNewPassword().equals(changePasswordRequest.getConfirmPassword())) {
+            return "New password and confirm password do not match";
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
+        user.setUpdatedAt(Instant.now());
+        userRepository.save(user);
+
+        return "Changed password successfully";
     }
 
     @Override
