@@ -11,9 +11,6 @@ public class UpdateEmailRequest {
     @Email(message = "Invalid email format")
     private String email;
 
-    @NotBlank(message = "OTP is required")
-    private String otp;
-
     @NotBlank(message = "Password is required")
     private String password;
 }

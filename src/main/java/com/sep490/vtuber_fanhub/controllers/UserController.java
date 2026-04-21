@@ -92,20 +92,12 @@ public class UserController {
 
     @PutMapping("/update-email")
     public ResponseEntity<?> updateEmail(@RequestBody @Valid UpdateEmailRequest request) {
-        if(otpService.verifyOtp(request.getEmail(), request.getOtp())){
-            String result = userService.updateEmail(request);
-            boolean success = "Updated email successfully".equals(result);
-            return ResponseEntity.ok().body(APIResponse.<String>builder()
-                    .success(success)
-                    .message(success ? "Success" : "Fail")
-                    .data(result)
-                    .build()
-            );
-        }
+        String result = userService.updateEmail(request);
+        boolean success = "Updated email successfully".equals(result);
         return ResponseEntity.ok().body(APIResponse.<String>builder()
-                .success(false)
-                .message("Fail")
-                .data("Invalid OTP")
+                .success(success)
+                .message(success ? "Success" : "Fail")
+                .data(result)
                 .build()
         );
     }
