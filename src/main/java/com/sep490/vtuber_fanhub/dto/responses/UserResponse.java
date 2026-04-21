@@ -33,6 +33,8 @@ public class UserResponse {
 
     private List<UserHubJoinedResponse> fanHubsJoined;
 
+    private OshiResponse oshi;
+
 
     @Data
     public static class UserDisplayBadgeResponse {
@@ -64,6 +66,14 @@ public class UserResponse {
         private String subdomain;
         private String hubName;
         private String themeColor;
+        private String avatarUrl;
+    }
+
+    @Data
+    public static class OshiResponse {
+        private Long userId;
+        private String username;
+        private String displayName;
         private String avatarUrl;
     }
 }

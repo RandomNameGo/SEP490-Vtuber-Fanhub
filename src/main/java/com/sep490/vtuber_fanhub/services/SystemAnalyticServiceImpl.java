@@ -128,6 +128,15 @@ public class SystemAnalyticServiceImpl implements SystemAnalyticService {
         response.setUpdatedAt(user.getUpdatedAt());
         response.setIsActive(user.getIsActive());
 
+        if (user.getOshiUser() != null) {
+            UserResponse.OshiResponse oshiResponse = new UserResponse.OshiResponse();
+            oshiResponse.setUserId(user.getOshiUser().getId());
+            oshiResponse.setUsername(user.getOshiUser().getUsername());
+            oshiResponse.setDisplayName(user.getOshiUser().getDisplayName());
+            oshiResponse.setAvatarUrl(user.getOshiUser().getAvatarUrl());
+            response.setOshi(oshiResponse);
+        }
+
         response.setTotalBadges(userBadgeRepository.countByUserId(user.getId()));
         response.setTotalFanHubs(fanHubMemberRepository.countByUserId(user.getId()));
         response.setTotalReceivedGifts(postCommentGiftRepository.countByReceiverId(user.getId()));

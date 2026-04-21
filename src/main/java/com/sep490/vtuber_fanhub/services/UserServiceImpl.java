@@ -222,6 +222,15 @@ public class UserServiceImpl implements UserService{
         response.setUpdatedAt(user.getUpdatedAt());
         response.setIsActive(user.getIsActive());
 
+        if (user.getOshiUser() != null) {
+            UserResponse.OshiResponse oshiResponse = new UserResponse.OshiResponse();
+            oshiResponse.setUserId(user.getOshiUser().getId());
+            oshiResponse.setUsername(user.getOshiUser().getUsername());
+            oshiResponse.setDisplayName(user.getOshiUser().getDisplayName());
+            oshiResponse.setAvatarUrl(user.getOshiUser().getAvatarUrl());
+            response.setOshi(oshiResponse);
+        }
+
         response.setTotalBadges(userBadgeRepository.countByUserId(userId));
         response.setTotalFanHubs(fanHubMemberRepository.countByUserId(userId));
         response.setTotalReceivedGifts(postCommentGiftRepository.countByReceiverId(userId));
@@ -373,6 +382,15 @@ public class UserServiceImpl implements UserService{
         response.setCreatedAt(user.getCreatedAt());
         response.setUpdatedAt(user.getUpdatedAt());
         response.setIsActive(user.getIsActive());
+
+        if (user.getOshiUser() != null) {
+            UserDetailResponse.OshiResponse oshiResponse = new UserDetailResponse.OshiResponse();
+            oshiResponse.setUserId(user.getOshiUser().getId());
+            oshiResponse.setUsername(user.getOshiUser().getUsername());
+            oshiResponse.setDisplayName(user.getOshiUser().getDisplayName());
+            oshiResponse.setAvatarUrl(user.getOshiUser().getAvatarUrl());
+            response.setOshi(oshiResponse);
+        }
 
         return response;
     }

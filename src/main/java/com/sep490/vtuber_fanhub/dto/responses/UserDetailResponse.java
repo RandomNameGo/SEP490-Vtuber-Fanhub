@@ -20,4 +20,14 @@ public class UserDetailResponse {
     private Instant createdAt;
     private Instant updatedAt;
     private Boolean isActive;
+
+    private OshiResponse oshi;
+
+    @Data
+    public static class OshiResponse {
+        private Long userId;
+        private String username;
+        private String displayName;
+        private String avatarUrl;
+    }
 }
