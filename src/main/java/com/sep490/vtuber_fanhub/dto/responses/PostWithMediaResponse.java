@@ -40,6 +40,7 @@ public class PostWithMediaResponse {
 
     private String aiValidationStatus;
     private String aiValidationComment;
+    private String aiContentValidationStatus;
 
     @Data
     public static class PostMediaItem {
