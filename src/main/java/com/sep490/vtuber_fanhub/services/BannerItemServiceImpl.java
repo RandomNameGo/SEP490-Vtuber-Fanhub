@@ -143,7 +143,7 @@ public class BannerItemServiceImpl implements BannerItemService {
 
         // Check if banner is active
         Instant now = Instant.now();
-        if (now.isBefore(banner.getStartTime()) || now.isAfter(banner.getEndTime())) {
+        if (Boolean.FALSE.equals(banner.getIsActive()) || now.isBefore(banner.getStartTime()) || now.isAfter(banner.getEndTime())) {
             throw new IllegalStateException("Banner is not currently active");
         }
 

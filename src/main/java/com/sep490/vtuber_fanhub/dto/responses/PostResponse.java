@@ -35,6 +35,9 @@ public class PostResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
+    private Instant startTime;
+    private Instant endTime;
+
     private Long likeCount;
     private Boolean isLikedByCurrentUser;
 

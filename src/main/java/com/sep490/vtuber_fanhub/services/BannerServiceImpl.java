@@ -36,11 +36,9 @@ public class BannerServiceImpl implements BannerService {
         }
 
         // Check if there's an overlapping active banner
-        Optional<Banner> overlappingBanner = bannerRepository.findOverlappingBanner(
-                request.getStartTime(), request.getEndTime());
-        if (overlappingBanner.isPresent()) {
-            throw new IllegalStateException("Another banner is already active during this time period");
-        }
+        List<Banner> overlappingBanners = bannerRepository.findOverlappingBanners(
+                request.getStartTime(), request.getEndTime(), -1L);
+        boolean isActive = overlappingBanners.isEmpty();
 
         // Upload banner image if provided
         String bannerImgUrl = null;
@@ -60,11 +58,52 @@ public class BannerServiceImpl implements BannerService {
         banner.setGachaCost(request.getGachaCost());
         banner.setCreatedAt(Instant.now());
         banner.setBannerImgUrl(bannerImgUrl);
-        banner.setIsActive(true);
+        banner.setIsActive(isActive);
 
         bannerRepository.save(banner);
 
         return "Created banner successfully";
+    }
+
+    @Override
+    @Transactional
+    public String activateBanner(Long bannerId) {
+        Banner banner = bannerRepository.findById(bannerId)
+                .orElseThrow(() -> new NotFoundException("Banner not found"));
+
+        if (Boolean.TRUE.equals(banner.getIsActive())) {
+            return "Banner is already active";
+        }
+
+        // Deactivate any overlapping active banners
+        List<Banner> overlappingBanners = bannerRepository.findOverlappingBanners(
+                banner.getStartTime(), banner.getEndTime(), bannerId);
+        
+        for (Banner overlapping : overlappingBanners) {
+            overlapping.setIsActive(false);
+        }
+        bannerRepository.saveAll(overlappingBanners);
+
+        banner.setIsActive(true);
+        bannerRepository.save(banner);
+
+        return "Banner activated successfully";
+    }
+
+    @Override
+    @Transactional
+    public String deactivateBanner(Long bannerId) {
+        Banner banner = bannerRepository.findById(bannerId)
+                .orElseThrow(() -> new NotFoundException("Banner not found"));
+
+        if (Boolean.FALSE.equals(banner.getIsActive())) {
+            return "Banner is already inactive";
+        }
+
+        banner.setIsActive(false);
+        bannerRepository.save(banner);
+
+        return "Banner deactivated successfully";
     }
 
     @Override

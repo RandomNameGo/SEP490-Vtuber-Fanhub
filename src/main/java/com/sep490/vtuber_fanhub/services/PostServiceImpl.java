@@ -173,6 +173,8 @@ public class PostServiceImpl implements PostService {
         post.setStatus(isAnnouncement || isSchedule ? "APPROVED" : "PENDING");
         post.setIsAnnouncement(isAnnouncement);
         post.setIsSchedule(isSchedule);
+        post.setStartTime(request.getStartTime());
+        post.setEndTime(request.getEndTime());
         post.setCreatedAt(Instant.now());
         post.setUpdatedAt(Instant.now());
 
@@ -814,16 +816,17 @@ public class PostServiceImpl implements PostService {
                     .collect(Collectors.toList());
         }
 
-        // Case 2: Authenticated user - get personalized feed with 70/30 ratio
         Long userId = currentUser.getId();
 
-        // Get all Fan Hubs the user has joined
-        List<FanHubMember> userMemberships = fanHubMemberRepository.findAllByUserId(userId);
-        List<Long> followedHubIds = userMemberships.stream()
+        Set<Long> followedHubIdsSet = fanHubMemberRepository.findAllByUserId(userId).stream()
                 .map(member -> member.getHub().getId())
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
-        // If user hasn't joined any hubs, return public posts as suggestions
+        fanHubRepository.findByOwnerUserIdAndIsActive(userId, true)
+                .ifPresent(hub -> followedHubIdsSet.add(hub.getId()));
+
+        List<Long> followedHubIds = new ArrayList<>(followedHubIdsSet);
+
         if (followedHubIds.isEmpty()) {
             Page<Post> publicPosts = postRepository.findPublicPosts(Collections.emptyList(), paging);
             if (publicPosts.isEmpty()) {
@@ -1040,6 +1043,8 @@ public class PostServiceImpl implements PostService {
         response.setIsPinned(post.getIsPinned());
         response.setCreatedAt(post.getCreatedAt());
         response.setUpdatedAt(post.getUpdatedAt());
+        response.setStartTime(post.getStartTime());
+        response.setEndTime(post.getEndTime());
 
         //Media URLs
         List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
@@ -1128,6 +1133,8 @@ public class PostServiceImpl implements PostService {
         response.setIsPinned(post.getIsPinned());
         response.setCreatedAt(post.getCreatedAt());
         response.setUpdatedAt(post.getUpdatedAt());
+        response.setStartTime(post.getStartTime());
+        response.setEndTime(post.getEndTime());
 
         // Media with AI validation fields
         List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());

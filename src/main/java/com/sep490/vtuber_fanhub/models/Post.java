@@ -83,4 +83,10 @@ public class Post {
     @Column(name = "is_schedule")
     private Boolean isSchedule;
 
+    @Column(name = "start_time")
+    private Instant startTime;
+
+    @Column(name = "end_time")
+    private Instant endTime;
+
 }

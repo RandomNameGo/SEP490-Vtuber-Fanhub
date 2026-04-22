@@ -41,6 +41,28 @@ public class BannerController {
         );
     }
 
+    @PostMapping("/{id}/activate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> activateBanner(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(bannerService.activateBanner(id))
+                .build()
+        );
+    }
+
+    @PostMapping("/{id}/deactivate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> deactivateBanner(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(bannerService.deactivateBanner(id))
+                .build()
+        );
+    }
+
     @GetMapping("/all")
     public ResponseEntity<?> getAllBanners(
             @RequestParam(defaultValue = "0") int pageNo,

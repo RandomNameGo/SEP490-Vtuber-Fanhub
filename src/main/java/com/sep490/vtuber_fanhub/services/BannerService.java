@@ -12,4 +12,8 @@ public interface BannerService {
     List<BannerResponse> getAllBanners(int pageNo, int pageSize, String sortBy);
 
     BannerResponse getActiveBanner();
+
+    String activateBanner(Long bannerId);
+
+    String deactivateBanner(Long bannerId);
 }
