@@ -1207,6 +1207,7 @@ public class PostServiceImpl implements PostService {
         // AI Validation fields (Post level)
         response.setAiValidationStatus(post.getFinalAiValidationStatus());
         response.setAiValidationComment(post.getAiValidationComment());
+        response.setAiContentValidationStatus(post.getContentAiValidationStatus());
 
         return response;
     }
