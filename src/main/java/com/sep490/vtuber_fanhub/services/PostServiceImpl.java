@@ -793,8 +793,8 @@ public class PostServiceImpl implements PostService {
         return "Job sent successfully!";
     }
 
+    @Override
     public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy) {
-        // Get current user from token
         User currentUser = null;
         try {
             currentUser = authService.getUserFromToken(httpServletRequest);
@@ -807,17 +807,25 @@ public class PostServiceImpl implements PostService {
 
         // Case 1: Unauthenticated user - return public posts sorted by interactions
         if (currentUser == null) {
-            Page<Post> publicPosts = postRepository.findPublicPostsOrderByInteractions(paging);
-            if (publicPosts.isEmpty()) {
-                return List.of();
-            }
-            return publicPosts.getContent().stream()
+            return postRepository.findPublicPostsOrderByInteractions(paging).getContent().stream()
                     .map(this::mapToPostResponse)
                     .collect(Collectors.toList());
         }
 
-        Long userId = currentUser.getId();
+        List<Long> followedHubIds = getFollowedHubIds(currentUser.getId());
 
+        // Case 2: Authenticated but no followed hubs - return any public posts
+        if (followedHubIds.isEmpty()) {
+            return postRepository.findPublicPosts(Collections.emptyList(), paging).getContent().stream()
+                    .map(this::mapToPostResponse)
+                    .collect(Collectors.toList());
+        }
+
+        // Case 3: Authenticated with followed hubs - return personalized mix
+        return getAuthenticatedPersonalizedFeed(followedHubIds, pageNo, pageSize, sortBy);
+    }
+
+    private List<Long> getFollowedHubIds(Long userId) {
         Set<Long> followedHubIdsSet = fanHubMemberRepository.findAllByUserId(userId).stream()
                 .map(member -> member.getHub().getId())
                 .collect(Collectors.toSet());
@@ -825,69 +833,87 @@ public class PostServiceImpl implements PostService {
         fanHubRepository.findByOwnerUserIdAndIsActive(userId, true)
                 .ifPresent(hub -> followedHubIdsSet.add(hub.getId()));
 
-        List<Long> followedHubIds = new ArrayList<>(followedHubIdsSet);
+        return new ArrayList<>(followedHubIdsSet);
+    }
 
-        if (followedHubIds.isEmpty()) {
-            Page<Post> publicPosts = postRepository.findPublicPosts(Collections.emptyList(), paging);
-            if (publicPosts.isEmpty()) {
-                return List.of();
-            }
-            return publicPosts.getContent().stream()
-                    .map(this::mapToPostResponse)
-                    .collect(Collectors.toList());
-        }
+    private List<PostResponse> getAuthenticatedPersonalizedFeed(List<Long> followedHubIds, int pageNo, int pageSize, String sortBy) {
+        int totalNeeded = (pageNo + 1) * pageSize;
 
-        // Calculate the number of posts for each category (70/30 split)
-        // Ensure minimum counts to avoid fetching 0 posts for either category
-        int followedPostsCount = Math.max(1, (int) Math.ceil(pageSize * FOLLOWED_RATIO));
-        int suggestionPostsCount = Math.max(1, pageSize - followedPostsCount);
+        // Fetch up to totalNeeded from each source to allow for full backfilling if one is empty
+        Pageable fetchPageable = PageRequest.of(0, totalNeeded, Sort.by(Sort.Direction.DESC, sortBy));
+        List<Post> followedPosts = postRepository.findByHubIdInAndStatusApproved(followedHubIds, fetchPageable).getContent();
 
-        // Adjust followedPostsCount if suggestionPostsCount increase causes total to exceed pageSize
-        if (followedPostsCount + suggestionPostsCount > pageSize) {
-            followedPostsCount = pageSize - suggestionPostsCount;
-        }
-
-        // Ensure followedPostsCount is at least 1 after adjustment
-        followedPostsCount = Math.max(1, followedPostsCount);
-
-        // Calculate total posts needed to cover up to the requested page
-        int pageMultiplier = pageNo + 1;
-
-        // Fetch posts from followed hubs (70%)
-        Pageable followedPageable = PageRequest.of(0, followedPostsCount * pageMultiplier, Sort.by(Sort.Direction.DESC, sortBy));
-        List<Post> followedPosts = postRepository.findByHubIdInAndStatusApproved(followedHubIds, followedPageable)
-                .getContent();
-
-        // Get categories from user's followed hubs for smart suggestions
         List<String> followedCategories = postRepository.findCategoriesByHubIds(followedHubIds);
+        List<Post> suggestionPosts = fetchSuggestionPosts(followedHubIds, followedCategories, totalNeeded, sortBy);
 
-        // Fetch suggestion posts (30%)
-        List<Post> suggestionPosts;
-        if (followedCategories.isEmpty()) {
-            // No categories found, get any public posts
-            Pageable suggestionPageable = PageRequest.of(0, suggestionPostsCount * pageMultiplier, Sort.by(Sort.Direction.DESC, sortBy));
-            suggestionPosts = postRepository.findPublicPosts(followedHubIds, suggestionPageable).getContent();
-        } else {
-            // Get posts from public hubs with similar categories
-            Pageable suggestionPageable = PageRequest.of(0, suggestionPostsCount * pageMultiplier, Sort.by(Sort.Direction.DESC, sortBy));
-            suggestionPosts = postRepository.findPublicPostsByCategories(followedHubIds, followedCategories, suggestionPageable)
-                    .getContent();
+        // Merge posts maintaining ratio but filling gaps to ensure pageSize is met
+        List<Post> mergedPosts = mergePostsWithBackfill(followedPosts, suggestionPosts, totalNeeded);
+
+        return paginateMergedResults(mergedPosts, pageNo, pageSize);
+    }
+
+    private List<Post> fetchSuggestionPosts(List<Long> followedHubIds, List<String> followedCategories, int totalNeeded, String sortBy) {
+        Pageable suggestionPageable = PageRequest.of(0, totalNeeded, Sort.by(Sort.Direction.DESC, sortBy));
+        List<Post> suggestions = new ArrayList<>();
+
+        if (!followedCategories.isEmpty()) {
+            suggestions = postRepository.findPublicPostsByCategories(followedHubIds, followedCategories, suggestionPageable).getContent();
         }
 
-        // Merge posts maintaining 70/30 ratio with interleaving
-        List<Post> mergedPosts = mergePostsByRatio(followedPosts, suggestionPosts, followedPostsCount * pageMultiplier, suggestionPostsCount * pageMultiplier);
+        // Fallback: If no category-based suggestions found (or no categories), get any public posts
+        if (suggestions.isEmpty()) {
+            suggestions = postRepository.findPublicPosts(followedHubIds, suggestionPageable).getContent();
+        }
 
-        // Apply pagination to merged results
+        return suggestions;
+    }
+
+    private List<Post> mergePostsWithBackfill(List<Post> followed, List<Post> suggestions, int totalNeeded) {
+        List<Post> merged = new ArrayList<>();
+        int fIdx = 0;
+        int sIdx = 0;
+        Set<Long> seenIds = new HashSet<>();
+
+        while (merged.size() < totalNeeded && (fIdx < followed.size() || sIdx < suggestions.size())) {
+            boolean shouldPickSuggestion = false;
+            if (sIdx < suggestions.size()) {
+                if (fIdx >= followed.size()) {
+                    shouldPickSuggestion = true;
+                } else {
+                    // Ratio-based pick: Aim for SUGGESTION_RATIO (0.3)
+                    // If current ratio is below target, pick suggestion.
+                    // Empty list starts with ratio 0, so pick suggestion first to guarantee "at least 1".
+                    double currentRatio = merged.isEmpty() ? 0 : (double) sIdx / merged.size();
+                    if (currentRatio < SUGGESTION_RATIO) {
+                        shouldPickSuggestion = true;
+                    }
+                }
+            }
+
+            if (shouldPickSuggestion) {
+                Post p = suggestions.get(sIdx++);
+                if (seenIds.add(p.getId())) {
+                    merged.add(p);
+                }
+            } else if (fIdx < followed.size()) {
+                Post p = followed.get(fIdx++);
+                if (seenIds.add(p.getId())) {
+                    merged.add(p);
+                }
+            } else {
+                break;
+            }
+        }
+        return merged;
+    }
+
+    private List<PostResponse> paginateMergedResults(List<Post> mergedPosts, int pageNo, int pageSize) {
         int startIndex = pageNo * pageSize;
         int endIndex = Math.min(startIndex + pageSize, mergedPosts.size());
 
-        // If requested page is beyond available posts, return the last valid page instead of empty
         if (startIndex >= mergedPosts.size()) {
-            // Calculate last valid page start index
             int totalPages = (int) Math.ceil((double) mergedPosts.size() / pageSize);
-            if (totalPages == 0) {
-                return List.of();
-            }
+            if (totalPages == 0) return Collections.emptyList();
             startIndex = (totalPages - 1) * pageSize;
             endIndex = mergedPosts.size();
         }
@@ -971,59 +997,6 @@ public class PostServiceImpl implements PostService {
         return SummarizePostResponse.builder()
                 .summarizeResult(geminiAIServiceImpl.summarizePost(post.getContent(), post.getTitle(), summmaryLanguage))
                 .build();
-    }
-
-
-    //Merge followed posts and suggestion posts maintaining the 70/30 ratio.
-    private List<Post> mergePostsByRatio(List<Post> followedPosts,
-                                          List<Post> suggestionPosts,
-                                          int followedCount,
-                                          int suggestionCount) {
-        List<Post> merged = new ArrayList<>();
-
-        // Limit posts to desired counts
-        List<Post> limitedFollowed = followedPosts.stream()
-                .limit(followedCount)
-                .toList();
-
-        List<Post> limitedSuggestions = suggestionPosts.stream()
-                .limit(suggestionCount)
-                .toList();
-
-        // Remove duplicates based on post ID
-        Set<Long> seenPostIds = new HashSet<>();
-
-        // Interleave posts: show 3 followed posts, then 1 suggestion
-        // Mimic natural distribution rather than blocking
-        int followedIndex = 0;
-        int suggestionIndex = 0;
-        int followedInCurrentBatch = 0;
-        final int BATCH_SIZE = 3;
-
-        while (followedIndex < limitedFollowed.size() || suggestionIndex < limitedSuggestions.size()) {
-            // Add followed posts in batches
-            while (followedInCurrentBatch < BATCH_SIZE && followedIndex < limitedFollowed.size()) {
-                Post post = limitedFollowed.get(followedIndex);
-                if (seenPostIds.add(post.getId())) {
-                    merged.add(post);
-                }
-                followedIndex++;
-                followedInCurrentBatch++;
-            }
-
-            // Add one suggestion post
-            if (suggestionIndex < limitedSuggestions.size()) {
-                Post post = limitedSuggestions.get(suggestionIndex);
-                if (seenPostIds.add(post.getId())) {
-                    merged.add(post);
-                }
-                suggestionIndex++;
-            }
-
-            followedInCurrentBatch = 0;
-        }
-
-        return merged;
     }
 
     private PostResponse mapToPostResponse(Post post) {
