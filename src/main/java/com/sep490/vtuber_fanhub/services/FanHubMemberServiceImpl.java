@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PendingMemberResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.*;
@@ -170,7 +171,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
     }
 
     @Override
-    public List<FanHubMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PendingMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -197,11 +198,41 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         if (pagedMembers.hasContent()) {
             return pagedMembers.getContent().stream()
-                    .map(this::mapToResponse)
+                    .map(this::mapToPendingMemberResponse)
                     .collect(Collectors.toList());
         }
 
         return List.of();
+    }
+
+    private PendingMemberResponse mapToPendingMemberResponse(FanHubMember entity) {
+        PendingMemberResponse response = new com.sep490.vtuber_fanhub.dto.responses.PendingMemberResponse();
+        response.setId(entity.getId());
+        response.setHubId(entity.getHub().getId());
+        response.setHubName(entity.getHub().getHubName());
+        response.setRoleInHub(entity.getRoleInHub());
+        response.setStatus(entity.getStatus());
+        response.setFanHubScore(entity.getFanHubScore());
+        response.setJoinedAt(entity.getJoinedAt());
+        response.setTitle(entity.getTitle());
+
+        if (entity.getUser() != null) {
+            User user = entity.getUser();
+            response.setUserId(user.getId());
+            response.setUsername(user.getUsername());
+            response.setDisplayName(user.getDisplayName());
+            response.setAvatarUrl(user.getAvatarUrl());
+        }
+
+        // Fetch and map answers
+        List<FanHubJoinAnswer> answers = answerRepository.findByMemberId(entity.getId());
+        if (!answers.isEmpty()) {
+            response.setJoinAnswers(answers.stream()
+                    .map(this::mapToAnswerResponse)
+                    .collect(Collectors.toList()));
+        }
+
+        return response;
     }
 
     @Override

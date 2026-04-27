@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -46,6 +47,7 @@ public class BanMemberServiceImpl implements BanMemberService {
     private final NotificationService notificationService;
 
     @Override
+    @Transactional
     public String banFanHubMember(CreateBanMemberRequest request) {
 
         User currentUser = authService.getUserFromToken(httpServletRequest);
@@ -70,12 +72,45 @@ public class BanMemberServiceImpl implements BanMemberService {
             throw new AccessDeniedException("Access denied");
         }
 
+        String banType = request.getBanType().toUpperCase();
+
+        // Check for existing active ban of the same type
+        Optional<BanMember> existingBanOpt = banMemberRepository
+                .findByHubIdAndUserIdAndBanTypeAndIsActiveTrue(fanHubId, fanHubMember.getUser().getId(), banType);
+
+        if (existingBanOpt.isPresent()) {
+            BanMember existingBan = existingBanOpt.get();
+            Instant existingUntil = existingBan.getBannedUntil();
+            Instant newUntil = request.getBannedUntil();
+
+            // Compare durations
+            boolean isNewLonger = false;
+            if (existingUntil == null) {
+                // Existing is permanent, nothing can be longer
+                isNewLonger = false;
+            } else if (newUntil == null) {
+                // New is permanent, existing is not
+                isNewLonger = true;
+            } else {
+                // Both have expiry, compare dates
+                isNewLonger = newUntil.isAfter(existingUntil);
+            }
+
+            if (!isNewLonger) {
+                return "Member already has a longer or equal ban of this type";
+            }
+
+            // Deactivate the old ban
+            existingBan.setIsActive(false);
+            banMemberRepository.save(existingBan);
+        }
+
         BanMember banMember = new BanMember();
         banMember.setHub(fanHubMember.getHub());
         banMember.setUser(fanHubMember.getUser());
         banMember.setBannedBy(currentUser);
         banMember.setReason(request.getReason());
-        banMember.setBanType(request.getBanType());
+        banMember.setBanType(banType);
         banMember.setBannedUntil(request.getBannedUntil());
         banMember.setIsActive(true);
         banMember.setCreatedAt(Instant.now());

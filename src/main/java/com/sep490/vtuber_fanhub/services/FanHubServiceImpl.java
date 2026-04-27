@@ -63,6 +63,8 @@ public class FanHubServiceImpl implements FanHubService {
 
     private final FanHubStrikeRepository fanHubStrikeRepository;
 
+    private final com.sep490.vtuber_fanhub.repositories.FanHubJoinQuestionRepository questionRepository;
+
     @Override
     @Transactional
     public String createFanHub(CreateFanHubRequest request) {
@@ -400,6 +402,9 @@ public class FanHubServiceImpl implements FanHubService {
         response.setIsPrivate(fanHub.getIsPrivate());
         response.setRequiresApproval(fanHub.getRequiresApproval());
         response.setCreatedAt(fanHub.getCreatedAt());
+
+        boolean hasQuestions = !questionRepository.findActiveQuestionsByHubId(fanHub.getId()).isEmpty();
+        response.setHasJoinQuestions(hasQuestions);
 
         User owner = fanHub.getOwnerUser();
         response.setOwnerUserId(owner.getId());

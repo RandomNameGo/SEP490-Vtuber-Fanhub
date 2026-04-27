@@ -74,13 +74,13 @@ public class FanHubMemberController {
     }
 
     @GetMapping("/pending-members/{fanHubId}")
-    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
     public ResponseEntity<?> getPendingFanHubMembers(
             @PathVariable long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "joinedAt") String sortBy) {
-        return ResponseEntity.ok().body(APIResponse.<List<FanHubMemberResponse>>builder()
+        return ResponseEntity.ok().body(APIResponse.<List<com.sep490.vtuber_fanhub.dto.responses.PendingMemberResponse>>builder()
                 .success(true)
                 .message("Success")
                 .data(fanHubMemberService.getPendingFanHubMembers(fanHubId, pageNo, pageSize, sortBy))

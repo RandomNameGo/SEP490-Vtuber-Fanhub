@@ -29,4 +29,6 @@ public class FanHubResponse {
     private List<String> categories;
 
     private Long memberCount;
+
+    private Boolean hasJoinQuestions;
 }

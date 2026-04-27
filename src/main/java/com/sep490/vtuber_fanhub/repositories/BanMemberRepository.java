@@ -16,6 +16,9 @@ public interface BanMemberRepository extends JpaRepository<BanMember, Long> {
 
     Optional<BanMember> findByHubIdAndUserIdAndIsActiveTrue(Long hubId, Long userId);
 
+    @EntityGraph(attributePaths = {"hub", "user", "bannedBy"})
+    Optional<BanMember> findByHubIdAndUserIdAndBanTypeAndIsActiveTrue(Long hubId, Long userId, String banType);
+
     @Query("SELECT b FROM BanMember b WHERE b.hub.id = :hubId AND b.user.id = :userId AND b.isActive = true AND b.banType IN :banTypes")
     List<BanMember> findByHubIdAndUserIdAndIsActiveTrueAndBanTypeIn(
             @Param("hubId") Long hubId,
