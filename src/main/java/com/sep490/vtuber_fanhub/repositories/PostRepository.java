@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.repositories;
 import com.sep490.vtuber_fanhub.models.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,9 +14,11 @@ import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p where p.hub.id = :fanHubId and p.status = :status and p.hub.isActive = true")
     Page<Post> findByHubIdAndStatus(Long fanHubId, String status, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select distinct p from Post p " +
             "left join PostHashtag ph on p.id = ph.post.id " +
             "where p.hub.id = :fanHubId " +
@@ -28,6 +31,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             String hashtag,
             Pageable pageable);
 
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select distinct p from Post p " +
             "left join PostHashtag ph on p.id = ph.post.id " +
             "where p.hub.id = :fanHubId " +
@@ -43,6 +47,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable);
 
     //Find posts from specific hub IDs (user's followed hubs)
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "where p.hub.id in :hubIds " +
             "and p.status = 'APPROVED' " +
@@ -51,6 +56,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByHubIdInAndStatusApproved(List<Long> hubIds, Pageable pageable);
 
     //Find public posts with similar categories for suggestions
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select distinct p from Post p " +
             "join FanHubCategory fc on p.hub.id = fc.hub.id " +
             "where p.hub.isPrivate = false " +
@@ -65,6 +71,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable);
 
     //Find any public posts (fallback for suggestions)
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "where p.hub.isPrivate = false " +
             "and p.hub.isActive = true " +
@@ -76,6 +83,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable);
 
     //Find public posts sorted by interaction count
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "left join PostLike pl on p.id = pl.post.id " +
             "left join PostComment pc on p.id = pc.post.id " +
@@ -93,6 +101,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<String> findCategoriesByHubIds(List<Long> hubIds);
 
     // Find trending posts by FanHub: APPROVED posts ordered by likes + comments count desc
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "left join PostLike pl on p.id = pl.post.id " +
             "left join PostComment pc on p.id = pc.post.id " +
@@ -104,6 +113,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findTrendingPostsByFanHub(Long fanHubId, Pageable pageable);
 
     // Find the most interacted post across all public FanHubs in the last 24 hours
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "left join PostLike pl on p.id = pl.post.id and pl.createdAt >= :oneDayAgo " +
             "left join PostComment pc on p.id = pc.post.id and pc.createdAt >= :oneDayAgo " +
@@ -117,6 +127,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findTrendingPost(@Param("oneDayAgo") Instant oneDayAgo, Pageable pageable);
 
     // Find posts by username with pagination
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "where p.user.username = :username " +
             "and p.hub.isActive = true " +
@@ -124,6 +135,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByUsername(String username, Pageable pageable);
 
     // Find posts by hub id excluding DELETED status
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "where p.hub.id = :fanHubId " +
             "and p.status != 'DELETED' " +
@@ -132,6 +144,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByHubIdAndStatusNotDeleted(Long fanHubId, Pageable pageable);
 
     // Find posts by AI validation status
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "where p.hub.id = :fanHubId " +
             "and p.finalAiValidationStatus = :aiStatus " +
@@ -141,6 +154,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByHubIdAndAiValidationStatusAndPending(Long fanHubId, String aiStatus);
 
     // Find announcement or schedule posts by hub id
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "where p.hub.id = :fanHubId " +
             "and p.status = :status " +
@@ -156,6 +170,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // Search posts by title or content containing keyword
     // Note: Using CAST on content because it's a @Lob field and cannot use LIKE directly
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("SELECT p FROM Post p " +
             "WHERE p.status = 'APPROVED' " +
             "AND p.hub.isActive = true " +
@@ -168,6 +183,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT ph.hashtag FROM PostHashtag ph GROUP BY ph.hashtag ORDER BY COUNT(ph.post.id) DESC")
     List<String> findTrendingHashtags(Pageable pageable);
 
+    @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select p from Post p " +
             "where p.hub.isPrivate = false " +
             "and p.hub.isActive = true " +

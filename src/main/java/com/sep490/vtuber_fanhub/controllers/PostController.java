@@ -80,6 +80,21 @@ public class PostController {
         );
     }
 
+    @GetMapping("/fan-hub/{fanHubId}/rejected")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
+    public ResponseEntity<?> getRejectedPosts(@PathVariable long fanHubId,
+                                              @RequestParam(defaultValue = "0") int pageNo,
+                                              @RequestParam(defaultValue = "10") int pageSize,
+                                              @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.getRejectedPosts(fanHubId, pageNo, pageSize, sortBy))
+                .build()
+        );
+    }
+
     @PostMapping("/validate")
     @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> sendAiValidate(@RequestParam Long postId) {

@@ -18,6 +18,8 @@ public interface PostService {
 
     List<PostWithMediaResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
 
+    List<PostWithMediaResponse> getRejectedPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
+
     List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername);
 
     List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername);
