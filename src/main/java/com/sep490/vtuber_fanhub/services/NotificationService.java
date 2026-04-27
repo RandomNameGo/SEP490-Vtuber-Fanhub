@@ -51,6 +51,8 @@ public interface NotificationService {
 
     void sendMemberBannedNotification(Long userId, Long fanHubId, String fanHubName, String reason);
 
+    void sendMemberKickedNotification(Long userId, Long fanHubId, String fanHubName, Long kickedByUserId);
+
     void sendMemberAcceptedNotification(Long userId, Long fanHubId, String fanHubName);
 
     void sendReportPostResolvedNotification(Long reporterId, Long postId, String postTitle, String resolution, Long resolvedByUserId);

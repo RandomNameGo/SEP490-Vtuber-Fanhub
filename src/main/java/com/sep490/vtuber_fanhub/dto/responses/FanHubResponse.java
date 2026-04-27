@@ -24,6 +24,7 @@ public class FanHubResponse {
     private Long ownerUserId;
     private String ownerUsername;
     private String ownerDisplayName;
+    private String ownerAvatarUrl;
 
     private List<String> categories;
 

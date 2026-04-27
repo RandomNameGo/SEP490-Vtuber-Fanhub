@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.repositories;
 import com.sep490.vtuber_fanhub.models.BanMember;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,12 +22,18 @@ public interface BanMemberRepository extends JpaRepository<BanMember, Long> {
             @Param("userId") Long userId,
             @Param("banTypes") List<String> banTypes);
 
+    @EntityGraph(attributePaths = {"hub", "user", "bannedBy"})
     @Query("SELECT b FROM BanMember b WHERE b.hub.id = :hubId AND b.isActive = true ORDER BY b.createdAt DESC")
     Page<BanMember> findByHubIdAndIsActiveTrue(@Param("hubId") Long hubId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"hub", "user", "bannedBy"})
+    @Query("SELECT b FROM BanMember b WHERE b.hub.id = :hubId AND b.isActive = true AND b.banType = :banType ORDER BY b.createdAt DESC")
+    Page<BanMember> findByHubIdAndIsActiveTrueAndBanType(@Param("hubId") Long hubId, @Param("banType") String banType, Pageable pageable);
 
     @Query("SELECT b FROM BanMember b WHERE b.isActive = true AND b.bannedUntil IS NOT NULL AND b.bannedUntil < :now")
     List<BanMember> findExpiredBans(@Param("now") Instant now);
 
+    @EntityGraph(attributePaths = {"hub", "user", "bannedBy"})
     @Query("SELECT b FROM BanMember b WHERE b.hub.id = :hubId and b.isActive = true")
     Page<BanMember> findByHubId(@Param("hubId") Long hubId, Pageable pageable);
 }

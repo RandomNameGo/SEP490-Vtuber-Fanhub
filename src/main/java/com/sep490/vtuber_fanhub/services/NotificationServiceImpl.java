@@ -343,6 +343,28 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
+    public void sendMemberKickedNotification(Long userId, Long fanHubId, String fanHubName, Long kickedByUserId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        FanHub hub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        User kickedBy = userRepository.findById(kickedByUserId)
+                .orElseThrow(() -> new NotFoundException("User who kicked not found"));
+
+        String type = "MEMBER_KICKED";
+        String title = "Removed from FanHub";
+        String message = String.format("You have been removed from FanHub \"%s\" by a moderator.",
+                fanHubName);
+
+        createNotification(user, type, title, message, hub, null, kickedBy);
+
+        log.info("Sent member kicked notification to user {} for hub {}", userId, fanHubId);
+    }
+
+    @Override
+    @Transactional
     public void sendMemberAcceptedNotification(Long userId, Long fanHubId, String fanHubName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));

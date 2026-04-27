@@ -43,6 +43,7 @@ public class PostWithReportsResponse {
         private Long reportedByUserId;
         private String reportedByUsername;
         private String reportedByDisplayName;
+        private String reportedByAvatarUrl;
         private String reason;
         private String reportStatus;
         private String resolveMessage;

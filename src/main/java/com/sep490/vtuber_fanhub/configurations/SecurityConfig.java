@@ -54,6 +54,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/fan-hub/*").permitAll()
                         .requestMatchers("/vhub/api/v1/search/**").permitAll()
                         .requestMatchers("/vhub/api/v1/webhooks/sightengine/**").permitAll()
+                        .requestMatchers("/vhub/api/v1/payment/webhook").permitAll()
+                        .requestMatchers("/vhub/api/v1/payment/success").permitAll()
+                        .requestMatchers("/vhub/api/v1/payment/cancel").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).

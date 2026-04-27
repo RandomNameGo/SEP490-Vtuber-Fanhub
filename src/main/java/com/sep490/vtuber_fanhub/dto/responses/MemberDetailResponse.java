@@ -24,4 +24,6 @@ public class MemberDetailResponse {
     private String displayName;
     private String avatarUrl;
     private String frameUrl;
+
+    private java.util.List<FanHubJoinAnswerResponse> joinAnswers;
 }

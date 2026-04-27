@@ -106,7 +106,7 @@ public class BanMemberServiceImpl implements BanMemberService {
     }
 
     @Override
-    public List<BanMemberResponse> getActiveBansByHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<BanMemberResponse> getActiveBansByHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String banType) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -128,7 +128,13 @@ public class BanMemberServiceImpl implements BanMemberService {
         }
 
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
-        Page<BanMember> pagedBans = banMemberRepository.findByHubIdAndIsActiveTrue(fanHubId, paging);
+        Page<BanMember> pagedBans;
+        
+        if (banType != null && !banType.isEmpty()) {
+            pagedBans = banMemberRepository.findByHubIdAndIsActiveTrueAndBanType(fanHubId, banType.toUpperCase(), paging);
+        } else {
+            pagedBans = banMemberRepository.findByHubIdAndIsActiveTrue(fanHubId, paging);
+        }
 
         if (pagedBans.hasContent()) {
             return pagedBans.getContent().stream()

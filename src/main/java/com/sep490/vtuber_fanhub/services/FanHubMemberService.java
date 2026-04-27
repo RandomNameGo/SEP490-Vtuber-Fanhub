@@ -10,7 +10,9 @@ public interface FanHubMemberService {
 
     String joinFanHubMember(long fanHubId);
 
-    List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username);
+    String joinFanHubMemberWithAnswers(long fanHubId, List<com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest> answers);
+
+    List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username, String role);
 
     List<FanHubMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy);
 

@@ -422,6 +422,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setReportedByUserId(reportPost.getReportedBy().getId());
         response.setReportedByUsername(reportPost.getReportedBy().getUsername());
         response.setReportedByDisplayName(reportPost.getReportedBy().getDisplayName());
+        response.setReportedByAvatarUrl(reportPost.getReportedBy().getAvatarUrl());
 
         // Resolver information (if resolved)
         if (reportPost.getResolveBy() != null) {

@@ -405,6 +405,7 @@ public class FanHubServiceImpl implements FanHubService {
         response.setOwnerUserId(owner.getId());
         response.setOwnerUsername(owner.getUsername());
         response.setOwnerDisplayName(owner.getDisplayName());
+        response.setOwnerAvatarUrl(owner.getAvatarUrl());
 
         List<String> categories = fanHubCategoryRepository.findByHubId(fanHub.getId())
                 .stream()

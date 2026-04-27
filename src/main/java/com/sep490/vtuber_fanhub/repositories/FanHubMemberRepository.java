@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.repositories;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,14 +13,25 @@ import java.util.Optional;
 
 public interface FanHubMemberRepository extends JpaRepository<FanHubMember, Long> {
 
+    @EntityGraph(attributePaths = {"user", "hub"})
     @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.status = :status and f.hub.isActive = true")
     Page<FanHubMember> findByHubIdAndStatus(Long fanHubId, String status, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"user", "hub"})
     @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.status = 'JOINED' and f.hub.isActive = true")
     Page<FanHubMember> findByHubId(Long fanHubId, Pageable pageable);
 
-    @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.user.username = :username and f.status = 'JOINED' and f.hub.isActive = true")
+    @EntityGraph(attributePaths = {"user", "hub"})
+    @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.user.username LIKE %:username% and f.status = 'JOINED' and f.hub.isActive = true")
     Page<FanHubMember> findByHubIdAndUsername(@Param("fanHubId") Long fanHubId, @Param("username") String username, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "hub"})
+    @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.status = 'JOINED' and f.hub.isActive = true and f.roleInHub = :role")
+    Page<FanHubMember> findByHubIdAndRole(Long fanHubId, String role, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "hub"})
+    @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.user.username LIKE %:username% and f.status = 'JOINED' and f.hub.isActive = true and f.roleInHub = :role")
+    Page<FanHubMember> findByHubIdAndRoleAndUsername(@Param("fanHubId") Long fanHubId, @Param("role") String role, @Param("username") String username, Pageable pageable);
 
     @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.user.id = :userId and f.hub.isActive = true")
     Optional<FanHubMember> findByHubIdAndUserId(Long fanHubId, Long userId);

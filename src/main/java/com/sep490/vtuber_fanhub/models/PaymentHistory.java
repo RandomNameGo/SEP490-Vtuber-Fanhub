@@ -34,4 +34,8 @@ public class PaymentHistory {
     @JoinColumn(name = "package_id")
     private PaidPackage packageField;
 
+    @Lob
+    @Column(name = "status")
+    private String status;
+
 }

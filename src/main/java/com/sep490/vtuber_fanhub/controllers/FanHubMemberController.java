@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportMemberRequest;
+import com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.BanMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
@@ -42,6 +43,19 @@ public class FanHubMemberController {
         );
     }
 
+    @PostMapping("/join-with-answers/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> joinFanHubWithAnswers(
+            @PathVariable long fanHubId,
+            @RequestBody List<FanHubJoinAnswerRequest> answers) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.joinFanHubMemberWithAnswers(fanHubId, answers))
+                .build()
+        );
+    }
+
     @GetMapping("/members/{fanHubId}")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> getFanHubMembers(
@@ -49,11 +63,12 @@ public class FanHubMemberController {
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "joinedAt") String sortBy,
-            @RequestParam(required = false) String username) {
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String role) {
         return ResponseEntity.ok().body(APIResponse.<List<FanHubMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubMemberService.getFanHubMembers(fanHubId, pageNo, pageSize, sortBy, username))
+                .data(fanHubMemberService.getFanHubMembers(fanHubId, pageNo, pageSize, sortBy, username, role))
                 .build()
         );
     }
@@ -165,12 +180,13 @@ public class FanHubMemberController {
             @PathVariable Long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(required = false) String banType) {
 
         return ResponseEntity.ok().body(APIResponse.<List<BanMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(banMemberService.getActiveBansByHubId(fanHubId, pageNo, pageSize, sortBy))
+                .data(banMemberService.getActiveBansByHubId(fanHubId, pageNo, pageSize, sortBy, banType))
                 .build()
         );
     }

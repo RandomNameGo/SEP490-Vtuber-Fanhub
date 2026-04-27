@@ -1,16 +1,13 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
 import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
-import com.sep490.vtuber_fanhub.models.FanHub;
-import com.sep490.vtuber_fanhub.models.FanHubMember;
-import com.sep490.vtuber_fanhub.models.User;
-import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
-import com.sep490.vtuber_fanhub.repositories.UserRepository;
+import com.sep490.vtuber_fanhub.models.*;
+import com.sep490.vtuber_fanhub.repositories.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -44,9 +41,23 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     private final NotificationService notificationService;
 
+    private final FanHubJoinQuestionRepository questionRepository;
+
+    private final FanHubJoinAnswerRepository answerRepository;
+
     @Override
     @Transactional
     public String joinFanHubMember(long fanHubId) {
+        return processJoinRequest(fanHubId, null);
+    }
+
+    @Override
+    @Transactional
+    public String joinFanHubMemberWithAnswers(long fanHubId, List<FanHubJoinAnswerRequest> answers) {
+        return processJoinRequest(fanHubId, answers);
+    }
+
+    private String processJoinRequest(long fanHubId, List<FanHubJoinAnswerRequest> answers) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -57,11 +68,21 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         // Check if user is banned from joining this hub
         banMemberService.checkBanStatus(fanHubId, currentUser.getId(), List.of("JOIN"));
 
-        // Check if user is already a member
         Optional<FanHubMember> existingMember = fanHubMemberRepository.findByHubIdAndUserId(
                 fanHubId, currentUser.getId());
         if (existingMember.isPresent()) {
             return "User is already a member of this FanHub";
+        }
+
+        // Check if hub has active join questions
+        List<FanHubJoinQuestion> activeQuestions = questionRepository.findActiveQuestionsByHubId(fanHubId);
+        if (!activeQuestions.isEmpty()) {
+            if (answers == null || answers.isEmpty()) {
+                throw new IllegalArgumentException("This FanHub requires answering questions to join. Please submit your answers first.");
+            }
+            if (answers.size() < activeQuestions.size()) {
+                throw new IllegalArgumentException("All questions must be answered.");
+            }
         }
 
         FanHubMember member = new FanHubMember();
@@ -79,13 +100,30 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         fanHubMemberRepository.save(member);
 
+        if (answers != null && !answers.isEmpty()) {
+            for (FanHubJoinAnswerRequest answerReq : answers) {
+                FanHubJoinQuestion question = questionRepository.findById(answerReq.getQuestionId())
+                        .orElseThrow(() -> new NotFoundException("Question not found with id: " + answerReq.getQuestionId()));
+
+                if (!question.getHub().getId().equals(fanHubId)) {
+                    throw new IllegalArgumentException("Question does not belong to this FanHub");
+                }
+
+                FanHubJoinAnswer answer = new FanHubJoinAnswer();
+                answer.setMember(member);
+                answer.setQuestion(question);
+                answer.setContent(answerReq.getContent());
+                answerRepository.save(answer);
+            }
+        }
+
         return fanHub.get().getRequiresApproval() != null && fanHub.get().getRequiresApproval()
                 ? "Join request submitted. Awaiting approval."
                 : "Joined FanHub successfully";
     }
 
     @Override
-    public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username) {
+    public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username, String role) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -108,10 +146,18 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
 
         Page<FanHubMember> pagedMembers;
-        if (username != null && !username.isEmpty()) {
-            pagedMembers = fanHubMemberRepository.findByHubIdAndUsername(fanHubId, username, paging);
+        if (role != null && !role.isEmpty()) {
+            if (username != null && !username.isEmpty()) {
+                pagedMembers = fanHubMemberRepository.findByHubIdAndRoleAndUsername(fanHubId, role.toUpperCase(), username, paging);
+            } else {
+                pagedMembers = fanHubMemberRepository.findByHubIdAndRole(fanHubId, role.toUpperCase(), paging);
+            }
         } else {
-            pagedMembers = fanHubMemberRepository.findByHubId(fanHubId, paging);
+            if (username != null && !username.isEmpty()) {
+                pagedMembers = fanHubMemberRepository.findByHubIdAndUsername(fanHubId, username, paging);
+            } else {
+                pagedMembers = fanHubMemberRepository.findByHubId(fanHubId, paging);
+            }
         }
 
         if (pagedMembers.hasContent()) {
@@ -272,7 +318,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
                     member.get().getHub().getHubName()
             );
         } else {
-            member.get().setStatus("REJECTED");
+            fanHubMemberRepository.delete(member.get());
         }
         fanHubMemberRepository.save(member.get());
 
@@ -414,6 +460,13 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new AccessDeniedException("Cannot kick members with MODERATOR or VTUBER role");
         }
 
+        notificationService.sendMemberKickedNotification(
+                target.getUser().getId(),
+                fanHubId,
+                target.getHub().getHubName(),
+                currentUser.getId()
+        );
+
         fanHubMemberRepository.delete(target);
 
 
@@ -473,6 +526,23 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setFrameUrl(user.getFrameUrl());
         }
 
+        // Populate join answers if they exist
+        List<com.sep490.vtuber_fanhub.models.FanHubJoinAnswer> answers = answerRepository.findByMemberId(entity.getId());
+        if (!answers.isEmpty()) {
+            response.setJoinAnswers(answers.stream()
+                    .map(this::mapToAnswerResponse)
+                    .collect(Collectors.toList()));
+        }
+
+        return response;
+    }
+
+    private com.sep490.vtuber_fanhub.dto.responses.FanHubJoinAnswerResponse mapToAnswerResponse(com.sep490.vtuber_fanhub.models.FanHubJoinAnswer answer) {
+        com.sep490.vtuber_fanhub.dto.responses.FanHubJoinAnswerResponse response = new com.sep490.vtuber_fanhub.dto.responses.FanHubJoinAnswerResponse();
+        response.setId(answer.getId());
+        response.setQuestionId(answer.getQuestion().getId());
+        response.setQuestionContent(answer.getQuestion().getContent());
+        response.setContent(answer.getContent());
         return response;
     }
 }

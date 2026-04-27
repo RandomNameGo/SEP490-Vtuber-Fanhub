@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.repositories;
 
 import com.sep490.vtuber_fanhub.models.PostComment;
 import com.sep490.vtuber_fanhub.models.PostCommentLike;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,5 +12,6 @@ public interface PostCommentLikeRepository extends JpaRepository<PostCommentLike
 
     Long countByComment(PostComment comment);
 
+    @EntityGraph(attributePaths = {"user", "comment"})
     Optional<PostCommentLike> findByUserIdAndComment(Long userId, PostComment comment);
 }

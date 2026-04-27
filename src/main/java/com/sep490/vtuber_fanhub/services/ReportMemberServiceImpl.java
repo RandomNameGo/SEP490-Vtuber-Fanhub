@@ -378,6 +378,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         response.setReportedByUserId(reportMember.getReportedBy().getId());
         response.setReportedByUsername(reportMember.getReportedBy().getUsername());
         response.setReportedByDisplayName(reportMember.getReportedBy().getDisplayName());
+        response.setReportedByAvatarUrl(reportMember.getReportedBy().getAvatarUrl());
 
         // Resolver information (if resolved)
         if (reportMember.getResolveBy() != null) {
