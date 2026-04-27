@@ -70,12 +70,13 @@ public class PostController {
     public ResponseEntity<?> getPendingPosts(@PathVariable long fanHubId,
                                              @RequestParam(defaultValue = "0") int pageNo,
                                              @RequestParam(defaultValue = "10") int pageSize,
-                                             @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                             @RequestParam(defaultValue = "createdAt") String sortBy,
+                                             @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPendingPosts(fanHubId, pageNo, pageSize, sortBy))
+                .data(postService.getPendingPosts(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -85,12 +86,13 @@ public class PostController {
     public ResponseEntity<?> getRejectedPosts(@PathVariable long fanHubId,
                                               @RequestParam(defaultValue = "0") int pageNo,
                                               @RequestParam(defaultValue = "10") int pageSize,
-                                              @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                              @RequestParam(defaultValue = "createdAt") String sortBy,
+                                              @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getRejectedPosts(fanHubId, pageNo, pageSize, sortBy))
+                .data(postService.getRejectedPosts(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -158,13 +160,14 @@ public class PostController {
                                       @RequestParam(defaultValue = "0") int pageNo,
                                       @RequestParam(defaultValue = "10") int pageSize,
                                       @RequestParam(defaultValue = "createdAt") String sortBy,
+                                      @RequestParam(defaultValue = "desc") String sortDir,
                                       @RequestParam(required = false) String postHashtag,
                                       @RequestParam(required = false) String authorUsername) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPosts(fanHubId, pageNo, pageSize, sortBy, postHashtag, authorUsername))
+                .data(postService.getPosts(fanHubId, pageNo, pageSize, sortBy, sortDir, postHashtag, authorUsername))
                 .build()
         );
     }
@@ -173,12 +176,13 @@ public class PostController {
     public ResponseEntity<?> getAnnouncementAndEventPosts(@PathVariable long fanHubId,
                                                           @RequestParam(defaultValue = "0") int pageNo,
                                                           @RequestParam(defaultValue = "10") int pageSize,
-                                                          @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                                          @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                          @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getAnnouncementAndEventPosts(fanHubId, pageNo, pageSize, sortBy))
+                .data(postService.getAnnouncementAndEventPosts(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -213,12 +217,13 @@ public class PostController {
     public ResponseEntity<?> getPersonalizedFeed(
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPersonalizedFeed(pageNo, pageSize, sortBy))
+                .data(postService.getPersonalizedFeed(pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -324,12 +329,13 @@ public class PostController {
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> getBookmarkPosts(@RequestParam(defaultValue = "0") int pageNo,
                                                @RequestParam(defaultValue = "10") int pageSize,
-                                               @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                               @RequestParam(defaultValue = "createdAt") String sortBy,
+                                               @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getBookmarkPosts(pageNo, pageSize, sortBy))
+                .data(postService.getBookmarkPosts(pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -470,12 +476,13 @@ public class PostController {
             @PathVariable Long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<ReportPostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(reportPostService.getReportPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .data(reportPostService.getReportPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -498,13 +505,14 @@ public class PostController {
                                       @RequestParam(defaultValue = "0") int pageNo,
                                       @RequestParam(defaultValue = "10") int pageSize,
                                       @RequestParam(defaultValue = "createdAt") String sortBy,
+                                      @RequestParam(defaultValue = "desc") String sortDir,
                                       @RequestParam(required = false) String postHashtag,
                                       @RequestParam(required = false) String authorUsername) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, postHashtag, authorUsername))
+                .data(postService.getPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, sortDir, postHashtag, authorUsername))
                 .build()
         );
     }
@@ -514,12 +522,13 @@ public class PostController {
     public ResponseEntity<?> getPendingPostsBySubdomain(@PathVariable String subdomain,
                                              @RequestParam(defaultValue = "0") int pageNo,
                                              @RequestParam(defaultValue = "10") int pageSize,
-                                             @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                             @RequestParam(defaultValue = "createdAt") String sortBy,
+                                             @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPendingPostsBySubdomain(subdomain, pageNo, pageSize, sortBy))
+                .data(postService.getPendingPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -528,12 +537,13 @@ public class PostController {
     @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> getPostsByUsername(@RequestParam(defaultValue = "0") int pageNo,
                                                 @RequestParam(defaultValue = "10") int pageSize,
-                                                @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                                @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPostsByUsername(pageNo, pageSize, sortBy))
+                .data(postService.getPostsByUsername(pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -543,12 +553,13 @@ public class PostController {
     public ResponseEntity<?> getAllPostsByFanHubId(@PathVariable long fanHubId,
                                                    @RequestParam(defaultValue = "0") int pageNo,
                                                    @RequestParam(defaultValue = "10") int pageSize,
-                                                   @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                                   @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                   @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostWithMediaResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getAllPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .data(postService.getAllPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -578,12 +589,13 @@ public class PostController {
     public ResponseEntity<?> getAllPostsBySubdomain(@PathVariable String subdomain,
                                                     @RequestParam(defaultValue = "0") int pageNo,
                                                     @RequestParam(defaultValue = "10") int pageSize,
-                                                    @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                                    @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                    @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getAllPostsBySubdomain(subdomain, pageNo, pageSize, sortBy))
+                .data(postService.getAllPostsBySubdomain(subdomain, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -593,12 +605,13 @@ public class PostController {
     public ResponseEntity<?> getMyReportPosts(
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<ReportPostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(reportPostService.getReportPostsByCurrentUser(pageNo, pageSize, sortBy))
+                .data(reportPostService.getReportPostsByCurrentUser(pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -609,12 +622,13 @@ public class PostController {
             @PathVariable Long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<ReportPostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(reportPostService.getPendingReportPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .data(reportPostService.getPendingReportPostsByFanHubId(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -639,12 +653,13 @@ public class PostController {
             @PathVariable Long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<PostWithReportsResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(reportPostService.getAllPostsWithReports(fanHubId, pageNo, pageSize, sortBy))
+                .data(reportPostService.getAllPostsWithReports(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }

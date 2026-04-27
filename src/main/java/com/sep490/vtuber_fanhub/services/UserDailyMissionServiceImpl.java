@@ -18,6 +18,7 @@ public class UserDailyMissionServiceImpl implements UserDailyMissionService {
 
     private final UserDailyMissionRepository userDailyMissionRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
 
     @Override
@@ -49,6 +50,7 @@ public class UserDailyMissionServiceImpl implements UserDailyMissionService {
             userRepository.save(user);
             mission.setBonus10(true);
             userDailyMissionRepository.save(mission);
+            notificationService.sendDailyMissionPointsNotification(userId, 20, "10 Likes Milestone");
         }
 
         if (likeAmount >= 20 && !Boolean.TRUE.equals(mission.getBonus20())) {
@@ -58,6 +60,7 @@ public class UserDailyMissionServiceImpl implements UserDailyMissionService {
             userRepository.save(user);
             mission.setBonus20(true);
             userDailyMissionRepository.save(mission);
+            notificationService.sendDailyMissionPointsNotification(userId, 40, "20 Likes Milestone");
         }
     }
 }

@@ -16,17 +16,17 @@ public interface PostService {
 
     String createPollPost(CreatePollPostRequest request);
 
-    List<PostWithMediaResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
-    List<PostWithMediaResponse> getRejectedPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getRejectedPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
-    List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername);
+    List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir, String postHashtag, String authorUsername);
 
-    List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername);
+    List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String sortDir, String postHashtag, String authorUsername);
 
-    List<PostWithMediaResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String sortDir);
 
-    List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
     String reviewPost(Long postId, String status);
 
@@ -34,7 +34,7 @@ public interface PostService {
 
     String sendAiValidate(Long postId);
 
-    List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy);
+    List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy, String sortDir);
 
     TranslatePostResponse translatePost(Long postId);
 
@@ -55,13 +55,13 @@ public interface PostService {
 
     String deletePost(Long postId);
 
-    List<PostWithMediaResponse> getBookmarkPosts(int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getBookmarkPosts(int pageNo, int pageSize, String sortBy, String sortDir);
 
-    List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy, String sortDir);
 
-    List<PostWithMediaResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<PostWithMediaResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
-    List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy);
+    List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String sortDir);
 
     PostResponse getPostDetail(Long postId);
 
@@ -71,11 +71,11 @@ public interface PostService {
 
     String rejectAiUnsafePosts(Long fanHubId);
 
-    List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
     PostResponse getTrendingPublicPost();
 
     PostResponse getLatestPublicApprovedPost();
 
-    List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy);
+    List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy, String sortDir);
 }

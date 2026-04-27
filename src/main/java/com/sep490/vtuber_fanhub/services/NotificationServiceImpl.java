@@ -25,16 +25,7 @@ import java.util.List;
 
 import java.time.Instant;
 
-/**
- * Service implementation for Notification management
- * Handles database persistence and coordinates with SSE service for real-time delivery
- * 
- * Features:
- * - Persist notifications to database for history
- * - Send real-time notifications via SSE
- * - Mark notifications as read/unread
- * - Pagination support for notification lists
- */
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -427,5 +418,65 @@ public class NotificationServiceImpl implements NotificationService {
         createNotification(reporter, type, title, message, relatedHub, null, resolvedBy);
 
         log.info("Sent report member resolved notification to user {} for reported user {} in hub {} resolved by {}", reporterId, reportedMemberId, fanHubId, resolvedByUserId);
+    }
+
+    @Override
+    @Transactional
+    public void sendDailyMissionPointsNotification(Long userId, int points, String missionName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        String type = "DAILY_MISSION_POINTS";
+        String title = "Daily Mission Reward! 🎁";
+        String message = String.format("You've earned %d points from completing the \"%s\" mission!",
+                points, missionName);
+
+        createNotification(user, type, title, message, null, null, null);
+
+        log.info("Sent daily mission points notification to user {}: {} points for mission {}", userId, points, missionName);
+    }
+
+    @Override
+    @Transactional
+    public void sendPostApprovalNotification(Long userId, Long postId, String postTitle, Long fanHubId, String fanHubName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        FanHub hub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        String type = "POST_APPROVED";
+        String title = "Post Approved! ✅";
+        String message = String.format("Your post \"%s\" in \"%s\" has been approved. You've earned 10 points!",
+                postTitle, fanHubName);
+
+        createNotification(user, type, title, message, hub, post, null);
+
+        log.info("Sent post approval notification to user {} for post {}", userId, postId);
+    }
+
+    @Override
+    @Transactional
+    public void sendPostRejectionNotification(Long userId, Long postId, String postTitle, Long fanHubId, String fanHubName, String reason) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        FanHub hub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        String type = "POST_REJECTED";
+        String title = "Post Rejected ❌";
+        String message = String.format("Your post \"%s\" in \"%s\" has been rejected. Reason: %s",
+                postTitle, fanHubName, reason != null ? reason : "Does not follow community guidelines");
+
+        createNotification(user, type, title, message, hub, post, null);
+
+        log.info("Sent post rejection notification to user {} for post {}", userId, postId);
     }
 }

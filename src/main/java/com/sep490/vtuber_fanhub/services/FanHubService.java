@@ -20,13 +20,13 @@ public interface FanHubService {
 
     String uploadFanHubBannerBackGroundAvatar(long fanHubId, MultipartFile banner, List<MultipartFile> highlight, MultipartFile avatar) throws IOException;
 
-    List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, boolean includePrivate);
+    List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, String sortDir, boolean includePrivate);
 
     List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category);
 
     FanHubResponse getFanHubBySubdomain(String subdomain);
 
-    List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy);
+    List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy, String sortDir);
 
     FanHubResponse getMyHubAsOwner();
 
@@ -36,5 +36,5 @@ public interface FanHubService {
 
     String deactivateFanHub(Long fanHubId);
 
-    List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy);
+    List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy, String sortDir);
 }

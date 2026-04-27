@@ -11,15 +11,15 @@ public interface ReportPostService {
 
     String createReportPost(CreateReportPostRequest createReportPostRequest);
 
-    List<ReportPostResponse> getReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<ReportPostResponse> getReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
     String resolveReportPost(Long reportId, String resolveMessage);
 
-    List<ReportPostResponse> getReportPostsByCurrentUser(int pageNo, int pageSize, String sortBy);
+    List<ReportPostResponse> getReportPostsByCurrentUser(int pageNo, int pageSize, String sortBy, String sortDir);
 
-    List<ReportPostResponse> getPendingReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<ReportPostResponse> getPendingReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
     String bulkResolveReportPosts(List<Long> reportIds, String resolveMessage);
 
-    List<PostWithReportsResponse> getAllPostsWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<PostWithReportsResponse> getAllPostsWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 }

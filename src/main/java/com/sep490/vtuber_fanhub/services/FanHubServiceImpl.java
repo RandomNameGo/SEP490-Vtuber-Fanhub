@@ -279,8 +279,8 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, boolean includePrivate) {
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+    public List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, String sortDir, boolean includePrivate) {
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<FanHub> pagedFanHubs;
         if (includePrivate) {
@@ -332,7 +332,7 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy) {
+    public List<FanHubResponse> getJoinedFanHubs(int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         List<FanHubMember> joinedMembers = fanHubMemberRepository.findByUserIdAndStatus(currentUser.getId(), "JOINED");
@@ -524,12 +524,12 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy) {
+    public List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy, String sortDir) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return List.of();
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<FanHub> pagedFanHubs = fanHubRepository.searchFanHubs(keyword.trim(), paging);
 
@@ -540,5 +540,12 @@ public class FanHubServiceImpl implements FanHubService {
         return pagedFanHubs.getContent().stream()
                 .map(this::mapToFanHubResponseWithMemberCount)
                 .collect(Collectors.toList());
+    }
+
+    private Sort.Direction getSortDirection(String sortDir) {
+        if (sortDir != null && sortDir.equalsIgnoreCase("asc")) {
+            return Sort.Direction.ASC;
+        }
+        return Sort.Direction.DESC;
     }
 }

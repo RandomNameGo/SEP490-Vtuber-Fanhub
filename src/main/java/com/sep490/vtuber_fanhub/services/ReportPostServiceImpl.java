@@ -74,7 +74,7 @@ public class ReportPostServiceImpl implements ReportPostService {
     }
 
     @Override
-    public List<ReportPostResponse> getReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<ReportPostResponse> getReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -95,7 +95,7 @@ public class ReportPostServiceImpl implements ReportPostService {
             throw new AccessDeniedException("Access denied");
         }
 
-        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
         Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubId(fanHubId, pageRequest);
 
         return reportPostPage.getContent().stream()
@@ -151,10 +151,10 @@ public class ReportPostServiceImpl implements ReportPostService {
     }
 
     @Override
-    public List<ReportPostResponse> getReportPostsByCurrentUser(int pageNo, int pageSize, String sortBy) {
+    public List<ReportPostResponse> getReportPostsByCurrentUser(int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
         Page<ReportPost> reportPostPage = reportPostRepository.findByReportedById(currentUser.getId(), pageRequest);
 
         return reportPostPage.getContent().stream()
@@ -163,7 +163,7 @@ public class ReportPostServiceImpl implements ReportPostService {
     }
 
     @Override
-    public List<ReportPostResponse> getPendingReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<ReportPostResponse> getPendingReportPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -184,7 +184,7 @@ public class ReportPostServiceImpl implements ReportPostService {
             throw new AccessDeniedException("Access denied");
         }
 
-        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
         Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubIdAndStatus(fanHubId, "PENDING", pageRequest);
 
         return reportPostPage.getContent().stream()
@@ -315,7 +315,7 @@ public class ReportPostServiceImpl implements ReportPostService {
     }
 
     @Override
-    public List<PostWithReportsResponse> getAllPostsWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PostWithReportsResponse> getAllPostsWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -337,7 +337,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         }
 
         // Get all report posts for this fan hub with PENDING status
-        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
         Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubIdAndStatus(fanHubId, "PENDING", pageRequest);
 
         if (reportPostPage.isEmpty()) {
@@ -352,6 +352,13 @@ public class ReportPostServiceImpl implements ReportPostService {
         return postToReportsMap.entrySet().stream()
                 .map(entry -> mapToPostWithReportsResponse(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
+    }
+
+    private Sort.Direction getSortDirection(String sortDir) {
+        if (sortDir != null && sortDir.equalsIgnoreCase("asc")) {
+            return Sort.Direction.ASC;
+        }
+        return Sort.Direction.DESC;
     }
 
     private PostWithReportsResponse mapToPostWithReportsResponse(Post post, List<ReportPost> reports) {

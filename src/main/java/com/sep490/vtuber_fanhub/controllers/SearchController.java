@@ -26,6 +26,7 @@ public class SearchController {
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(defaultValue = "Post") String type) {
 
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -39,7 +40,7 @@ public class SearchController {
         String searchType = type.trim().toLowerCase();
 
         if ("post".equals(searchType)) {
-            List<PostResponse> results = postService.searchPosts(keyword.trim(), pageNo, pageSize, sortBy);
+            List<PostResponse> results = postService.searchPosts(keyword.trim(), pageNo, pageSize, sortBy, sortDir);
             return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                     .success(true)
                     .message("Posts search successful")
@@ -47,7 +48,7 @@ public class SearchController {
                     .build()
             );
         } else if ("fanhub".equals(searchType) || "fan hub".equals(searchType.toLowerCase()) || "fan_hub".equals(searchType)) {
-            List<FanHubResponse> results = fanHubService.searchFanHubs(keyword.trim(), pageNo, pageSize, sortBy);
+            List<FanHubResponse> results = fanHubService.searchFanHubs(keyword.trim(), pageNo, pageSize, sortBy, sortDir);
             return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
                     .success(true)
                     .message("FanHubs search successful")

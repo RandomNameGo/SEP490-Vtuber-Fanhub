@@ -74,7 +74,7 @@ public class FanHubMemberController {
     }
 
     @GetMapping("/pending-members/{fanHubId}")
-    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> getPendingFanHubMembers(
             @PathVariable long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,

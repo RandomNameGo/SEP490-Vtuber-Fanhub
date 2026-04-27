@@ -58,4 +58,10 @@ public interface NotificationService {
     void sendReportPostResolvedNotification(Long reporterId, Long postId, String postTitle, String resolution, Long resolvedByUserId);
 
     void sendReportMemberResolvedNotification(Long reporterId, Long reportedMemberId, Long fanHubId, String resolution, Long resolvedByUserId);
+
+    void sendDailyMissionPointsNotification(Long userId, int points, String missionName);
+
+    void sendPostApprovalNotification(Long userId, Long postId, String postTitle, Long fanHubId, String fanHubName);
+
+    void sendPostRejectionNotification(Long userId, Long postId, String postTitle, Long fanHubId, String fanHubName, String reason);
 }

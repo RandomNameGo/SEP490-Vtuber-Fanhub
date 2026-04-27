@@ -294,7 +294,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostWithMediaResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getPendingPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -315,7 +315,7 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view pending posts");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.findByHubIdAndStatus(fanHubId, "PENDING", paging);
 
@@ -330,7 +330,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostWithMediaResponse> getRejectedPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getRejectedPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -351,7 +351,7 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view rejected posts");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.findByHubIdAndStatus(fanHubId, "REJECTED", paging);
 
@@ -366,7 +366,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername) {
+    public List<PostResponse> getPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir, String postHashtag, String authorUsername) {
         // Get current user from token (may be null if unauthenticated)
         User currentUser = null;
         try {
@@ -395,7 +395,7 @@ public class PostServiceImpl implements PostService {
         }
 
         // Pinned posts first, then by user's sortBy
-        Sort sort = Sort.by(Sort.Direction.DESC, "isPinned").and(Sort.by(sortBy));
+        Sort sort = Sort.by(Sort.Direction.DESC, "isPinned").and(Sort.by(getSortDirection(sortDir), sortBy));
         Pageable paging = PageRequest.of(pageNo, pageSize, sort);
 
         Page<Post> pagedPosts;
@@ -417,7 +417,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String postHashtag, String authorUsername) {
+    public List<PostResponse> getPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String sortDir, String postHashtag, String authorUsername) {
         // Get current user from token (may be null if unauthenticated)
         User currentUser = null;
         try {
@@ -446,7 +446,7 @@ public class PostServiceImpl implements PostService {
         }
 
         // Pinned posts first, then by user's sortBy
-        Sort sort = Sort.by(Sort.Direction.DESC, "isPinned").and(Sort.by(sortBy));
+        Sort sort = Sort.by(Sort.Direction.DESC, "isPinned").and(Sort.by(getSortDirection(sortDir), sortBy));
         Pageable paging = PageRequest.of(pageNo, pageSize, sort);
 
         Page<Post> pagedPosts;
@@ -469,7 +469,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostWithMediaResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getPendingPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
@@ -490,7 +490,7 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view pending posts");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.findByHubIdAndStatus(fanHub.get().getId(), "PENDING", paging);
 
@@ -505,13 +505,13 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PostResponse> getAnnouncementAndEventPosts(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.findByHubIdAndStatusAndAnnouncementOrSchedule(
                 fanHubId, "APPROVED", paging);
@@ -560,7 +560,7 @@ public class PostServiceImpl implements PostService {
         post.get().setUpdatedAt(Instant.now());
         postRepository.save(post.get());
 
-        // Award points when post is APPROVED
+        // Award points and send notification when post is APPROVED
         if ("APPROVED".equals(normalizedStatus)) {
             User postAuthor = post.get().getUser();
             
@@ -576,6 +576,23 @@ public class PostServiceImpl implements PostService {
                 fanHubMember.setFanHubScore(currentScore + 10);
                 fanHubMemberRepository.save(fanHubMember);
             }
+
+            notificationService.sendPostApprovalNotification(
+                    postAuthor.getId(),
+                    postId,
+                    post.get().getTitle(),
+                    fanHubId,
+                    post.get().getHub().getHubName()
+            );
+        } else if ("REJECTED".equals(normalizedStatus)) {
+            notificationService.sendPostRejectionNotification(
+                    post.get().getUser().getId(),
+                    postId,
+                    post.get().getTitle(),
+                    fanHubId,
+                    post.get().getHub().getHubName(),
+                    post.get().getAiValidationComment()
+            );
         }
 
         return "Post " + normalizedStatus.toLowerCase() + " successfully";
@@ -620,7 +637,7 @@ public class PostServiceImpl implements PostService {
             post.get().setUpdatedAt(Instant.now());
             postRepository.save(post.get());
 
-            // Award points when post is APPROVED
+            // Award points and send notification when post is APPROVED
             if ("APPROVED".equals(normalizedStatus)) {
                 User postAuthor = post.get().getUser();
 
@@ -636,8 +653,24 @@ public class PostServiceImpl implements PostService {
                     fanHubMember.setFanHubScore(currentScore + 10);
                     fanHubMemberRepository.save(fanHubMember);
                 }
+
+                notificationService.sendPostApprovalNotification(
+                        postAuthor.getId(),
+                        postId,
+                        post.get().getTitle(),
+                        fanHubId,
+                        post.get().getHub().getHubName()
+                );
                 approvedCount++;
             } else {
+                notificationService.sendPostRejectionNotification(
+                        post.get().getUser().getId(),
+                        postId,
+                        post.get().getTitle(),
+                        fanHubId,
+                        post.get().getHub().getHubName(),
+                        post.get().getAiValidationComment()
+                );
                 rejectedCount++;
             }
         }
@@ -676,7 +709,7 @@ public class PostServiceImpl implements PostService {
             post.setUpdatedAt(Instant.now());
             postRepository.save(post);
 
-            // Award points when post is APPROVED
+            // Award points and send notification when post is APPROVED
             User postAuthor = post.getUser();
 
             long currentPoints = postAuthor.getPoints() != null ? postAuthor.getPoints() : 0;
@@ -691,6 +724,14 @@ public class PostServiceImpl implements PostService {
                 fanHubMember.setFanHubScore(currentScore + 10);
                 fanHubMemberRepository.save(fanHubMember);
             }
+
+            notificationService.sendPostApprovalNotification(
+                    postAuthor.getId(),
+                    post.getId(),
+                    post.getTitle(),
+                    fanHubId,
+                    post.getHub().getHubName()
+            );
             approvedCount++;
         }
 
@@ -728,6 +769,14 @@ public class PostServiceImpl implements PostService {
             post.setUpdatedAt(Instant.now());
             postRepository.save(post);
 
+            notificationService.sendPostRejectionNotification(
+                    post.getUser().getId(),
+                    post.getId(),
+                    post.getTitle(),
+                    fanHubId,
+                    post.getHub().getHubName(),
+                    post.getAiValidationComment()
+            );
             rejectedCount++;
         }
 
@@ -765,6 +814,15 @@ public class PostServiceImpl implements PostService {
             post.get().setAiValidationComment(reason);
         }
         postRepository.save(post.get());
+
+        notificationService.sendPostRejectionNotification(
+                post.get().getUser().getId(),
+                postId,
+                post.get().getTitle(),
+                fanHubId,
+                post.get().getHub().getHubName(),
+                reason
+        );
 
         return "Post rejected successfully";
     }
@@ -830,7 +888,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy) {
+    public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = null;
         try {
             currentUser = authService.getUserFromToken(httpServletRequest);
@@ -839,7 +897,7 @@ public class PostServiceImpl implements PostService {
             currentUser = null;
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         // Case 1: Unauthenticated user - return public posts sorted by interactions
         if (currentUser == null) {
@@ -858,7 +916,7 @@ public class PostServiceImpl implements PostService {
         }
 
         // Case 3: Authenticated with followed hubs - return personalized mix
-        return getAuthenticatedPersonalizedFeed(followedHubIds, pageNo, pageSize, sortBy);
+        return getAuthenticatedPersonalizedFeed(followedHubIds, pageNo, pageSize, sortBy, sortDir);
     }
 
     private List<Long> getFollowedHubIds(Long userId) {
@@ -872,15 +930,15 @@ public class PostServiceImpl implements PostService {
         return new ArrayList<>(followedHubIdsSet);
     }
 
-    private List<PostResponse> getAuthenticatedPersonalizedFeed(List<Long> followedHubIds, int pageNo, int pageSize, String sortBy) {
+    private List<PostResponse> getAuthenticatedPersonalizedFeed(List<Long> followedHubIds, int pageNo, int pageSize, String sortBy, String sortDir) {
         int totalNeeded = (pageNo + 1) * pageSize;
 
         // Fetch up to totalNeeded from each source to allow for full backfilling if one is empty
-        Pageable fetchPageable = PageRequest.of(0, totalNeeded, Sort.by(Sort.Direction.DESC, sortBy));
+        Pageable fetchPageable = PageRequest.of(0, totalNeeded, Sort.by(getSortDirection(sortDir), sortBy));
         List<Post> followedPosts = postRepository.findByHubIdInAndStatusApproved(followedHubIds, fetchPageable).getContent();
 
         List<String> followedCategories = postRepository.findCategoriesByHubIds(followedHubIds);
-        List<Post> suggestionPosts = fetchSuggestionPosts(followedHubIds, followedCategories, totalNeeded, sortBy);
+        List<Post> suggestionPosts = fetchSuggestionPosts(followedHubIds, followedCategories, totalNeeded, sortBy, sortDir);
 
         // Merge posts maintaining ratio but filling gaps to ensure pageSize is met
         List<Post> mergedPosts = mergePostsWithBackfill(followedPosts, suggestionPosts, totalNeeded);
@@ -888,8 +946,8 @@ public class PostServiceImpl implements PostService {
         return paginateMergedResults(mergedPosts, pageNo, pageSize);
     }
 
-    private List<Post> fetchSuggestionPosts(List<Long> followedHubIds, List<String> followedCategories, int totalNeeded, String sortBy) {
-        Pageable suggestionPageable = PageRequest.of(0, totalNeeded, Sort.by(Sort.Direction.DESC, sortBy));
+    private List<Post> fetchSuggestionPosts(List<Long> followedHubIds, List<String> followedCategories, int totalNeeded, String sortBy, String sortDir) {
+        Pageable suggestionPageable = PageRequest.of(0, totalNeeded, Sort.by(getSortDirection(sortDir), sortBy));
         List<Post> suggestions = new ArrayList<>();
 
         if (!followedCategories.isEmpty()) {
@@ -1500,10 +1558,10 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostWithMediaResponse> getBookmarkPosts(int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getBookmarkPosts(int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<UserBookmark> pagedBookmarks = userBookmarkRepository.findByUserId(currentUser.getId(), paging);
 
@@ -1518,7 +1576,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getPostsByUsername(int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         // Find user by username
@@ -1527,7 +1585,7 @@ public class PostServiceImpl implements PostService {
             throw new NotFoundException("User not found");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.findByUsername(currentUser.getUsername(), paging);
 
@@ -1542,7 +1600,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostWithMediaResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PostWithMediaResponse> getAllPostsByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -1563,7 +1621,7 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view all posts");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.findByHubIdAndStatusNotDeleted(fanHubId, paging);
 
@@ -1578,7 +1636,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy) {
+    public List<PostResponse> getAllPostsBySubdomain(String subdomain, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findBySubdomainAndIsActive(subdomain, true);
@@ -1599,7 +1657,7 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("Only VTUBER (owner) or MODERATOR can view all posts");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.findByHubIdAndStatusNotDeleted(fanHub.get().getId(), paging);
 
@@ -1636,7 +1694,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PostResponse> getTrendingPostsByFanHub(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
         if (fanHub.isEmpty()) {
             throw new NotFoundException("FanHub not found");
@@ -1646,7 +1704,7 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("This FanHub is private");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.findTrendingPostsByFanHub(fanHubId, paging);
 
@@ -1687,12 +1745,12 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy) {
+    public List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy, String sortDir) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return List.of();
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
 
         Page<Post> pagedPosts = postRepository.searchPosts(keyword.trim(), paging);
 
@@ -1703,5 +1761,12 @@ public class PostServiceImpl implements PostService {
         return pagedPosts.getContent().stream()
                 .map(this::mapToPostResponse)
                 .collect(Collectors.toList());
+    }
+
+    private Sort.Direction getSortDirection(String sortDir) {
+        if (sortDir != null && sortDir.equalsIgnoreCase("asc")) {
+            return Sort.Direction.ASC;
+        }
+        return Sort.Direction.DESC;
     }
 }

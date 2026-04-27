@@ -77,12 +77,13 @@ public class FanHubController {
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(defaultValue = "false") boolean includePrivate) {
 
         return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubService.getAllFanHubs(pageNo, pageSize, sortBy, includePrivate))
+                .data(fanHubService.getAllFanHubs(pageNo, pageSize, sortBy, sortDir, includePrivate))
                 .build()
         );
     }
@@ -116,12 +117,13 @@ public class FanHubController {
     public ResponseEntity<?> getMyJoinedFanHubs(
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubService.getJoinedFanHubs(pageNo, pageSize, sortBy))
+                .data(fanHubService.getJoinedFanHubs(pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -175,12 +177,13 @@ public class FanHubController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubService.searchFanHubs(keyword, pageNo, pageSize, sortBy))
+                .data(fanHubService.searchFanHubs(keyword, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
