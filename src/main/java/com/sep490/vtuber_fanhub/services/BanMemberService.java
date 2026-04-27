@@ -12,11 +12,11 @@ public interface BanMemberService {
 
     void checkBanStatus(Long hubId, Long userId, List<String> banTypes);
 
-    List<BanMemberResponse> getActiveBansByHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String banType);
+    List<BanMemberResponse> getActiveBansByHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir, String banType);
 
     String revokeBan(Long banId);
 
     void deactivateExpiredBans();
 
-    List<MemberWithBansResponse> getAllMembersWithBans(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<MemberWithBansResponse> getAllMembersWithBans(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 }

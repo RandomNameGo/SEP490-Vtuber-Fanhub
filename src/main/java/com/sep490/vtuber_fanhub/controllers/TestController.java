@@ -9,6 +9,7 @@ import com.sep490.vtuber_fanhub.models.Enum.PostMediaType;
 import com.sep490.vtuber_fanhub.services.ContentValidationService;
 import com.sep490.vtuber_fanhub.services.GeminiAIService;
 import com.sep490.vtuber_fanhub.services.SightEngineService;
+import com.sep490.vtuber_fanhub.services.YoutubeAPIService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ public class TestController {
     private final GeminiAIService geminiAIService;
     private final SightEngineService sightEngineService;
     private final ContentValidationService contentValidationService;
+    private final YoutubeAPIService youtubeAPIService;
 
     @GetMapping("/gemini")
     public ResponseEntity<APIResponse<String>> testGeminiPrompt(){
@@ -110,5 +112,14 @@ public class TestController {
         );
     }
 
-
+    @GetMapping("/youtube")
+    public ResponseEntity<?> testYoutube() {
+        return ResponseEntity.ok(
+                APIResponse.<String>builder()
+                        .message("nice")
+                        .success(true)
+                        .data(youtubeAPIService.testGetChannel())
+                        .build()
+        );
+    }
 }

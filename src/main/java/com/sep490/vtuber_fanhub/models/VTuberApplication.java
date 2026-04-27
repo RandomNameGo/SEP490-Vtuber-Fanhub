@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -43,5 +44,12 @@ public class VTuberApplication {
 
     @Column(name = "review_at")
     private Instant reviewAt;
+
+    @Size(max = 512)
+    @Column(name = "channel_id", length = 512)
+    private String channelId;
+
+    @Column(name = "is_match_channel_link_and_id")
+    private Boolean isMatchChannelLinkAndId;
 
 }

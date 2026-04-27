@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("vhub/api/v1/vtuber-application")
@@ -22,7 +23,7 @@ public class VTuberApplicationController {
 
     @PostMapping("/register-vtuber")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> registerVTuber(@RequestBody @Valid CreateVTuberApplication request) {
+    public ResponseEntity<?> registerVTuber(@RequestBody @Valid CreateVTuberApplication request) throws ExecutionException, InterruptedException {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
                 .success(true)
                 .message("Success")
@@ -33,11 +34,15 @@ public class VTuberApplicationController {
 
     @GetMapping("/my-applications")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
-    public ResponseEntity<?> getMyVTuberApplications() {
+    public ResponseEntity<?> getMyVTuberApplications(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
         return ResponseEntity.ok().body(APIResponse.<List<VTuberApplicationResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(vtuberApplicationService.getMyVTuberApplications())
+                .data(vtuberApplicationService.getMyVTuberApplications(pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -46,11 +51,12 @@ public class VTuberApplicationController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
     public ResponseEntity<?> getAllVTuberApplications(@RequestParam(defaultValue = "0") int pageNo,
                                                       @RequestParam(defaultValue = "10") int pageSize,
-                                                      @RequestParam(defaultValue = "createdAt") String sortBy) {
+                                                      @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                      @RequestParam(defaultValue = "desc") String sortDir) {
         return ResponseEntity.ok().body(APIResponse.<List<VTuberApplicationResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(vtuberApplicationService.getAllVTuberApplications(pageNo, pageSize, sortBy))
+                .data(vtuberApplicationService.getAllVTuberApplications(pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }

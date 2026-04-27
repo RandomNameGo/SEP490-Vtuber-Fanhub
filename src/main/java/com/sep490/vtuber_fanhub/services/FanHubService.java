@@ -22,7 +22,7 @@ public interface FanHubService {
 
     List<FanHubResponse> getAllFanHubs(int pageNo, int pageSize, String sortBy, String sortDir, boolean includePrivate);
 
-    List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category);
+    List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category, String sortDir);
 
     FanHubResponse getFanHubBySubdomain(String subdomain);
 

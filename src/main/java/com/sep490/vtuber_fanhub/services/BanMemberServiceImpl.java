@@ -141,7 +141,7 @@ public class BanMemberServiceImpl implements BanMemberService {
     }
 
     @Override
-    public List<BanMemberResponse> getActiveBansByHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String banType) {
+    public List<BanMemberResponse> getActiveBansByHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir, String banType) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -162,7 +162,8 @@ public class BanMemberServiceImpl implements BanMemberService {
             throw new AccessDeniedException("Access denied");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable paging = PageRequest.of(pageNo, pageSize, sort);
         Page<BanMember> pagedBans;
         
         if (banType != null && !banType.isEmpty()) {
@@ -259,7 +260,7 @@ public class BanMemberServiceImpl implements BanMemberService {
     }
 
     @Override
-    public List<MemberWithBansResponse> getAllMembersWithBans(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<MemberWithBansResponse> getAllMembersWithBans(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -280,7 +281,8 @@ public class BanMemberServiceImpl implements BanMemberService {
             throw new AccessDeniedException("Access denied");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable paging = PageRequest.of(pageNo, pageSize, sort);
         Page<BanMember> pagedBans = banMemberRepository.findByHubId(fanHubId, paging);
 
         if (pagedBans.isEmpty()) {

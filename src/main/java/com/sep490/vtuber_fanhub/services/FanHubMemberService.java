@@ -13,9 +13,9 @@ public interface FanHubMemberService {
 
     String joinFanHubMemberWithAnswers(long fanHubId, List<com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest> answers);
 
-    List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username, String role);
+    List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir, String username, String role);
 
-    List<PendingMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<PendingMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
     String addModerator(long fanHubId, List<Long> fanHubMemberIds);
 

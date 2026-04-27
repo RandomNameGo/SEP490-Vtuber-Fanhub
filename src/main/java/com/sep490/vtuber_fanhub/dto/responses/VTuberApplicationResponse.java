@@ -14,6 +14,8 @@ public class VTuberApplicationResponse {
 
     private String channelName;
     private String channelLink;
+    private String channelId;
+    private Boolean isMatchChannelLinkAndId;
     private String status;
     private String reason;
 

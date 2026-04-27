@@ -18,4 +18,6 @@ public class CreateVTuberApplication {
     @Size(max = 512, message = "Channel link must not exceed 512 characters")
     // @URL(message = "Channel link must be a valid URL")
     private String channelLink;
+
+    private String channelId;
 }

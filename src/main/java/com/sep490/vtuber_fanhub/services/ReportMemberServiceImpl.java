@@ -76,7 +76,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
     }
 
     @Override
-    public List<ReportMemberResponse> getReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<ReportMemberResponse> getReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -97,7 +97,8 @@ public class ReportMemberServiceImpl implements ReportMemberService {
             throw new AccessDeniedException("Access denied");
         }
 
-        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(direction, sortBy));
         Page<ReportMember> reportMemberPage = reportMemberRepository.findByFanHubId(fanHubId, pageRequest);
 
         return reportMemberPage.getContent().stream()
@@ -152,10 +153,11 @@ public class ReportMemberServiceImpl implements ReportMemberService {
     }
 
     @Override
-    public List<ReportMemberResponse> getReportMembersByCurrentUser(int pageNo, int pageSize, String sortBy) {
+    public List<ReportMemberResponse> getReportMembersByCurrentUser(int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(direction, sortBy));
         Page<ReportMember> reportMemberPage = reportMemberRepository.findByReportedById(currentUser.getId(), pageRequest);
 
         return reportMemberPage.getContent().stream()
@@ -164,7 +166,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
     }
 
     @Override
-    public List<ReportMemberResponse> getPendingReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<ReportMemberResponse> getPendingReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -185,7 +187,8 @@ public class ReportMemberServiceImpl implements ReportMemberService {
             throw new AccessDeniedException("Access denied");
         }
 
-        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(direction, sortBy));
         Page<ReportMember> reportMemberPage = reportMemberRepository.findByHubIdAndStatus(fanHubId, "PENDING", pageRequest);
 
         return reportMemberPage.getContent().stream()
@@ -287,7 +290,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
     }
 
     @Override
-    public List<MemberWithReportsResponse> getAllMembersWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<MemberWithReportsResponse> getAllMembersWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -309,7 +312,8 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         }
 
         // Get all report members for this fan hub with PENDING status
-        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(Sort.Direction.DESC, sortBy));
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(direction, sortBy));
         Page<ReportMember> reportMemberPage = reportMemberRepository.findByHubIdAndStatus(fanHubId, "PENDING", pageRequest);
 
         if (reportMemberPage.isEmpty()) {

@@ -302,7 +302,7 @@ public class FanHubServiceImpl implements FanHubService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category) {
+    public List<FanHubResponse> getTopFanHubs(int pageNo, int pageSize, String category, String sortDir) {
         Pageable paging = PageRequest.of(pageNo, pageSize);
 
         List<FanHub> fanHubs;
@@ -316,9 +316,18 @@ public class FanHubServiceImpl implements FanHubService {
             return List.of();
         }
 
-        return fanHubs.stream()
+        List<FanHubResponse> responses = fanHubs.stream()
                 .map(this::mapToFanHubResponseWithMemberCount)
                 .collect(Collectors.toList());
+
+        Sort.Direction direction = getSortDirection(sortDir);
+        if (direction == Sort.Direction.ASC) {
+            responses.sort((a, b) -> Long.compare(a.getMemberCount(), b.getMemberCount()));
+        } else {
+            responses.sort((a, b) -> Long.compare(b.getMemberCount(), a.getMemberCount()));
+        }
+
+        return responses;
     }
 
     @Override
@@ -351,6 +360,20 @@ public class FanHubServiceImpl implements FanHubService {
         if (fanHubs.isEmpty()) {
             return List.of();
         }
+
+        // Apply sorting manually
+        Sort.Direction direction = getSortDirection(sortDir);
+        fanHubs.sort((h1, h2) -> {
+            int result = 0;
+            if ("createdAt".equals(sortBy)) {
+                result = h1.getCreatedAt().compareTo(h2.getCreatedAt());
+            } else if ("hubName".equals(sortBy)) {
+                result = h1.getHubName().compareToIgnoreCase(h2.getHubName());
+            } else {
+                result = h1.getCreatedAt().compareTo(h2.getCreatedAt());
+            }
+            return direction == Sort.Direction.ASC ? result : -result;
+        });
 
         // Apply pagination manually
         int start = Math.min(pageNo * pageSize, fanHubs.size());

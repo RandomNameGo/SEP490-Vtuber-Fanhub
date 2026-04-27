@@ -92,12 +92,13 @@ public class FanHubController {
     public ResponseEntity<?> getTopFanHubs(
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String category) {
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<FanHubResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubService.getTopFanHubs(pageNo, pageSize, category))
+                .data(fanHubService.getTopFanHubs(pageNo, pageSize, category, sortDir))
                 .build()
         );
     }

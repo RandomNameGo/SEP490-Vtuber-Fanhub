@@ -63,12 +63,13 @@ public class FanHubMemberController {
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "joinedAt") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String role) {
         return ResponseEntity.ok().body(APIResponse.<List<FanHubMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubMemberService.getFanHubMembers(fanHubId, pageNo, pageSize, sortBy, username, role))
+                .data(fanHubMemberService.getFanHubMembers(fanHubId, pageNo, pageSize, sortBy, sortDir, username, role))
                 .build()
         );
     }
@@ -79,11 +80,12 @@ public class FanHubMemberController {
             @PathVariable long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "joinedAt") String sortBy) {
+            @RequestParam(defaultValue = "joinedAt") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
         return ResponseEntity.ok().body(APIResponse.<List<com.sep490.vtuber_fanhub.dto.responses.PendingMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(fanHubMemberService.getPendingFanHubMembers(fanHubId, pageNo, pageSize, sortBy))
+                .data(fanHubMemberService.getPendingFanHubMembers(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -140,12 +142,13 @@ public class FanHubMemberController {
             @PathVariable Long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<ReportMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(reportMemberService.getReportMembersByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .data(reportMemberService.getReportMembersByFanHubId(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -181,12 +184,13 @@ public class FanHubMemberController {
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir,
             @RequestParam(required = false) String banType) {
 
         return ResponseEntity.ok().body(APIResponse.<List<BanMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(banMemberService.getActiveBansByHubId(fanHubId, pageNo, pageSize, sortBy, banType))
+                .data(banMemberService.getActiveBansByHubId(fanHubId, pageNo, pageSize, sortBy, sortDir, banType))
                 .build()
         );
     }
@@ -252,12 +256,13 @@ public class FanHubMemberController {
     public ResponseEntity<?> getMyReportMembers(
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<ReportMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(reportMemberService.getReportMembersByCurrentUser(pageNo, pageSize, sortBy))
+                .data(reportMemberService.getReportMembersByCurrentUser(pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -268,12 +273,13 @@ public class FanHubMemberController {
             @PathVariable Long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<ReportMemberResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(reportMemberService.getPendingReportMembersByFanHubId(fanHubId, pageNo, pageSize, sortBy))
+                .data(reportMemberService.getPendingReportMembersByFanHubId(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -298,12 +304,13 @@ public class FanHubMemberController {
             @PathVariable Long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<MemberWithReportsResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(reportMemberService.getAllMembersWithReports(fanHubId, pageNo, pageSize, sortBy))
+                .data(reportMemberService.getAllMembersWithReports(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }
@@ -314,12 +321,13 @@ public class FanHubMemberController {
             @PathVariable Long fanHubId,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "createdAt") String sortBy) {
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok().body(APIResponse.<List<MemberWithBansResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(banMemberService.getAllMembersWithBans(fanHubId, pageNo, pageSize, sortBy))
+                .data(banMemberService.getAllMembersWithBans(fanHubId, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }

@@ -124,7 +124,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
     }
 
     @Override
-    public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String username, String role) {
+    public List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir, String username, String role) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -144,7 +144,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new AccessDeniedException("Access denied");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable paging = PageRequest.of(pageNo, pageSize, sort);
 
         Page<FanHubMember> pagedMembers;
         if (role != null && !role.isEmpty()) {
@@ -171,7 +172,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
     }
 
     @Override
-    public List<PendingMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy) {
+    public List<PendingMemberResponse> getPendingFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         Optional<FanHub> fanHub = fanHubRepository.findById(fanHubId);
@@ -192,7 +193,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new AccessDeniedException("Access denied");
         }
 
-        Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable paging = PageRequest.of(pageNo, pageSize, sort);
 
         Page<FanHubMember> pagedMembers = fanHubMemberRepository.findByHubIdAndStatus(fanHubId, "PENDING", paging);
 

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,7 @@ public class FanHubJoinQuestionServiceImpl implements FanHubJoinQuestionService 
     @Transactional(readOnly = true)
     public List<FanHubJoinQuestionResponse> getQuestionsByHubId(Long hubId) {
         return questionRepository.findActiveQuestionsByHubId(hubId).stream()
+                .sorted(Comparator.comparing(q -> q.getOrderNumber() != null ? q.getOrderNumber() : 0))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

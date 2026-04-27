@@ -10,15 +10,15 @@ public interface ReportMemberService {
 
     String createReportMember(CreateReportMemberRequest createReportMemberRequest);
 
-    List<ReportMemberResponse> getReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<ReportMemberResponse> getReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
     String resolveReportMember(Long reportId, String resolveMessage);
 
-    List<ReportMemberResponse> getReportMembersByCurrentUser(int pageNo, int pageSize, String sortBy);
+    List<ReportMemberResponse> getReportMembersByCurrentUser(int pageNo, int pageSize, String sortBy, String sortDir);
 
-    List<ReportMemberResponse> getPendingReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<ReportMemberResponse> getPendingReportMembersByFanHubId(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 
     String bulkResolveReportMembers(List<Long> reportIds, String resolveMessage);
 
-    List<MemberWithReportsResponse> getAllMembersWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy);
+    List<MemberWithReportsResponse> getAllMembersWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
 }

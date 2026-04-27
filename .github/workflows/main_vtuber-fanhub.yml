@@ -31,6 +31,11 @@ jobs:
           SIGHTENGINE_USER: ${{ secrets.SIGHTENGINE_USER }}
           SIGHTENGINE_SECRET: ${{ secrets.SIGHTENGINE_SECRET}}
           APP_HOST: ${{ secrets.APP_HOST}}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_USERNAME: ${{ secrets.REDIS_USERNAME }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: mvn clean install
 
       - name: Rename executable JAR to app.jar
