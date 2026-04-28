@@ -224,7 +224,7 @@ public class ReportPostServiceImpl implements ReportPostService {
             }
 
             // If reported user is the current user, they cannot resolve their own report
-            if (reportPost.getPost().getUser().getId().equals(currentUser.getId())) {
+            if (reportPost.getPost().getUser().getId().equals(currentUser.getId()) && !isOwner) {
                 throw new AccessDeniedException("Cannot resolve your own report for report ID: " + reportId);
             }
 
