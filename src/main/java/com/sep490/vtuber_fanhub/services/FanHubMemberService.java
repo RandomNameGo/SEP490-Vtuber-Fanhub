@@ -1,9 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
-import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
-import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
-import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
-import com.sep490.vtuber_fanhub.dto.responses.PendingMemberResponse;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateJoinAnswerRequest;
+import com.sep490.vtuber_fanhub.dto.responses.*;
 
 import java.util.List;
 
@@ -26,6 +24,16 @@ public interface FanHubMemberService {
     MemberDetailResponse getMemberDetail(long fanHubMemberId);
 
     FanHubMembershipResponse checkUserMembership(Long fanHubId);
+
+    FanHubMembershipResponse checkUserMembershipAnyStatus(Long fanHubId);
+
+    Boolean checkUserSentJoinRequest(Long fanHubId);
+
+    String updateJoinAnswers(List<UpdateJoinAnswerRequest> requests);
+
+    List<UserFanHubAnswersResponse> getMyJoinAnswers(Long fanHubId);
+
+    String deleteJoinRequest(long fanHubId);
 
     String leaveFanHub(long fanHubId);
 

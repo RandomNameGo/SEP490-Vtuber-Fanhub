@@ -188,4 +188,14 @@ public class FanHubController {
                 .build()
         );
     }
+
+    @GetMapping("/most-popular")
+    public ResponseEntity<?> getMostPopularFanHub() {
+        return ResponseEntity.ok().body(APIResponse.<FanHubResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubService.getMostPopularFanHub())
+                .build()
+        );
+    }
 }

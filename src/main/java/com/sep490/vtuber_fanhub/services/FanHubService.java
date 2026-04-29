@@ -37,4 +37,6 @@ public interface FanHubService {
     String deactivateFanHub(Long fanHubId);
 
     List<FanHubResponse> searchFanHubs(String keyword, int pageNo, int pageSize, String sortBy, String sortDir);
+
+    FanHubResponse getMostPopularFanHub();
 }

@@ -1,10 +1,8 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest;
-import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
-import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
-import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
-import com.sep490.vtuber_fanhub.dto.responses.PendingMemberResponse;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateJoinAnswerRequest;
+import com.sep490.vtuber_fanhub.dto.responses.*;
 import com.sep490.vtuber_fanhub.exceptions.CustomAuthenticationException;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.*;
@@ -343,7 +341,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         if ("APPROVED".equals(normalizedStatus)) {
             member.get().setStatus("JOINED");
             member.get().setRoleInHub("MEMBER");
-            
+            fanHubMemberRepository.save(member.get());
+
             // Send notification to the user
             notificationService.sendMemberAcceptedNotification(
                     member.get().getUser().getId(),
@@ -353,7 +352,6 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         } else {
             fanHubMemberRepository.delete(member.get());
         }
-        fanHubMemberRepository.save(member.get());
 
         return "Membership request " + normalizedStatus.toLowerCase() + " successfully";
     }
@@ -403,6 +401,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         if (fanHub.getOwnerUser().getId().equals(currentUser.getId())) {
             response.setIsMember(true);
             response.setRoleInHub("VTUBER");
+            response.setStatus("JOINED");
             return response;
         }
 
@@ -412,8 +411,124 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         response.setIsMember(member.isPresent());
         response.setRoleInHub(member.isPresent() ? member.get().getRoleInHub() : null);
+        response.setStatus(member.isPresent() ? member.get().getStatus() : null);
 
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FanHubMembershipResponse checkUserMembershipAnyStatus(Long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        FanHub fanHub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        FanHubMembershipResponse response = new FanHubMembershipResponse();
+
+        if (fanHub.getOwnerUser().getId().equals(currentUser.getId())) {
+            response.setIsMember(true);
+            response.setRoleInHub("VTUBER");
+            response.setStatus("JOINED");
+            return response;
+        }
+
+        Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId());
+
+        if (member.isPresent()) {
+            response.setIsMember(true);
+            response.setRoleInHub(member.get().getRoleInHub());
+            response.setStatus(member.get().getStatus());
+        } else {
+            response.setIsMember(false);
+            response.setRoleInHub(null);
+            response.setStatus(null);
+        }
+
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Boolean checkUserSentJoinRequest(Long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        return fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .map(m -> "PENDING".equals(m.getStatus()))
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional
+    public String updateJoinAnswers(List<UpdateJoinAnswerRequest> requests) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        for (UpdateJoinAnswerRequest request : requests) {
+            FanHubJoinAnswer answer = answerRepository.findById(request.getAnswerId())
+                    .orElseThrow(() -> new NotFoundException("Answer with ID " + request.getAnswerId() + " not found"));
+
+            if (!answer.getMember().getUser().getId().equals(currentUser.getId())) {
+                throw new AccessDeniedException("You can only edit your own answers (Answer ID: " + request.getAnswerId() + ")");
+            }
+
+            if (!"PENDING".equals(answer.getMember().getStatus())) {
+                throw new IllegalArgumentException("Answers can only be edited for pending join requests (Answer ID: " + request.getAnswerId() + ")");
+            }
+
+            answer.setContent(request.getContent());
+            answerRepository.save(answer);
+        }
+
+        return "Answers updated successfully";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserFanHubAnswersResponse> getMyJoinAnswers(Long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        List<FanHubJoinAnswer> answers;
+        if (fanHubId != null) {
+            answers = answerRepository.findByMember_User_IdAndMember_Hub_Id(currentUser.getId(), fanHubId);
+        } else {
+            answers = answerRepository.findByMember_User_Id(currentUser.getId());
+        }
+
+        return answers.stream()
+                .collect(Collectors.groupingBy(a -> a.getMember().getHub()))
+                .entrySet().stream()
+                .map(entry -> {
+                    FanHub hub = entry.getKey();
+                    List<FanHubJoinAnswer> hubAnswers = entry.getValue();
+
+                    UserFanHubAnswersResponse response = new UserFanHubAnswersResponse();
+                    response.setFanHubId(hub.getId());
+                    response.setFanHubName(hub.getHubName());
+                    response.setAnswers(hubAnswers.stream()
+                            .map(this::mapToAnswerResponse)
+                            .collect(Collectors.toList()));
+
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public String deleteJoinRequest(long fanHubId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        FanHubMember member = fanHubMemberRepository.findByHubIdAndUserId(fanHubId, currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Join request not found"));
+
+        if (!"PENDING".equals(member.getStatus())) {
+            throw new IllegalArgumentException("Only pending join requests can be deleted");
+        }
+
+        answerRepository.deleteByMemberId(member.getId());
+
+        fanHubMemberRepository.delete(member);
+        return "Join request deleted successfully";
     }
 
     @Override

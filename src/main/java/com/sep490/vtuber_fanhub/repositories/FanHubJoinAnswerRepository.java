@@ -10,9 +10,17 @@ import java.util.List;
 @Repository
 public interface FanHubJoinAnswerRepository extends JpaRepository<FanHubJoinAnswer, Long> {
     
+    @EntityGraph(attributePaths = {"question", "member", "member.hub"})
+    List<FanHubJoinAnswer> findByMember_User_Id(Long userId);
+
+    @EntityGraph(attributePaths = {"question", "member", "member.hub"})
+    List<FanHubJoinAnswer> findByMember_User_IdAndMember_Hub_Id(Long userId, Long hubId);
+
     @EntityGraph(attributePaths = {"question"})
     List<FanHubJoinAnswer> findByMemberId(Long memberId);
 
     @EntityGraph(attributePaths = {"question", "member", "member.user"})
     List<FanHubJoinAnswer> findByMember_Hub_Id(Long hubId);
+
+    void deleteByMemberId(Long memberId);
 }

@@ -38,6 +38,13 @@ public interface FanHubRepository extends JpaRepository<FanHub, Long> {
     @Query("SELECT fh FROM FanHub fh WHERE fh.isActive = true AND fh.isPrivate = false")
     List<FanHub> findPublicActiveFanHubs(Pageable pageable);
 
+    @Query("SELECT fh FROM FanHub fh " +
+           "LEFT JOIN FanHubMember fhm ON fh.id = fhm.hub.id " +
+           "WHERE fh.isActive = true AND fh.isPrivate = false " +
+           "GROUP BY fh.id " +
+           "ORDER BY COUNT(fhm.id) DESC")
+    List<FanHub> findTopPopularFanHubs(Pageable pageable);
+
     // Search fan hubs by hub name containing keyword
     @Query("SELECT fh FROM FanHub fh " +
             "WHERE fh.isActive = true " +

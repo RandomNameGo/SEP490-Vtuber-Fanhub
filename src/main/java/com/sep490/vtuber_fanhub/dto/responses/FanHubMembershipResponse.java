@@ -6,4 +6,5 @@ import lombok.Data;
 public class FanHubMembershipResponse {
     private Boolean isMember;
     private String roleInHub;
+    private String status;
 }

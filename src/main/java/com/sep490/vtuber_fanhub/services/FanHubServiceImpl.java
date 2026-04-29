@@ -65,6 +65,10 @@ public class FanHubServiceImpl implements FanHubService {
 
     private final com.sep490.vtuber_fanhub.repositories.FanHubJoinQuestionRepository questionRepository;
 
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    private static final String POPULAR_HUB_INDEX_KEY = "popular_hub_rotation_index";
+
     @Override
     @Transactional
     public String createFanHub(CreateFanHubRequest request) {
@@ -563,6 +567,23 @@ public class FanHubServiceImpl implements FanHubService {
         return pagedFanHubs.getContent().stream()
                 .map(this::mapToFanHubResponseWithMemberCount)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FanHubResponse getMostPopularFanHub() {
+        List<FanHub> topHubs = fanHubRepository.findTopPopularFanHubs(PageRequest.of(0, 10));
+        
+        if (topHubs.isEmpty()) {
+            throw new NotFoundException("No FanHubs found");
+        }
+
+
+        Long nextIndex = redisTemplate.opsForValue().increment(POPULAR_HUB_INDEX_KEY);
+        
+        int indexToUse = (int) (nextIndex % topHubs.size());
+
+        return mapToFanHubResponseWithMemberCount(topHubs.get(indexToUse));
     }
 
     private Sort.Direction getSortDirection(String sortDir) {

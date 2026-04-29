@@ -3,14 +3,8 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreateBanMemberRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateReportMemberRequest;
 import com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest;
-import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
-import com.sep490.vtuber_fanhub.dto.responses.BanMemberResponse;
-import com.sep490.vtuber_fanhub.dto.responses.FanHubMembershipResponse;
-import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
-import com.sep490.vtuber_fanhub.dto.responses.MemberDetailResponse;
-import com.sep490.vtuber_fanhub.dto.responses.ReportMemberResponse;
-import com.sep490.vtuber_fanhub.dto.responses.MemberWithReportsResponse;
-import com.sep490.vtuber_fanhub.dto.responses.MemberWithBansResponse;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateJoinAnswerRequest;
+import com.sep490.vtuber_fanhub.dto.responses.*;
 import com.sep490.vtuber_fanhub.services.BanMemberService;
 import com.sep490.vtuber_fanhub.services.FanHubMemberService;
 import com.sep490.vtuber_fanhub.services.ReportMemberService;
@@ -247,6 +241,60 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(membership)
+                .build()
+        );
+    }
+
+    @GetMapping("/{fanHubId}/membership")
+    public ResponseEntity<?> checkUserMembershipAnyStatus(@PathVariable Long fanHubId) {
+        FanHubMembershipResponse membership = fanHubMemberService.checkUserMembershipAnyStatus(fanHubId);
+        return ResponseEntity.ok().body(APIResponse.<FanHubMembershipResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(membership)
+                .build()
+        );
+    }
+
+    @GetMapping("/{fanHubId}/check-join-request")
+    public ResponseEntity<?> checkIsPending(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Boolean>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.checkUserSentJoinRequest(fanHubId))
+                .build()
+        );
+    }
+
+    @PutMapping("/answers")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> updateJoinAnswers(@RequestBody List<UpdateJoinAnswerRequest> requests) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.updateJoinAnswers(requests))
+                .build()
+        );
+    }
+
+    @GetMapping("/my-answers")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyJoinAnswers(@RequestParam(required = false) Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<List<UserFanHubAnswersResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.getMyJoinAnswers(fanHubId))
+                .build()
+        );
+    }
+
+    @DeleteMapping("/{fanHubId}/join-request")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> deleteJoinRequest(@PathVariable long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.deleteJoinRequest(fanHubId))
                 .build()
         );
     }
