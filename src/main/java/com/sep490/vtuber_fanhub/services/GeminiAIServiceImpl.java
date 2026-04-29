@@ -72,15 +72,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     .temperature(1f)
                     .thinkingConfig(THINKING_CONFIG)
                     .systemInstruction(Content.fromParts(Part.fromText
-                            ( personality + """
-                                INSTRUCTIONS:
-                                - Use the data from LAST_MESSAGES if there is available.
-                                - Don't mention that you are analyzing previous messages.
-                                - Don't say 'earlier you said' or 'based on the chat history'.
-                                - Just answer naturally as if you already knew it.
-                                - Be conversational and helpful
-                                
-                                """)))
+                            (personality)))
                     .build();
 
             // Start the conversation with a list of content
@@ -138,15 +130,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     .tools(tool)
                     .thinkingConfig(THINKING_CONFIG)
                     .systemInstruction(Content.fromParts(Part.fromText
-                            ( personality + """
-                                INSTRUCTIONS:
-                                - Use the data from LAST_MESSAGES if there is available.
-                                - Don't mention that you are analyzing previous messages.
-                                - Don't say 'earlier you said' or 'based on the chat history'.
-                                - Just answer naturally as if you already knew it.
-                                - Be conversational and helpful
-                                
-                                """)))
+                            (personality)))
                     .build();
 
             // Start the conversation with a list of content
