@@ -56,24 +56,23 @@ public class VTuberApplicationServiceImpl implements VTuberApplicationService {
     public String createVTuberApplication(CreateVTuberApplication request) throws ExecutionException, InterruptedException {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        Optional<User> user = userRepository.findById(request.getUserId());
-        if (user.isEmpty()) {
-            throw new NotFoundException("User not found");
-        }
-
         if(!Objects.equals(currentUser.getId(), request.getUserId())) {
             throw new CustomAuthenticationException("Wrong credentials");
         }
 
+        if (vTuberApplicationRepository.existsByUserIdAndStatus(currentUser.getId(), "PENDING")) {
+            throw new IllegalArgumentException("You already have a pending VTuber application.");
+        }
+
         VTuberApplication application = new VTuberApplication();
-        application.setUser(user.get());
+        application.setUser(currentUser);
         application.setChannelName(request.getChannelName());
         application.setChannelLink(request.getChannelLink());
         application.setStatus("PENDING");
         application.setCreatedAt(Instant.now());
         application.setChannelId(request.getChannelId());
-        VTuberApplication vTuberApplication = vTuberApplicationRepository.save(application);
-        validateChannelId(vTuberApplication);
+        VTuberApplication savedApplication = vTuberApplicationRepository.save(application);
+        validateChannelId(savedApplication);
 
         return "Submitted VTuber Application";
     }

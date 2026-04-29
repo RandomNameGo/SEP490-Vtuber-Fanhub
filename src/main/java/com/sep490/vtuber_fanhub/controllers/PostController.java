@@ -215,15 +215,15 @@ public class PostController {
 
     @GetMapping("/feed")
     public ResponseEntity<?> getPersonalizedFeed(
+            @RequestParam(required = false) String hashtag,
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-
         return ResponseEntity.ok().body(APIResponse.<List<PostResponse>>builder()
                 .success(true)
                 .message("Success")
-                .data(postService.getPersonalizedFeed(pageNo, pageSize, sortBy, sortDir))
+                .data(postService.getPersonalizedFeed(hashtag, pageNo, pageSize, sortBy, sortDir))
                 .build()
         );
     }

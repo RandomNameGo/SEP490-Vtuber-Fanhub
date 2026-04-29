@@ -48,38 +48,49 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     //Find posts from specific hub IDs (user's followed hubs)
     @EntityGraph(attributePaths = {"hub", "user"})
-    @Query("select p from Post p " +
+    @Query("select distinct p from Post p " +
+            "left join PostHashtag ph on p.id = ph.post.id " +
             "where p.hub.id in :hubIds " +
             "and p.status = 'APPROVED' " +
             "and p.hub.isActive = true " +
+            "and (:hashtag is null or ph.hashtag = :hashtag) " +
             "order by p.createdAt desc")
-    Page<Post> findByHubIdInAndStatusApproved(List<Long> hubIds, Pageable pageable);
+    Page<Post> findByHubIdInAndStatusApproved(
+            @Param("hashtag") String hashtag,
+            @Param("hubIds") List<Long> hubIds,
+            Pageable pageable);
 
     //Find public posts with similar categories for suggestions
     @EntityGraph(attributePaths = {"hub", "user"})
     @Query("select distinct p from Post p " +
             "join FanHubCategory fc on p.hub.id = fc.hub.id " +
+            "left join PostHashtag ph on p.id = ph.post.id " +
             "where p.hub.isPrivate = false " +
             "and p.hub.isActive = true " +
             "and p.hub.id not in :excludedHubIds " +
             "and p.status = 'APPROVED' " +
             "and fc.categoryName in :categories " +
+            "and (:hashtag is null or ph.hashtag = :hashtag) " +
             "order by p.createdAt desc")
     Page<Post> findPublicPostsByCategories(
-            List<Long> excludedHubIds,
-            List<String> categories,
+            @Param("hashtag") String hashtag,
+            @Param("excludedHubIds") List<Long> excludedHubIds,
+            @Param("categories") List<String> categories,
             Pageable pageable);
 
     //Find any public posts (fallback for suggestions)
     @EntityGraph(attributePaths = {"hub", "user"})
-    @Query("select p from Post p " +
+    @Query("select distinct p from Post p " +
+            "left join PostHashtag ph on p.id = ph.post.id " +
             "where p.hub.isPrivate = false " +
             "and p.hub.isActive = true " +
             "and p.hub.id not in :excludedHubIds " +
             "and p.status = 'APPROVED' " +
+            "and (:hashtag is null or ph.hashtag = :hashtag) " +
             "order by p.createdAt desc")
     Page<Post> findPublicPosts(
-            List<Long> excludedHubIds,
+            @Param("hashtag") String hashtag,
+            @Param("excludedHubIds") List<Long> excludedHubIds,
             Pageable pageable);
 
     //Find public posts sorted by interaction count
@@ -87,12 +98,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("select p from Post p " +
             "left join PostLike pl on p.id = pl.post.id " +
             "left join PostComment pc on p.id = pc.post.id " +
+            "left join PostHashtag ph on p.id = ph.post.id " +
             "where p.hub.isPrivate = false " +
             "and p.hub.isActive = true " +
             "and p.status = 'APPROVED' " +
+            "and (:hashtag is null or ph.hashtag = :hashtag) " +
             "group by p.id " +
             "order by count(distinct pl.id) + count(distinct pc.id) desc, p.createdAt desc")
-    Page<Post> findPublicPostsOrderByInteractions(Pageable pageable);
+    Page<Post> findPublicPostsOrderByInteractions(@Param("hashtag") String hashtag, Pageable pageable);
 
 
      //Get categories from user's followed hubs

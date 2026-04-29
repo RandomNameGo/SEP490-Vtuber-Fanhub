@@ -34,7 +34,7 @@ public interface PostService {
 
     String sendAiValidate(Long postId);
 
-    List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy, String sortDir);
+    List<PostResponse> getPersonalizedFeed(String hashtag, int pageNo, int pageSize, String sortBy, String sortDir);
 
     TranslatePostResponse translatePost(Long postId);
 

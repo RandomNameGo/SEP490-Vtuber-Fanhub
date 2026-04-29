@@ -888,7 +888,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostResponse> getPersonalizedFeed(int pageNo, int pageSize, String sortBy, String sortDir) {
+    public List<PostResponse> getPersonalizedFeed(String hashtag, int pageNo, int pageSize, String sortBy, String sortDir) {
         User currentUser = null;
         try {
             currentUser = authService.getUserFromToken(httpServletRequest);
@@ -901,7 +901,7 @@ public class PostServiceImpl implements PostService {
 
         // Case 1: Unauthenticated user - return public posts sorted by interactions
         if (currentUser == null) {
-            return postRepository.findPublicPostsOrderByInteractions(paging).getContent().stream()
+            return postRepository.findPublicPostsOrderByInteractions(hashtag, paging).getContent().stream()
                     .map(this::mapToPostResponse)
                     .collect(Collectors.toList());
         }
@@ -910,13 +910,13 @@ public class PostServiceImpl implements PostService {
 
         // Case 2: Authenticated but no followed hubs - return any public posts
         if (followedHubIds.isEmpty()) {
-            return postRepository.findPublicPosts(Collections.emptyList(), paging).getContent().stream()
+            return postRepository.findPublicPosts(hashtag, Collections.emptyList(), paging).getContent().stream()
                     .map(this::mapToPostResponse)
                     .collect(Collectors.toList());
         }
 
         // Case 3: Authenticated with followed hubs - return personalized mix
-        return getAuthenticatedPersonalizedFeed(followedHubIds, pageNo, pageSize, sortBy, sortDir);
+        return getAuthenticatedPersonalizedFeed(hashtag, followedHubIds, pageNo, pageSize, sortBy, sortDir);
     }
 
     private List<Long> getFollowedHubIds(Long userId) {
@@ -930,15 +930,15 @@ public class PostServiceImpl implements PostService {
         return new ArrayList<>(followedHubIdsSet);
     }
 
-    private List<PostResponse> getAuthenticatedPersonalizedFeed(List<Long> followedHubIds, int pageNo, int pageSize, String sortBy, String sortDir) {
+    private List<PostResponse> getAuthenticatedPersonalizedFeed(String hashtag, List<Long> followedHubIds, int pageNo, int pageSize, String sortBy, String sortDir) {
         int totalNeeded = (pageNo + 1) * pageSize;
 
         // Fetch up to totalNeeded from each source to allow for full backfilling if one is empty
         Pageable fetchPageable = PageRequest.of(0, totalNeeded, Sort.by(getSortDirection(sortDir), sortBy));
-        List<Post> followedPosts = postRepository.findByHubIdInAndStatusApproved(followedHubIds, fetchPageable).getContent();
+        List<Post> followedPosts = postRepository.findByHubIdInAndStatusApproved(hashtag, followedHubIds, fetchPageable).getContent();
 
         List<String> followedCategories = postRepository.findCategoriesByHubIds(followedHubIds);
-        List<Post> suggestionPosts = fetchSuggestionPosts(followedHubIds, followedCategories, totalNeeded, sortBy, sortDir);
+        List<Post> suggestionPosts = fetchSuggestionPosts(hashtag, followedHubIds, followedCategories, totalNeeded, sortBy, sortDir);
 
         // Merge posts maintaining ratio but filling gaps to ensure pageSize is met
         List<Post> mergedPosts = mergePostsWithBackfill(followedPosts, suggestionPosts, totalNeeded);
@@ -946,17 +946,17 @@ public class PostServiceImpl implements PostService {
         return paginateMergedResults(mergedPosts, pageNo, pageSize);
     }
 
-    private List<Post> fetchSuggestionPosts(List<Long> followedHubIds, List<String> followedCategories, int totalNeeded, String sortBy, String sortDir) {
+    private List<Post> fetchSuggestionPosts(String hashtag, List<Long> followedHubIds, List<String> followedCategories, int totalNeeded, String sortBy, String sortDir) {
         Pageable suggestionPageable = PageRequest.of(0, totalNeeded, Sort.by(getSortDirection(sortDir), sortBy));
         List<Post> suggestions = new ArrayList<>();
 
         if (!followedCategories.isEmpty()) {
-            suggestions = postRepository.findPublicPostsByCategories(followedHubIds, followedCategories, suggestionPageable).getContent();
+            suggestions = postRepository.findPublicPostsByCategories(hashtag, followedHubIds, followedCategories, suggestionPageable).getContent();
         }
 
         // Fallback: If no category-based suggestions found (or no categories), get any public posts
         if (suggestions.isEmpty()) {
-            suggestions = postRepository.findPublicPosts(followedHubIds, suggestionPageable).getContent();
+            suggestions = postRepository.findPublicPosts(hashtag, followedHubIds, suggestionPageable).getContent();
         }
 
         return suggestions;
@@ -1113,34 +1113,37 @@ public class PostServiceImpl implements PostService {
         response.setStartTime(post.getStartTime());
         response.setEndTime(post.getEndTime());
 
-        //Media URLs
-        List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
+        //Media URLs - using pre-fetched collection with @BatchSize
         List<String> mediaUrls = new ArrayList<>();
-        for (PostMedia media : mediaList) {
-            mediaUrls.add(media.getMediaUrl());
+        if (post.getPostMedias() != null) {
+            for (PostMedia media : post.getPostMedias()) {
+                mediaUrls.add(media.getMediaUrl());
+            }
         }
         response.setMediaUrls(mediaUrls);
 
-        //Hashtags
-        List<PostHashtag> hashtagList = postHashtagRepository.findByPostId(post.getId());
+        //Hashtags - using pre-fetched collection with @BatchSize
         List<String> hashtags = new ArrayList<>();
-        for (PostHashtag hashtag : hashtagList) {
-            hashtags.add(hashtag.getHashtag());
+        if (post.getPostHashtags() != null) {
+            for (PostHashtag hashtag : post.getPostHashtags()) {
+                hashtags.add(hashtag.getHashtag());
+            }
         }
         response.setHashtags(hashtags);
 
         //Vote option
         if ("POLL".equals(post.getPostType())) {
-            List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(post.getId());
             List<VoteOptionResponse> optionResponses = new ArrayList<>();
             Map<Long, Long> voteCounts = new HashMap<>();
             Long totalVotes = 0L;
 
-            for (VoteOption option : voteOptions) {
-                optionResponses.add(new VoteOptionResponse(option.getId(), option.getOptionText()));
-                Long optionVoteCount = postVoteRepository.countByOptionId(option.getId());
-                voteCounts.put(option.getId(), optionVoteCount != null ? optionVoteCount : 0L);
-                totalVotes += optionVoteCount != null ? optionVoteCount : 0L;
+            if (post.getVoteOptions() != null) {
+                for (VoteOption option : post.getVoteOptions()) {
+                    optionResponses.add(new VoteOptionResponse(option.getId(), option.getOptionText()));
+                    Long optionVoteCount = postVoteRepository.countByOptionId(option.getId());
+                    voteCounts.put(option.getId(), optionVoteCount != null ? optionVoteCount : 0L);
+                    totalVotes += optionVoteCount != null ? optionVoteCount : 0L;
+                }
             }
             response.setVoteOptions(optionResponses);
             response.setVoteCounts(voteCounts);
@@ -1150,11 +1153,13 @@ public class PostServiceImpl implements PostService {
             try {
                 User currentUser = authService.getUserFromToken(httpServletRequest);
                 Long userVotedOptionId = null;
-                for (VoteOption option : voteOptions) {
-                    Optional<PostVote> userVote = postVoteRepository.findByUserIdAndOptionId(currentUser.getId(), option.getId());
-                    if (userVote.isPresent()) {
-                        userVotedOptionId = option.getId();
-                        break;
+                if (post.getVoteOptions() != null) {
+                    for (VoteOption option : post.getVoteOptions()) {
+                        Optional<PostVote> userVote = postVoteRepository.findByUserIdAndOptionId(currentUser.getId(), option.getId());
+                        if (userVote.isPresent()) {
+                            userVotedOptionId = option.getId();
+                            break;
+                        }
                     }
                 }
                 response.setUserVotedOptionId(userVotedOptionId);
@@ -1167,7 +1172,7 @@ public class PostServiceImpl implements PostService {
         Long likeCount = postLikeRepository.countByPostId(post.getId());
         response.setLikeCount(likeCount);
 
-        // Count comments (top-level only)
+        // Count comments
         Long commentCount = postCommentRepository.countByPostId(post.getId());
         response.setCommentCount(commentCount);
 
@@ -1203,39 +1208,42 @@ public class PostServiceImpl implements PostService {
         response.setStartTime(post.getStartTime());
         response.setEndTime(post.getEndTime());
 
-        // Media with AI validation fields
-        List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
+        // Media with AI validation fields - using pre-fetched collection with @BatchSize
         List<PostWithMediaResponse.PostMediaItem> mediaItems = new ArrayList<>();
-        for (PostMedia media : mediaList) {
-            PostWithMediaResponse.PostMediaItem mediaItem = new PostWithMediaResponse.PostMediaItem();
-            mediaItem.setMediaId(media.getId());
-            mediaItem.setMediaUrl(media.getMediaUrl());
-            mediaItem.setAiValidationStatus(media.getAiValidationStatus());
-            mediaItem.setAiValidationComment(media.getAiValidationComment());
-            mediaItems.add(mediaItem);
+        if (post.getPostMedias() != null) {
+            for (PostMedia media : post.getPostMedias()) {
+                PostWithMediaResponse.PostMediaItem mediaItem = new PostWithMediaResponse.PostMediaItem();
+                mediaItem.setMediaId(media.getId());
+                mediaItem.setMediaUrl(media.getMediaUrl());
+                mediaItem.setAiValidationStatus(media.getAiValidationStatus());
+                mediaItem.setAiValidationComment(media.getAiValidationComment());
+                mediaItems.add(mediaItem);
+            }
         }
         response.setMedia(mediaItems);
 
-        // Hashtags
-        List<PostHashtag> hashtagList = postHashtagRepository.findByPostId(post.getId());
+        // Hashtags - using pre-fetched collection with @BatchSize
         List<String> hashtags = new ArrayList<>();
-        for (PostHashtag hashtag : hashtagList) {
-            hashtags.add(hashtag.getHashtag());
+        if (post.getPostHashtags() != null) {
+            for (PostHashtag hashtag : post.getPostHashtags()) {
+                hashtags.add(hashtag.getHashtag());
+            }
         }
         response.setHashtags(hashtags);
 
         // Vote option
         if ("POLL".equals(post.getPostType())) {
-            List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(post.getId());
             List<VoteOptionResponse> optionResponses = new ArrayList<>();
             Map<Long, Long> voteCounts = new HashMap<>();
             Long totalVotes = 0L;
 
-            for (VoteOption option : voteOptions) {
-                optionResponses.add(new VoteOptionResponse(option.getId(), option.getOptionText()));
-                Long optionVoteCount = postVoteRepository.countByOptionId(option.getId());
-                voteCounts.put(option.getId(), optionVoteCount != null ? optionVoteCount : 0L);
-                totalVotes += optionVoteCount != null ? optionVoteCount : 0L;
+            if (post.getVoteOptions() != null) {
+                for (VoteOption option : post.getVoteOptions()) {
+                    optionResponses.add(new VoteOptionResponse(option.getId(), option.getOptionText()));
+                    Long optionVoteCount = postVoteRepository.countByOptionId(option.getId());
+                    voteCounts.put(option.getId(), optionVoteCount != null ? optionVoteCount : 0L);
+                    totalVotes += optionVoteCount != null ? optionVoteCount : 0L;
+                }
             }
             response.setVoteOptions(optionResponses);
             response.setVoteCounts(voteCounts);
@@ -1245,11 +1253,13 @@ public class PostServiceImpl implements PostService {
             try {
                 User currentUser = authService.getUserFromToken(httpServletRequest);
                 Long userVotedOptionId = null;
-                for (VoteOption option : voteOptions) {
-                    Optional<PostVote> userVote = postVoteRepository.findByUserIdAndOptionId(currentUser.getId(), option.getId());
-                    if (userVote.isPresent()) {
-                        userVotedOptionId = option.getId();
-                        break;
+                if (post.getVoteOptions() != null) {
+                    for (VoteOption option : post.getVoteOptions()) {
+                        Optional<PostVote> userVote = postVoteRepository.findByUserIdAndOptionId(currentUser.getId(), option.getId());
+                        if (userVote.isPresent()) {
+                            userVotedOptionId = option.getId();
+                            break;
+                        }
                     }
                 }
                 response.setUserVotedOptionId(userVotedOptionId);

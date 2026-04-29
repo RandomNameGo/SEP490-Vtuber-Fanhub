@@ -5,9 +5,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
@@ -88,5 +90,17 @@ public class Post {
 
     @Column(name = "end_time")
     private Instant endTime;
+
+    @OneToMany(mappedBy = "post")
+    @BatchSize(size = 20)
+    private List<PostMedia> postMedias;
+
+    @OneToMany(mappedBy = "post")
+    @BatchSize(size = 20)
+    private List<PostHashtag> postHashtags;
+
+    @OneToMany(mappedBy = "post")
+    @BatchSize(size = 20)
+    private List<VoteOption> voteOptions;
 
 }

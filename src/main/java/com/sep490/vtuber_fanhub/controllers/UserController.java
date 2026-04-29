@@ -213,4 +213,21 @@ public class UserController {
         );
     }
 
+
+    @GetMapping("/my-items")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> getMyItems(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "id") String sortBy,
+            HttpServletRequest httpRequest) {
+        List<UserItemResponse> items = userItemService.getItemsByCurrentUser(httpRequest, pageNo, pageSize, sortBy);
+        return ResponseEntity.ok().body(APIResponse.<List<UserItemResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(items)
+                .build()
+        );
+    }
+
 }
