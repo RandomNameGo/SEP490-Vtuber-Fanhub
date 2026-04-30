@@ -50,9 +50,13 @@ public class PaymentController {
         return ResponseEntity.ok("success");
     }
 
-    @GetMapping("/cancel")
-    public ResponseEntity<?> paymentCancel() {
-        return ResponseEntity.ok("cancel");
+    @GetMapping("/cancel/{id}")
+    public ResponseEntity<?> paymentCancel(@PathVariable long id) {
+        paymentHistoryService.updatePaymentStatus(id, "CANCELLED");
+        return ResponseEntity.ok().body(APIResponse.builder()
+                .success(true)
+                .message("Payment cancelled")
+                .build());
     }
 
     @PostMapping(path = "/webhook")

@@ -46,21 +46,22 @@ public class PaymentHistoryServiceImpl implements PaymentHistoryService {
     @Override
     @Transactional
     public void updatePaymentStatus(long id, String status) {
-        PaymentHistory paymentHistory = paymentHistoryRepository.findById(id)
+        PaymentHistory paymentHistory = paymentHistoryRepository.findByIdWithUserAndPackage(id)
                 .orElseThrow(() -> new NotFoundException("Payment history not found with id: " + id));
 
-            paymentHistory.setStatus("SUCCESS");
-            
+        paymentHistory.setStatus(status);
+
+        if ("PAID".equals(status)) {
             User user = paymentHistory.getUser();
             PaidPackage paidPackage = paymentHistory.getPackageField();
-            
+
             if (paidPackage != null) {
                 long currentPoints = user.getPaidPoints() != null ? user.getPaidPoints() : 0L;
                 user.setPaidPoints(currentPoints + paidPackage.getPaidPoints());
                 userRepository.save(user);
             }
-            
-            paymentHistoryRepository.save(paymentHistory);
+        }
 
+        paymentHistoryRepository.save(paymentHistory);
     }
 }
