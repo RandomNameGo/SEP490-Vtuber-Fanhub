@@ -107,7 +107,7 @@ public class FanHubMemberController {
     }
 
     @PutMapping("/review")
-    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> reviewFanHubMember(
             @RequestParam long fanHubMemberId,
             @RequestParam String status) {
