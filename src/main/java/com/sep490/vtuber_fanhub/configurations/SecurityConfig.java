@@ -58,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/vhub/api/v1/payment/webhook").permitAll()
                         .requestMatchers("/vhub/api/v1/payment/success").permitAll()
                         .requestMatchers("/vhub/api/v1/payment/cancel").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/fan-hub-model/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()).
