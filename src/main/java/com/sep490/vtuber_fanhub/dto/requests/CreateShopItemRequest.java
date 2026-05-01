@@ -24,4 +24,10 @@ public class CreateShopItemRequest {
 
     @NotNull(message = "Price must not be null")
     private Long price;
+
+    private java.math.BigDecimal size;
+
+    private java.math.BigDecimal xAxis;
+
+    private java.math.BigDecimal yAxis;
 }

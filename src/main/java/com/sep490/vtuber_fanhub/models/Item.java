@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @Entity
@@ -26,5 +28,14 @@ public class Item {
 
     @Column(name = "category", length = 50)
     private String category;
+
+    @Column(name = "size", precision = 65)
+    private BigDecimal size;
+
+    @Column(name = "x_axis", precision = 65)
+    private BigDecimal xAxis;
+
+    @Column(name = "y_axis", precision = 65)
+    private BigDecimal yAxis;
 
 }

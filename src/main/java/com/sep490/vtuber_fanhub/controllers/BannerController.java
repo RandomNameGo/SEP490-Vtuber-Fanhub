@@ -63,6 +63,17 @@ public class BannerController {
         );
     }
 
+    @DeleteMapping("/{id}/delete")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> deleteBanner(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(bannerService.deleteBanner(id))
+                .build()
+        );
+    }
+
     @GetMapping("/all")
     public ResponseEntity<?> getAllBanners(
             @RequestParam(defaultValue = "0") int pageNo,

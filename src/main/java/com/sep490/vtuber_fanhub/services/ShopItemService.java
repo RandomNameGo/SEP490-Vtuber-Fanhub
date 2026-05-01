@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateShopItemRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateShopItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.ShopItemResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,4 +11,8 @@ public interface ShopItemService {
     String createShopItem(CreateShopItemRequest request, MultipartFile image);
 
     List<ShopItemResponse> getAllShopItems(int pageNo, int pageSize, String sortBy);
+
+    String updateShopItem(Long id, UpdateShopItemRequest request, MultipartFile image);
+
+    String deleteShopItem(Long id);
 }

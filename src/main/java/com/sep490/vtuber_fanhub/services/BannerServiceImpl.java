@@ -4,6 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateBannerRequest;
 import com.sep490.vtuber_fanhub.dto.responses.BannerResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.Banner;
+import com.sep490.vtuber_fanhub.repositories.BannerItemRepository;
 import com.sep490.vtuber_fanhub.repositories.BannerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,8 @@ import java.util.Optional;
 public class BannerServiceImpl implements BannerService {
 
     private final BannerRepository bannerRepository;
+
+    private final BannerItemRepository bannerItemRepository;
 
     private final CloudinaryService cloudinaryService;
 
@@ -130,6 +133,21 @@ public class BannerServiceImpl implements BannerService {
                 .orElseThrow(() -> new NotFoundException("No active banner found"));
 
         return convertToResponse(banner);
+    }
+
+    @Override
+    @Transactional
+    public String deleteBanner(Long bannerId) {
+        Banner banner = bannerRepository.findById(bannerId)
+                .orElseThrow(() -> new NotFoundException("Banner not found"));
+
+        // Delete all banner items first
+        bannerItemRepository.deleteByBannerId(bannerId);
+
+        // Delete the banner
+        bannerRepository.delete(banner);
+
+        return "Banner and its items deleted successfully";
     }
 
     private BannerResponse convertToResponse(Banner banner) {

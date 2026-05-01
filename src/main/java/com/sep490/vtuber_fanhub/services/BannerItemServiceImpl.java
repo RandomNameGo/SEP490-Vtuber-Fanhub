@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
@@ -79,6 +80,9 @@ public class BannerItemServiceImpl implements BannerItemService {
             item.setDescription(request.getDescription());
             item.setImageUrl(imageUrl);
             item.setCategory(request.getCategory());
+            item.setSize(request.getSize());
+            item.setXAxis(request.getXAxis());
+            item.setYAxis(request.getYAxis());
             itemRepository.save(item);
         }
 
@@ -120,12 +124,18 @@ public class BannerItemServiceImpl implements BannerItemService {
             response.setDescription(bannerItem.getItem().getDescription());
             response.setImageUrl(bannerItem.getItem().getImageUrl());
             response.setCategory(bannerItem.getItem().getCategory());
+            response.setSize(bannerItem.getItem().getSize());
+            response.setXAxis(bannerItem.getItem().getXAxis());
+            response.setYAxis(bannerItem.getItem().getYAxis());
         } else {
             response.setItemId(null);
             response.setItemName("Good luck next time");
             response.setDescription(null);
             response.setImageUrl(null);
             response.setCategory(null);
+            response.setSize(null);
+            response.setXAxis(null);
+            response.setYAxis(null);
         }
         
         response.setMultiplier(bannerItem.getMultiplier());

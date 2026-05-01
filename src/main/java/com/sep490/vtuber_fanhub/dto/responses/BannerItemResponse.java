@@ -14,4 +14,7 @@ public class BannerItemResponse {
     private String category;
     private Integer multiplier;
     private String type;
+    private java.math.BigDecimal size;
+    private java.math.BigDecimal xAxis;
+    private java.math.BigDecimal yAxis;
 }

@@ -16,4 +16,6 @@ public interface BannerService {
     String activateBanner(Long bannerId);
 
     String deactivateBanner(Long bannerId);
+
+    String deleteBanner(Long bannerId);
 }

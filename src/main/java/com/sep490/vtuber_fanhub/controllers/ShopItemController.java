@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateShopItemRequest;
 import com.sep490.vtuber_fanhub.dto.requests.PurchaseItemRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateShopItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PurchaseResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ShopItemResponse;
@@ -50,6 +51,31 @@ public class ShopItemController {
                 .success(true)
                 .message("Success")
                 .data(items)
+                .build()
+        );
+    }
+
+    @PutMapping("/{id}/edit")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> updateShopItem(
+            @PathVariable Long id,
+            @RequestPart("request") @Valid UpdateShopItemRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(shopItemService.updateShopItem(id, request, image))
+                .build()
+        );
+    }
+
+    @DeleteMapping("/{id}/delete")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> deleteShopItem(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(shopItemService.deleteShopItem(id))
                 .build()
         );
     }

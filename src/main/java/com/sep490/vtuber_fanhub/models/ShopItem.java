@@ -21,4 +21,7 @@ public class ShopItem {
     @Column(name = "price")
     private Long price;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted;
+
 }

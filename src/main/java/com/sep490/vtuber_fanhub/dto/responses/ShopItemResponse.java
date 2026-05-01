@@ -12,4 +12,7 @@ public class ShopItemResponse {
     private String imageUrl;
     private String category;
     private Long price;
+    private java.math.BigDecimal size;
+    private java.math.BigDecimal xAxis;
+    private java.math.BigDecimal yAxis;
 }
