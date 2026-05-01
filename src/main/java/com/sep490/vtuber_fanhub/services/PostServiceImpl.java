@@ -102,6 +102,11 @@ public class PostServiceImpl implements PostService {
 
     private final UserBookmarkRepository userBookmarkRepository;
 
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    private static final String TRENDING_POST_INDEX_KEY = "trending_post_rotation_index";
+    private static final String LATEST_POST_INDEX_KEY = "latest_post_rotation_index";
+
     @Override
     @Transactional
     public String createPost(CreatePostRequest request, List<MultipartFile> images, MultipartFile video) {
@@ -1731,26 +1736,33 @@ public class PostServiceImpl implements PostService {
     @Transactional(readOnly = true)
     public PostResponse getTrendingPublicPost() {
         Instant oneDayAgo = Instant.now().minus(24, ChronoUnit.HOURS);
-        // We use Pageable to enforce LIMIT 1 in the database query
-        List<Post> trendingPosts = postRepository.findTrendingPost(oneDayAgo, PageRequest.of(0, 1));
+        // Fetch top 10 trending posts to rotate
+        List<Post> trendingPosts = postRepository.findTrendingPost(oneDayAgo, PageRequest.of(0, 10));
 
         if (trendingPosts.isEmpty()) {
             throw new NotFoundException("No public posts available");
         }
 
-        return mapToPostResponse(trendingPosts.get(0));
+        Long nextIndex = redisTemplate.opsForValue().increment(TRENDING_POST_INDEX_KEY);
+        int indexToUse = (int) (nextIndex % trendingPosts.size());
+
+        return mapToPostResponse(trendingPosts.get(indexToUse));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PostResponse getLatestPublicApprovedPost() {
-        List<Post> posts = postRepository.findLatestPublicApprovedPost(PageRequest.of(0, 1));
+        // Fetch top 10 latest posts to rotate
+        List<Post> posts = postRepository.findLatestPublicApprovedPost(PageRequest.of(0, 10));
 
         if (posts.isEmpty()) {
             throw new NotFoundException("No public posts available");
         }
 
-        return mapToPostResponse(posts.get(0));
+        Long nextIndex = redisTemplate.opsForValue().increment(LATEST_POST_INDEX_KEY);
+        int indexToUse = (int) (nextIndex % posts.size());
+
+        return mapToPostResponse(posts.get(indexToUse));
     }
 
     @Override
