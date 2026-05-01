@@ -44,6 +44,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     private final FanHubJoinAnswerRepository answerRepository;
 
+    private final PostCommentRepository postCommentRepository;
+
     @Override
     @Transactional
     public String joinFanHubMember(long fanHubId) {
@@ -98,6 +100,11 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         }
 
         fanHubMemberRepository.save(member);
+
+        // Update memberId in existing comments if joined successfully
+        if ("JOINED".equals(member.getStatus())) {
+            postCommentRepository.updateMemberIdByUserIdAndHubId(currentUser.getId(), fanHubId, member.getId());
+        }
 
         if (answers != null && !answers.isEmpty()) {
             for (FanHubJoinAnswerRequest answerReq : answers) {
@@ -344,6 +351,13 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             member.get().setRoleInHub("MEMBER");
             fanHubMemberRepository.save(member.get());
 
+            // Update memberId in existing comments
+            postCommentRepository.updateMemberIdByUserIdAndHubId(
+                    member.get().getUser().getId(),
+                    fanHubId,
+                    member.get().getId()
+            );
+
             // Send notification to the user
             notificationService.sendMemberAcceptedNotification(
                     member.get().getUser().getId(),
@@ -561,6 +575,9 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         answerRepository.deleteByMemberId(fanHubMember.getId());
 
+        // Nullify memberId in comments
+        postCommentRepository.nullifyMemberId(fanHubMember.getId());
+
         fanHubMemberRepository.delete(fanHubMember);
 
         return "Left FanHub successfully";
@@ -621,10 +638,13 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         answerRepository.deleteByMemberId(target.getId());
 
+        // Nullify memberId in comments
+        postCommentRepository.nullifyMemberId(target.getId());
+
         fanHubMemberRepository.delete(target);
 
-
         return "Member kicked successfully";
+
     }
 
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {
@@ -700,5 +720,10 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         response.setQuestionContent(answer.getQuestion().getContent());
         response.setContent(answer.getContent());
         return response;
+    }
+
+    @Override
+    public long countPendingMembersByFanHubId(Long fanHubId) {
+        return fanHubMemberRepository.countByHubIdAndStatus(fanHubId, "PENDING");
     }
 }

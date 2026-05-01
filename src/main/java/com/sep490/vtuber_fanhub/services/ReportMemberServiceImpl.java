@@ -407,4 +407,9 @@ public class ReportMemberServiceImpl implements ReportMemberService {
 
         return response;
     }
+
+    @Override
+    public long countReportMembersByFanHubId(Long fanHubId) {
+        return reportMemberRepository.countByHubIdAndStatus(fanHubId, "PENDING");
+    }
 }

@@ -160,6 +160,28 @@ public class FanHubMemberController {
         );
     }
 
+    @GetMapping("/count-pending-members/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> countPendingMembers(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Long>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.countPendingMembersByFanHubId(fanHubId))
+                .build()
+        );
+    }
+
+    @GetMapping("/count-report-members/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> countReportMembers(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Long>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.countReportMembersByFanHubId(fanHubId))
+                .build()
+        );
+    }
+
     @PostMapping("/ban")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> banMember(@RequestBody CreateBanMemberRequest request) {

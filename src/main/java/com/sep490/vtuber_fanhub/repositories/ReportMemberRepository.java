@@ -18,5 +18,7 @@ public interface ReportMemberRepository extends JpaRepository<ReportMember, Long
 
     Page<ReportMember> findByHubIdAndStatus(Long fanHubId, String status, Pageable pageable);
 
+    long countByHubIdAndStatus(Long fanHubId, String status);
+
     List<ReportMember> findByUserId(Long userId);
 }

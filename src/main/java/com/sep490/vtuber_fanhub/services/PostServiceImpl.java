@@ -1788,6 +1788,11 @@ public class PostServiceImpl implements PostService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public long countPendingPostsByFanHubId(Long fanHubId) {
+        return postRepository.countByHubIdAndStatus(fanHubId, "PENDING");
+    }
+
     private Sort.Direction getSortDirection(String sortDir) {
         if (sortDir != null && sortDir.equalsIgnoreCase("asc")) {
             return Sort.Direction.ASC;

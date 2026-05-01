@@ -50,6 +50,9 @@ public interface FanHubMemberRepository extends JpaRepository<FanHubMember, Long
     @Query("select count(f) from FanHubMember f where f.hub.id = :fanHubId and f.status = 'JOINED' and f.hub.isActive = true")
     long countJoinedMembers(Long fanHubId);
 
+    @Query("select count(f) from FanHubMember f where f.hub.id = :fanHubId and f.status = :status and f.hub.isActive = true")
+    long countByHubIdAndStatus(@Param("fanHubId") Long fanHubId, @Param("status") String status);
+
     @Query("select f from FanHubMember f where f.hub.id = :fanHubId and f.status = 'JOINED' and f.hub.isActive = true order by f.fanHubScore desc")
     List<FanHubMember> findTop3ByHubIdOrderByFanHubScoreDesc(Long fanHubId, Pageable pageable);
 }

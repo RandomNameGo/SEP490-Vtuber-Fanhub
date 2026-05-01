@@ -443,4 +443,9 @@ public class ReportPostServiceImpl implements ReportPostService {
 
         return response;
     }
+
+    @Override
+    public long countReportPostsByFanHubId(Long fanHubId) {
+        return reportPostRepository.countByFanHubIdAndStatus(fanHubId, "PENDING");
+    }
 }

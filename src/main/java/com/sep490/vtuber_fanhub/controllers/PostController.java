@@ -500,6 +500,28 @@ public class PostController {
         );
     }
 
+    @GetMapping("/count-pending-posts/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> countPendingPosts(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Long>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.countPendingPostsByFanHubId(fanHubId))
+                .build()
+        );
+    }
+
+    @GetMapping("/count-report-posts/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> countReportPosts(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Long>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.countReportPostsByFanHubId(fanHubId))
+                .build()
+        );
+    }
+
     @GetMapping("/fan-hub/subdomain/{subdomain}")
     public ResponseEntity<?> getPostsBySubDomain(@PathVariable String subdomain,
                                       @RequestParam(defaultValue = "0") int pageNo,
