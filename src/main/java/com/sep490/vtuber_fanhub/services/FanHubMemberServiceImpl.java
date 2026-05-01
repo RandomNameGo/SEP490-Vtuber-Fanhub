@@ -350,6 +350,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
                     member.get().getHub().getHubName()
             );
         } else {
+            answerRepository.deleteByMemberId(member.get().getId());
             fanHubMemberRepository.delete(member.get());
         }
 
@@ -557,6 +558,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             throw new AccessDeniedException("Only active members can leave the FanHub");
         }
 
+        answerRepository.deleteByMemberId(fanHubMember.getId());
+
         fanHubMemberRepository.delete(fanHubMember);
 
         return "Left FanHub successfully";
@@ -614,6 +617,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
                 target.getHub().getHubName(),
                 currentUser.getId()
         );
+
+        answerRepository.deleteByMemberId(target.getId());
 
         fanHubMemberRepository.delete(target);
 
