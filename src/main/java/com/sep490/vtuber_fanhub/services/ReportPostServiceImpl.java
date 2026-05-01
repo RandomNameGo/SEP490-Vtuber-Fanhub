@@ -280,6 +280,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setAuthorUsername(author.getUsername());
         response.setAuthorDisplayName(author.getDisplayName());
         response.setAuthorAvatarUrl(author.getAvatarUrl());
+        response.setAuthorFrameUrl(author.getFrameUrl());
         
         // Media count
         List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
@@ -388,6 +389,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setAuthorUsername(author.getUsername());
         response.setAuthorDisplayName(author.getDisplayName());
         response.setAuthorAvatarUrl(author.getAvatarUrl());
+        response.setAuthorFrameUrl(author.getFrameUrl());
 
         // Media count
         List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
@@ -430,6 +432,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setReportedByUsername(reportPost.getReportedBy().getUsername());
         response.setReportedByDisplayName(reportPost.getReportedBy().getDisplayName());
         response.setReportedByAvatarUrl(reportPost.getReportedBy().getAvatarUrl());
+        response.setReportedByFrameUrl(reportPost.getReportedBy().getFrameUrl());
 
         // Resolver information (if resolved)
         if (reportPost.getResolveBy() != null) {

@@ -93,6 +93,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .triggeredByUserId(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getId() : null)
                 .triggeredByUsername(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getUsername() : null)
                 .triggeredByAvatarUrl(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getAvatarUrl() : null)
+                .triggeredByFrameUrl(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getFrameUrl() : null)
                 .isRead(notification.getIsRead())
                 .createdAt(notification.getCreatedAt())
                 .build();
@@ -199,6 +200,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .triggeredByUserId(triggeredBy != null ? triggeredBy.getId() : null)
                 .triggeredByUsername(triggeredBy != null ? triggeredBy.getUsername() : null)
                 .triggeredByAvatarUrl(triggeredBy != null ? triggeredBy.getAvatarUrl() : null)
+                .triggeredByFrameUrl(triggeredBy != null ? triggeredBy.getFrameUrl() : null)
                 .isRead(false)
                 .createdAt(Instant.now())
                 .build();
@@ -231,7 +233,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void sendPostLikeNotification(Long postAuthorId, Long likedByUserId, String likedByUsername,
-                                          String likedByAvatarUrl, Long postId, String postTitle,
+                                          String likedByAvatarUrl, String likedByFrameUrl, Long postId, String postTitle,
                                           Long fanHubId, String fanHubName) {
         User postAuthor = userRepository.findById(postAuthorId)
                 .orElseThrow(() -> new NotFoundException("Post author not found"));
@@ -263,7 +265,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void sendPostCommentNotification(Long postAuthorId, Long commentedByUserId, String commentedByUsername,
-                                             String commentedByAvatarUrl, Long postId, String postTitle,
+                                             String commentedByAvatarUrl, String commentedByFrameUrl, Long postId, String postTitle,
                                              Long fanHubId, String fanHubName) {
         User postAuthor = userRepository.findById(postAuthorId)
                 .orElseThrow(() -> new NotFoundException("Post author not found"));
@@ -315,21 +317,45 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void sendMemberBannedNotification(Long userId, Long fanHubId, String fanHubName, String reason) {
+    public void sendMemberBannedNotification(Long userId, Long fanHubId, String fanHubName, String reason, Instant bannedUntil, String banType) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         FanHub hub = fanHubRepository.findById(fanHubId)
                 .orElseThrow(() -> new NotFoundException("FanHub not found"));
 
+        String durationStr = "permanent";
+        if (bannedUntil != null) {
+            java.time.Duration duration = java.time.Duration.between(Instant.now(), bannedUntil);
+            long days = duration.toDays();
+            long hours = duration.toHoursPart();
+            long minutes = duration.toMinutesPart();
+            
+            StringBuilder sb = new StringBuilder();
+            if (days > 0) sb.append(days).append("d ");
+            if (hours > 0) sb.append(hours).append("h ");
+            if (minutes > 0) sb.append(minutes).append("m");
+            durationStr = sb.toString().trim();
+            if (durationStr.isEmpty()) durationStr = "less than a minute";
+        }
+
+        String action = "restricted from " + (banType != null ? banType.toLowerCase() : "interacting");
+        if ("COMMENT".equalsIgnoreCase(banType)) {
+            action = "Restricted from commenting from this hub";
+        } else if ("POST".equalsIgnoreCase(banType)) {
+            action = "Restricted from creating post from this hub";
+        } else if ("JOIN".equalsIgnoreCase(banType)) {
+            action = "Banned from joining this hub";
+        }
+
         String type = "MEMBER_BANNED";
         String title = "Banned from FanHub";
-        String message = String.format("You have been banned from FanHub \"%s\". Reason: %s",
-                fanHubName, reason != null ? reason : "Violation of community guidelines");
+        String message = String.format("You are %s. Duration remaining: %s",
+                action, durationStr);
 
         createNotification(user, type, title, message, hub, null, null);
 
-        log.info("Sent member banned notification to user {} for hub {}", userId, fanHubId);
+        log.info("Sent member banned notification to user {} for hub {} with ban type {}", userId, fanHubId, banType);
     }
 
     @Override

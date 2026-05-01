@@ -40,16 +40,16 @@ public interface NotificationService {
 
 
     void sendPostLikeNotification(Long postAuthorId, Long likedByUserId, String likedByUsername,
-                                   String likedByAvatarUrl, Long postId, String postTitle,
+                                   String likedByAvatarUrl, String likedByFrameUrl, Long postId, String postTitle,
                                    Long fanHubId, String fanHubName);
 
     void sendPostCommentNotification(Long postAuthorId, Long commentedByUserId, String commentedByUsername,
-                                      String commentedByAvatarUrl, Long postId, String postTitle,
+                                      String commentedByAvatarUrl, String commentedByFrameUrl, Long postId, String postTitle,
                                       Long fanHubId, String fanHubName);
 
     void sendFanHubStrikeNotification(Long ownerUserId, Long hubId, String hubName, int strikeCount, String reason);
 
-    void sendMemberBannedNotification(Long userId, Long fanHubId, String fanHubName, String reason);
+    void sendMemberBannedNotification(Long userId, Long fanHubId, String fanHubName, String reason, java.time.Instant bannedUntil, String banType);
 
     void sendMemberKickedNotification(Long userId, Long fanHubId, String fanHubName, Long kickedByUserId);
 

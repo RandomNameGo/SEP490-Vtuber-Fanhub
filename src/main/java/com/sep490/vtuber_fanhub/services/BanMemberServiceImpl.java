@@ -121,7 +121,9 @@ public class BanMemberServiceImpl implements BanMemberService {
                 fanHubMember.getUser().getId(),
                 fanHubId,
                 fanHubMember.getHub().getHubName(),
-                request.getReason()
+                request.getReason(),
+                request.getBannedUntil(),
+                banType
         );
 
         return "Member banned successfully";
@@ -134,8 +136,33 @@ public class BanMemberServiceImpl implements BanMemberService {
 
         if (!activeBans.isEmpty()) {
             BanMember ban = activeBans.get(0);
-            String message = String.format("You are banned from this hub. Reason: %s, Ban type: %s",
-                    ban.getReason(), ban.getBanType());
+            
+            String durationStr = "permanent";
+            if (ban.getBannedUntil() != null) {
+                java.time.Duration duration = java.time.Duration.between(Instant.now(), ban.getBannedUntil());
+                long days = duration.toDays();
+                long hours = duration.toHoursPart();
+                long minutes = duration.toMinutesPart();
+                
+                StringBuilder sb = new StringBuilder();
+                if (days > 0) sb.append(days).append("d ");
+                if (hours > 0) sb.append(hours).append("h ");
+                if (minutes > 0) sb.append(minutes).append("m");
+                durationStr = sb.toString().trim();
+                if (durationStr.isEmpty()) durationStr = "less than a minute";
+            }
+
+            String action = "restricted from " + (ban.getBanType() != null ? ban.getBanType().toLowerCase() : "interacting");
+            if ("COMMENT".equalsIgnoreCase(ban.getBanType())) {
+                action = "Restricted from commenting from this hub";
+            } else if ("POST".equalsIgnoreCase(ban.getBanType())) {
+                action = "Restricted from creating post from this hub";
+            } else if ("JOIN".equalsIgnoreCase(ban.getBanType())) {
+                action = "Banned from joining this hub";
+            }
+
+            String message = String.format("You are %s. Duration remaining: %s",
+                    action, durationStr);
             throw new AccessDeniedException(message);
         }
     }
@@ -310,6 +337,7 @@ public class BanMemberServiceImpl implements BanMemberService {
         response.setUsername(user.getUsername());
         response.setDisplayName(user.getDisplayName());
         response.setAvatarUrl(user.getAvatarUrl());
+        response.setFrameUrl(user.getFrameUrl());
 
         if (fanHubMemberOpt.isPresent()) {
             FanHubMember fanHubMember = fanHubMemberOpt.get();

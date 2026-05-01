@@ -438,6 +438,7 @@ public class FanHubServiceImpl implements FanHubService {
         response.setOwnerUsername(owner.getUsername());
         response.setOwnerDisplayName(owner.getDisplayName());
         response.setOwnerAvatarUrl(owner.getAvatarUrl());
+        response.setOwnerFrameUrl(owner.getFrameUrl());
 
         List<String> categories = fanHubCategoryRepository.findByHubId(fanHub.getId())
                 .stream()
@@ -505,6 +506,7 @@ public class FanHubServiceImpl implements FanHubService {
         response.setUsername(member.getUser().getUsername());
         response.setDisplayName(member.getUser().getDisplayName());
         response.setAvatarUrl(member.getUser().getAvatarUrl());
+        response.setFrameUrl(member.getUser().getFrameUrl());
         response.setRoleInHub(member.getRoleInHub());
         response.setStatus(member.getStatus());
         response.setFanHubScore(member.getFanHubScore());

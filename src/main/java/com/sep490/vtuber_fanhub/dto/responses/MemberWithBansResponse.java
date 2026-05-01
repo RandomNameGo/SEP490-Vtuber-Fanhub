@@ -14,6 +14,7 @@ public class MemberWithBansResponse {
     private String username;
     private String displayName;
     private String avatarUrl;
+    private String frameUrl;
     private String roleInHub;
     private String memberStatus;
 

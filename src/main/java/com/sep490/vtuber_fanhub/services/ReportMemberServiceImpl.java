@@ -344,6 +344,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         response.setUsername(user.getUsername());
         response.setDisplayName(user.getDisplayName());
         response.setAvatarUrl(user.getAvatarUrl());
+        response.setFrameUrl(user.getFrameUrl());
 
         // FanHubMember information (if exists)
         if (fanHubMemberOpt.isPresent()) {
@@ -383,6 +384,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         response.setReportedByUsername(reportMember.getReportedBy().getUsername());
         response.setReportedByDisplayName(reportMember.getReportedBy().getDisplayName());
         response.setReportedByAvatarUrl(reportMember.getReportedBy().getAvatarUrl());
+        response.setReportedByFrameUrl(reportMember.getReportedBy().getFrameUrl());
 
         // Resolver information (if resolved)
         if (reportMember.getResolveBy() != null) {

@@ -128,6 +128,7 @@ public class PostCommentServiceImpl implements PostCommentService {
                     currentUser.getId(),
                     currentUser.getUsername(),
                     currentUser.getAvatarUrl(),
+                    currentUser.getFrameUrl(),
                     post.get().getId(),
                     post.get().getTitle(),
                     post.get().getHub().getId(),
@@ -245,6 +246,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         response.setUsername(comment.getUser().getUsername());
         response.setDisplayName(comment.getUser().getDisplayName());
         response.setAvatarUrl(comment.getUser().getAvatarUrl());
+        response.setFrameUrl(comment.getUser().getFrameUrl());
         response.setMemberId(comment.getMemberId());
 
         response.setContent(comment.getContent());

@@ -222,6 +222,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setUsername(user.getUsername());
             response.setDisplayName(user.getDisplayName());
             response.setAvatarUrl(user.getAvatarUrl());
+            response.setFrameUrl(user.getFrameUrl());
         }
 
         // Fetch and map answers
@@ -640,6 +641,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setUserId(entity.getUser().getId());
             response.setUsername(entity.getUser().getUsername());
             response.setDisplayName(entity.getUser().getDisplayName());
+            response.setAvatarUrl(entity.getUser().getAvatarUrl());
+            response.setFrameUrl(entity.getUser().getFrameUrl());
         }
 
         response.setRoleInHub(entity.getRoleInHub());

@@ -228,6 +228,7 @@ public class UserServiceImpl implements UserService{
             oshiResponse.setUsername(user.getOshiUser().getUsername());
             oshiResponse.setDisplayName(user.getOshiUser().getDisplayName());
             oshiResponse.setAvatarUrl(user.getOshiUser().getAvatarUrl());
+            oshiResponse.setFrameUrl(user.getOshiUser().getFrameUrl());
             response.setOshi(oshiResponse);
         }
 
@@ -389,6 +390,7 @@ public class UserServiceImpl implements UserService{
             oshiResponse.setUsername(user.getOshiUser().getUsername());
             oshiResponse.setDisplayName(user.getOshiUser().getDisplayName());
             oshiResponse.setAvatarUrl(user.getOshiUser().getAvatarUrl());
+            oshiResponse.setFrameUrl(user.getOshiUser().getFrameUrl());
             response.setOshi(oshiResponse);
         }
 

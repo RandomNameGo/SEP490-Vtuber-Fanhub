@@ -111,7 +111,7 @@ public class FanHubReportServiceImpl implements FanHubReportService {
         response.setDescription(fanHub.getDescription());
         response.setBannerUrl(fanHub.getBannerUrl());
         response.setAvatarUrl(fanHub.getAvatarUrl());
-        response.setIsActive(fanHub.getIsActive());
+        response.setIsPrivate(fanHub.getIsPrivate());
         response.setIsPrivate(fanHub.getIsPrivate());
         response.setStrikeCount(fanHub.getStrikeCount());
         response.setCreatedAt(fanHub.getCreatedAt());

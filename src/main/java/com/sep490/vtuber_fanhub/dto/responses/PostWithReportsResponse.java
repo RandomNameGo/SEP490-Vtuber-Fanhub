@@ -18,6 +18,7 @@ public class PostWithReportsResponse {
     private String authorUsername;
     private String authorDisplayName;
     private String authorAvatarUrl;
+    private String authorFrameUrl;
 
     private String postType;
     private String title;
@@ -44,6 +45,7 @@ public class PostWithReportsResponse {
         private String reportedByUsername;
         private String reportedByDisplayName;
         private String reportedByAvatarUrl;
+        private String reportedByFrameUrl;
         private String reason;
         private String reportStatus;
         private String resolveMessage;

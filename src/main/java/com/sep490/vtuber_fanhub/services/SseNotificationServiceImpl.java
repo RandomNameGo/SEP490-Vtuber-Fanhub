@@ -152,7 +152,7 @@ public class SseNotificationServiceImpl implements SseNotificationService {
 
     @Override
     public void sendPostLikeNotification(Long postAuthorId, Long likedByUserId, String likedByUsername,
-                                          String likedByAvatarUrl, Long postId, String postTitle,
+                                          String likedByAvatarUrl, String likedByFrameUrl, Long postId, String postTitle,
                                           Long fanHubId, String fanHubName) {
         log.info("Sending post like notification: author={}, likedBy={}, postId={}", 
                 postAuthorId, likedByUsername, postId);
@@ -172,6 +172,7 @@ public class SseNotificationServiceImpl implements SseNotificationService {
                 .triggeredByUserId(likedByUserId)
                 .triggeredByUsername(likedByUsername)
                 .triggeredByAvatarUrl(likedByAvatarUrl)
+                .triggeredByFrameUrl(likedByFrameUrl)
                 .createdAt(Instant.now())
                 .build();
 
@@ -180,7 +181,7 @@ public class SseNotificationServiceImpl implements SseNotificationService {
 
     @Override
     public void sendPostCommentNotification(Long postAuthorId, Long commentedByUserId, String commentedByUsername,
-                                             String commentedByAvatarUrl, Long postId, String postTitle,
+                                             String commentedByAvatarUrl, String commentedByFrameUrl, Long postId, String postTitle,
                                              Long fanHubId, String fanHubName) {
         log.info("Sending post comment notification: author={}, commentedBy={}, postId={}", 
                 postAuthorId, commentedByUsername, postId);
@@ -200,6 +201,7 @@ public class SseNotificationServiceImpl implements SseNotificationService {
                 .triggeredByUserId(commentedByUserId)
                 .triggeredByUsername(commentedByUsername)
                 .triggeredByAvatarUrl(commentedByAvatarUrl)
+                .triggeredByFrameUrl(commentedByFrameUrl)
                 .createdAt(Instant.now())
                 .build();
 

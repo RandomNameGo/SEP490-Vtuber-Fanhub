@@ -14,6 +14,7 @@ public class MemberWithReportsResponse {
     private String username;
     private String displayName;
     private String avatarUrl;
+    private String frameUrl;
     private String roleInHub;
     private String memberStatus;
 
@@ -34,6 +35,7 @@ public class MemberWithReportsResponse {
         private String reportedByUsername;
         private String reportedByDisplayName;
         private String reportedByAvatarUrl;
+        private String reportedByFrameUrl;
         private String reason;
         private String reportStatus;
         private String resolveMessage;

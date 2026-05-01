@@ -1108,6 +1108,7 @@ public class PostServiceImpl implements PostService {
         response.setAuthorUsername(post.getUser().getUsername());
         response.setAuthorDisplayName(post.getUser().getDisplayName());
         response.setAuthorAvatarUrl(post.getUser().getAvatarUrl());
+        response.setAuthorFrameUrl(post.getUser().getFrameUrl());
         response.setPostType(post.getPostType());
         response.setTitle(post.getTitle());
         response.setContent(post.getContent());
@@ -1203,6 +1204,7 @@ public class PostServiceImpl implements PostService {
         response.setAuthorUsername(post.getUser().getUsername());
         response.setAuthorDisplayName(post.getUser().getDisplayName());
         response.setAuthorAvatarUrl(post.getUser().getAvatarUrl());
+        response.setAuthorFrameUrl(post.getUser().getFrameUrl());
         response.setPostType(post.getPostType());
         response.setTitle(post.getTitle());
         response.setContent(post.getContent());
@@ -1345,6 +1347,7 @@ public class PostServiceImpl implements PostService {
                     currentUser.getId(),
                     currentUser.getUsername(),
                     currentUser.getAvatarUrl(),
+                    currentUser.getFrameUrl(),
                     postId,
                     post.get().getTitle(),
                     post.get().getHub().getId(),

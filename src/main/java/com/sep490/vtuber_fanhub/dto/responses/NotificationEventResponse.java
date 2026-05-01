@@ -42,6 +42,7 @@ public class NotificationEventResponse {
     
 
     private String triggeredByAvatarUrl;
+    private String triggeredByFrameUrl;
     
 
     private Boolean isRead;

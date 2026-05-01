@@ -75,5 +75,6 @@ public class UserResponse {
         private String username;
         private String displayName;
         private String avatarUrl;
+        private String frameUrl;
     }
 }

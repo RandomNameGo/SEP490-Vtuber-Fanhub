@@ -20,12 +20,12 @@ public interface SseNotificationService {
 
 
     void sendPostLikeNotification(Long postAuthorId, Long likedByUserId, String likedByUsername,
-                                   String likedByAvatarUrl, Long postId, String postTitle,
+                                   String likedByAvatarUrl, String likedByFrameUrl, Long postId, String postTitle,
                                    Long fanHubId, String fanHubName);
 
 
     void sendPostCommentNotification(Long postAuthorId, Long commentedByUserId, String commentedByUsername,
-                                      String commentedByAvatarUrl, Long postId, String postTitle,
+                                      String commentedByAvatarUrl, String commentedByFrameUrl, Long postId, String postTitle,
                                       Long fanHubId, String fanHubName);
 
     void sendFanHubStrikeNotification(Long ownerUserId, Long hubId, String hubName, int strikeCount, String reason);

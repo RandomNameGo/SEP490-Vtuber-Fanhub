@@ -14,6 +14,7 @@ public class PostCommentResponse {
     private String username;
     private String displayName;
     private String avatarUrl;
+    private String frameUrl;
     private Long memberId;
 
     private String content;

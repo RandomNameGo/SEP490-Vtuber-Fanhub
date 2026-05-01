@@ -20,6 +20,7 @@ public class ReportPostResponse {
     private String authorUsername;
     private String authorDisplayName;
     private String authorAvatarUrl;
+    private String authorFrameUrl;
 
     private String postType;
     private String title;
