@@ -56,7 +56,7 @@ public class PaymentHistoryServiceImpl implements PaymentHistoryService {
 
         paymentHistory.setStatus(status);
 
-        if ("PAID".equals(status)) {
+        if ("SUCCESS".equals(status)) {
             User user = paymentHistory.getUser();
             PaidPackage paidPackage = paymentHistory.getPackageField();
 
