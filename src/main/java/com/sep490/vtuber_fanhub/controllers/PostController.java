@@ -325,6 +325,17 @@ public class PostController {
         );
     }
 
+    @PostMapping("/unbookmark")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> unbookmarkPost(@RequestParam long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(userBookmarkService.deleteUserBookmark(postId))
+                .build()
+        );
+    }
+
     @GetMapping("/bookmark")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> getBookmarkPosts(@RequestParam(defaultValue = "0") int pageNo,

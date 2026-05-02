@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 public class CreateItemRequest {
@@ -18,4 +20,10 @@ public class CreateItemRequest {
 
     @Size(max = 50, message = "Category must not exceed 50 characters")
     private String category;
+
+    private BigDecimal size;
+
+    private BigDecimal xAxis;
+
+    private BigDecimal yAxis;
 }

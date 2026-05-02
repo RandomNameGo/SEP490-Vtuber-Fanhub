@@ -4,4 +4,6 @@ public interface UserBookmarkService {
 
     String createUserBookmark(long postId);
 
+    String deleteUserBookmark(long postId);
+
 }

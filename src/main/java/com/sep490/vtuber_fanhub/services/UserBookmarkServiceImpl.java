@@ -46,6 +46,21 @@ public class UserBookmarkServiceImpl implements UserBookmarkService {
         userBookmark.setCreatedAt(Instant.now());
         userBookmarkRepository.save(userBookmark);
 
-        return "";
+        return "Bookmarked post successfully";
+    }
+
+    @Override
+    public String deleteUserBookmark(long postId) {
+        User currentUser = authService.getUserFromToken(httpServletRequest);
+
+        Optional<UserBookmark> savedUserBookmark = userBookmarkRepository.findByUserIdAndPostId(currentUser.getId(), postId);
+
+        if (savedUserBookmark.isEmpty()) {
+            throw new NotFoundException("Bookmark not found");
+        }
+
+        userBookmarkRepository.delete(savedUserBookmark.get());
+
+        return "Un-bookmarked post successfully";
     }
 }

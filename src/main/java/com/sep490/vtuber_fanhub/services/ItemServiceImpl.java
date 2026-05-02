@@ -45,6 +45,9 @@ public class ItemServiceImpl implements ItemService {
         item.setDescription(request.getDescription());
         item.setImageUrl(imageUrl);
         item.setCategory(request.getCategory());
+        item.setSize(request.getSize());
+        item.setXAxis(request.getXAxis());
+        item.setYAxis(request.getYAxis());
         item.setIsDeleted(false);
 
         itemRepository.save(item);
@@ -116,6 +119,9 @@ public class ItemServiceImpl implements ItemService {
         response.setDescription(item.getDescription());
         response.setImageUrl(item.getImageUrl());
         response.setCategory(item.getCategory());
+        response.setSize(item.getSize());
+        response.setXAxis(item.getXAxis());
+        response.setYAxis(item.getYAxis());
         return response;
     }
 }
