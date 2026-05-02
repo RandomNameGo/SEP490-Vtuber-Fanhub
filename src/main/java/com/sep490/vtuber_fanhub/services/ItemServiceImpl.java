@@ -3,7 +3,9 @@ package com.sep490.vtuber_fanhub.services;
 import com.sep490.vtuber_fanhub.dto.requests.CreateItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.ItemResponse;
 import com.sep490.vtuber_fanhub.models.Item;
+import com.sep490.vtuber_fanhub.repositories.BannerItemRepository;
 import com.sep490.vtuber_fanhub.repositories.ItemRepository;
+import com.sep490.vtuber_fanhub.repositories.ShopItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,10 @@ import java.util.stream.Collectors;
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
+
+    private final ShopItemRepository shopItemRepository;
+
+    private final BannerItemRepository bannerItemRepository;
 
     private final CloudinaryService cloudinaryService;
 
@@ -68,6 +74,10 @@ public class ItemServiceImpl implements ItemService {
                 .orElseThrow(() -> new com.sep490.vtuber_fanhub.exceptions.NotFoundException("Item not found"));
         item.setIsDeleted(true);
         itemRepository.save(item);
+
+        shopItemRepository.softDeleteByItemId(id);
+        bannerItemRepository.deleteByItemId(id);
+
         return "Deleted item successfully";
     }
 

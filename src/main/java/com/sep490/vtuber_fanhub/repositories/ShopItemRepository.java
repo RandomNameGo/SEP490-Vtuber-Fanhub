@@ -16,4 +16,8 @@ public interface ShopItemRepository extends JpaRepository<ShopItem, Long> {
 
     @EntityGraph(attributePaths = {"item"})
     Page<ShopItem> findByIsDeletedFalse(Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE ShopItem s SET s.isDeleted = true WHERE s.item.id = :itemId")
+    void softDeleteByItemId(Long itemId);
 }

@@ -16,4 +16,8 @@ public interface BannerItemRepository extends JpaRepository<BannerItem, Long> {
     @Modifying
     @Transactional
     void deleteByBannerId(Long bannerId);
+
+    @Modifying
+    @Transactional
+    void deleteByItemId(Long itemId);
 }
