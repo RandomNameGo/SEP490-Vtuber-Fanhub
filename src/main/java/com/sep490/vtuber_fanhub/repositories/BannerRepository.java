@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface BannerRepository extends JpaRepository<Banner, Long> {
     
-    @Query("SELECT b FROM Banner b WHERE b.isActive = true AND b.startTime <= :now AND b.endTime >= :now")
+    @Query("SELECT b FROM Banner b WHERE b.isActive = true")
     Optional<Banner> findActiveBanner(@Param("now") Instant now);
 
     @Query("SELECT b FROM Banner b WHERE b.isActive = true AND b.startTime < :endTime AND b.endTime > :startTime AND b.id <> :bannerId")
