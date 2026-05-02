@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateItemRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.ItemResponse;
 import com.sep490.vtuber_fanhub.services.ItemService;
@@ -50,6 +51,20 @@ public class ItemController {
                 .success(true)
                 .message("Success")
                 .data(itemService.deleteItem(id))
+                .build()
+        );
+    }
+
+    @PutMapping("/{id}/edit")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> updateItem(
+            @PathVariable Long id,
+            @RequestPart("request") @Valid UpdateItemRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(itemService.updateItem(id, request, image))
                 .build()
         );
     }

@@ -1,6 +1,8 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateBannerRequest;
+import com.sep490.vtuber_fanhub.dto.responses.BannerDetailResponse;
+import com.sep490.vtuber_fanhub.dto.responses.BannerItemResponse;
 import com.sep490.vtuber_fanhub.dto.responses.BannerResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
 import com.sep490.vtuber_fanhub.models.Banner;
@@ -27,6 +29,8 @@ public class BannerServiceImpl implements BannerService {
     private final BannerRepository bannerRepository;
 
     private final BannerItemRepository bannerItemRepository;
+
+    private final BannerItemService bannerItemService;
 
     private final CloudinaryService cloudinaryService;
 
@@ -136,6 +140,19 @@ public class BannerServiceImpl implements BannerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public BannerDetailResponse getBannerDetail(Long bannerId) {
+        Banner banner = bannerRepository.findById(bannerId)
+                .orElseThrow(() -> new NotFoundException("Banner not found"));
+
+        BannerDetailResponse response = convertToDetailResponse(banner);
+        List<BannerItemResponse> items = bannerItemService.getBannerItemsByBannerId(bannerId, 0, Integer.MAX_VALUE, "id");
+        response.setItems(items);
+
+        return response;
+    }
+
+    @Override
     @Transactional
     public String deleteBanner(Long bannerId) {
         Banner banner = bannerRepository.findById(bannerId)
@@ -152,6 +169,20 @@ public class BannerServiceImpl implements BannerService {
 
     private BannerResponse convertToResponse(Banner banner) {
         BannerResponse response = new BannerResponse();
+        response.setBannerId(banner.getId());
+        response.setName(banner.getName());
+        response.setStartTime(banner.getStartTime());
+        response.setEndTime(banner.getEndTime());
+        response.setDescription(banner.getDescription());
+        response.setGachaCost(banner.getGachaCost());
+        response.setCreatedAt(banner.getCreatedAt());
+        response.setBannerImgUrl(banner.getBannerImgUrl());
+        response.setIsActive(banner.getIsActive());
+        return response;
+    }
+
+    private BannerDetailResponse convertToDetailResponse(Banner banner) {
+        BannerDetailResponse response = new BannerDetailResponse();
         response.setBannerId(banner.getId());
         response.setName(banner.getName());
         response.setStartTime(banner.getStartTime());

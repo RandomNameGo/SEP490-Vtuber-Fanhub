@@ -5,6 +5,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateBannerRequest;
 import com.sep490.vtuber_fanhub.dto.requests.GachaBannerItemRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateBannerItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
+import com.sep490.vtuber_fanhub.dto.responses.BannerDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.BannerItemResponse;
 import com.sep490.vtuber_fanhub.dto.responses.BannerResponse;
 import com.sep490.vtuber_fanhub.dto.responses.GachaResultResponse;
@@ -97,6 +98,16 @@ public class BannerController {
                 .success(true)
                 .message("Success")
                 .data(bannerService.getActiveBanner())
+                .build()
+        );
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getBannerDetail(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<BannerDetailResponse>builder()
+                .success(true)
+                .message("Success")
+                .data(bannerService.getBannerDetail(id))
                 .build()
         );
     }

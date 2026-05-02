@@ -8,8 +8,10 @@ import com.sep490.vtuber_fanhub.dto.requests.CreatePaymentRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdatePaidPackageRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PaidPackageResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PaymentHistoryResponse;
 import com.sep490.vtuber_fanhub.services.PaidPackageService;
 import com.sep490.vtuber_fanhub.services.PaymentHistoryService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -78,6 +80,17 @@ public class PaymentController {
                 .success(true)
                 .message("Success")
                 .data(paidPackageService.deletePaidPackage(id))
+                .build()
+        );
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getPaymentHistory(HttpServletRequest request) {
+        List<PaymentHistoryResponse> history = paymentHistoryService.getPaymentHistoryByCurrentUser(request);
+        return ResponseEntity.ok().body(APIResponse.<List<PaymentHistoryResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(history)
                 .build()
         );
     }

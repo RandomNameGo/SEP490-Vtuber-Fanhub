@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateItemRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.ItemResponse;
 import com.sep490.vtuber_fanhub.models.Item;
 import com.sep490.vtuber_fanhub.repositories.BannerItemRepository;
@@ -79,6 +80,33 @@ public class ItemServiceImpl implements ItemService {
         bannerItemRepository.deleteByItemId(id);
 
         return "Deleted item successfully";
+    }
+
+    @Override
+    @Transactional
+    public String updateItem(Long id, UpdateItemRequest request, MultipartFile image) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new com.sep490.vtuber_fanhub.exceptions.NotFoundException("Item not found"));
+
+        item.setItemName(request.getItemName());
+        item.setDescription(request.getDescription());
+        item.setCategory(request.getCategory());
+        item.setSize(request.getSize());
+        item.setXAxis(request.getXAxis());
+        item.setYAxis(request.getYAxis());
+
+        if (image != null && !image.isEmpty()) {
+            try {
+                String imageUrl = cloudinaryService.uploadFile(image);
+                item.setImageUrl(imageUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload image", e);
+            }
+        }
+
+        itemRepository.save(item);
+
+        return "Updated item successfully";
     }
 
     private ItemResponse mapToItemResponse(Item item) {
