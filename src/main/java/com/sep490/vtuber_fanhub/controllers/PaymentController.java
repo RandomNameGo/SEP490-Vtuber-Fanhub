@@ -127,7 +127,7 @@ public class PaymentController {
 
             WebhookData data = payOS.webhooks().verify(webhookBody);
             
-            String status = "00".equals(data.getCode()) ? "PAID" : "CANCELLED";
+            String status = "00".equals(data.getCode()) ? "SUCCESS" : "CANCELLED";
             paymentHistoryService.updatePaymentStatus(data.getOrderCode(), status);
             
             System.out.println(data);

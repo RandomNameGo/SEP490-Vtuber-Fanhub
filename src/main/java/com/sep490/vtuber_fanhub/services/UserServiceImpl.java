@@ -15,7 +15,9 @@ import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.models.UserBadge;
 import com.sep490.vtuber_fanhub.models.UserDailyMission;
+import com.sep490.vtuber_fanhub.models.Item;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
+import com.sep490.vtuber_fanhub.repositories.ItemRepository;
 import com.sep490.vtuber_fanhub.repositories.PostCommentGiftRepository;
 import com.sep490.vtuber_fanhub.repositories.UserBadgeRepository;
 import com.sep490.vtuber_fanhub.repositories.UserDailyMissionRepository;
@@ -56,6 +58,8 @@ public class UserServiceImpl implements UserService{
     private final PostCommentGiftRepository postCommentGiftRepository;
 
     private final UserBadgeService userBadgeService;
+
+    private final ItemRepository itemRepository;
 
     @Override
     @Transactional
@@ -112,6 +116,18 @@ public class UserServiceImpl implements UserService{
         userRepository.save(currentUser);
 
         return "Uploaded successfully";
+    }
+
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
     }
 
     @Override
@@ -214,6 +230,7 @@ public class UserServiceImpl implements UserService{
         response.setDisplayName(user.getDisplayName());
         response.setAvatarUrl(user.getAvatarUrl());
         response.setFrameUrl(user.getFrameUrl());
+        setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         response.setBio(user.getBio());
         response.setRole(user.getRole());
         response.setPoints(user.getPoints());
@@ -230,6 +247,7 @@ public class UserServiceImpl implements UserService{
             oshiResponse.setDisplayName(user.getOshiUser().getDisplayName());
             oshiResponse.setAvatarUrl(user.getOshiUser().getAvatarUrl());
             oshiResponse.setFrameUrl(user.getOshiUser().getFrameUrl());
+            setFrameDetails(user.getOshiUser(), oshiResponse::setFrameSize, oshiResponse::setFrameXAxis, oshiResponse::setFrameYAxis);
             response.setOshi(oshiResponse);
         }
 
@@ -385,6 +403,8 @@ public class UserServiceImpl implements UserService{
         response.setUpdatedAt(user.getUpdatedAt());
         response.setIsActive(user.getIsActive());
 
+        setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
+
         if (user.getOshiUser() != null) {
             UserDetailResponse.OshiResponse oshiResponse = new UserDetailResponse.OshiResponse();
             oshiResponse.setUserId(user.getOshiUser().getId());
@@ -392,6 +412,7 @@ public class UserServiceImpl implements UserService{
             oshiResponse.setDisplayName(user.getOshiUser().getDisplayName());
             oshiResponse.setAvatarUrl(user.getOshiUser().getAvatarUrl());
             oshiResponse.setFrameUrl(user.getOshiUser().getFrameUrl());
+            setFrameDetails(user.getOshiUser(), oshiResponse::setFrameSize, oshiResponse::setFrameXAxis, oshiResponse::setFrameYAxis);
             response.setOshi(oshiResponse);
         }
 

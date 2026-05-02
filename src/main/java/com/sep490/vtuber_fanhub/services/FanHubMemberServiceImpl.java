@@ -46,6 +46,8 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     private final PostCommentRepository postCommentRepository;
 
+    private final ItemRepository itemRepository;
+
     @Override
     @Transactional
     public String joinFanHubMember(long fanHubId) {
@@ -230,6 +232,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setDisplayName(user.getDisplayName());
             response.setAvatarUrl(user.getAvatarUrl());
             response.setFrameUrl(user.getFrameUrl());
+            setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         }
 
         // Fetch and map answers
@@ -663,6 +666,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setDisplayName(entity.getUser().getDisplayName());
             response.setAvatarUrl(entity.getUser().getAvatarUrl());
             response.setFrameUrl(entity.getUser().getFrameUrl());
+            setFrameDetails(entity.getUser(), response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         }
 
         response.setRoleInHub(entity.getRoleInHub());
@@ -700,6 +704,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setDisplayName(user.getDisplayName());
             response.setAvatarUrl(user.getAvatarUrl());
             response.setFrameUrl(user.getFrameUrl());
+            setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         }
 
         // Populate join answers if they exist
@@ -725,5 +730,17 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
     @Override
     public long countPendingMembersByFanHubId(Long fanHubId) {
         return fanHubMemberRepository.countByHubIdAndStatus(fanHubId, "PENDING");
+    }
+
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
     }
 }

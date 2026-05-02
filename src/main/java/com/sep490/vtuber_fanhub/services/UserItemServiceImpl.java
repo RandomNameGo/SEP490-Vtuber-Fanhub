@@ -115,6 +115,9 @@ public class UserItemServiceImpl implements UserItemService {
         response.setItemName(userItem.getItem().getItemName());
         response.setDescription(userItem.getItem().getDescription());
         response.setImageUrl(userItem.getItem().getImageUrl());
+        response.setSize(userItem.getItem().getSize());
+        response.setXAxis(userItem.getItem().getXAxis());
+        response.setYAxis(userItem.getItem().getYAxis());
         response.setCategory(userItem.getItem().getCategory());
         response.setObtainedAt(userItem.getPurchasedAt());
         return response;

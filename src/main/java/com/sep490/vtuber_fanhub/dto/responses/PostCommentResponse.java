@@ -15,6 +15,9 @@ public class PostCommentResponse {
     private String displayName;
     private String avatarUrl;
     private String frameUrl;
+    private java.math.BigDecimal frameSize;
+    private java.math.BigDecimal frameXAxis;
+    private java.math.BigDecimal frameYAxis;
     private Long memberId;
 
     private String content;

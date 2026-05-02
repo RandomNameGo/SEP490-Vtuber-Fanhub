@@ -12,6 +12,9 @@ public class UserItemResponse {
     private String itemName;
     private String description;
     private String imageUrl;
+    private java.math.BigDecimal size;
+    private java.math.BigDecimal xAxis;
+    private java.math.BigDecimal yAxis;
     private String category;
     private Instant obtainedAt;
 }

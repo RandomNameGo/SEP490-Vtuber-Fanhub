@@ -104,6 +104,8 @@ public class PostServiceImpl implements PostService {
 
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
+    private final ItemRepository itemRepository;
+
     private static final String TRENDING_POST_INDEX_KEY = "trending_post_rotation_index";
     private static final String LATEST_POST_INDEX_KEY = "latest_post_rotation_index";
 
@@ -1098,6 +1100,18 @@ public class PostServiceImpl implements PostService {
                 .build();
     }
 
+    private void setAuthorFrameDetails(User author, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                       java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                       java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (author.getFrameUrl() != null && !author.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(author.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
+    }
+
     private PostResponse mapToPostResponse(Post post) {
         PostResponse response = new PostResponse();
         response.setPostId(post.getId());
@@ -1109,6 +1123,7 @@ public class PostServiceImpl implements PostService {
         response.setAuthorDisplayName(post.getUser().getDisplayName());
         response.setAuthorAvatarUrl(post.getUser().getAvatarUrl());
         response.setAuthorFrameUrl(post.getUser().getFrameUrl());
+        setAuthorFrameDetails(post.getUser(), response::setAuthorFrameSize, response::setAuthorFrameXAxis, response::setAuthorFrameYAxis);
         response.setPostType(post.getPostType());
         response.setTitle(post.getTitle());
         response.setContent(post.getContent());
@@ -1205,6 +1220,7 @@ public class PostServiceImpl implements PostService {
         response.setAuthorDisplayName(post.getUser().getDisplayName());
         response.setAuthorAvatarUrl(post.getUser().getAvatarUrl());
         response.setAuthorFrameUrl(post.getUser().getFrameUrl());
+        setAuthorFrameDetails(post.getUser(), response::setAuthorFrameSize, response::setAuthorFrameXAxis, response::setAuthorFrameYAxis);
         response.setPostType(post.getPostType());
         response.setTitle(post.getTitle());
         response.setContent(post.getContent());

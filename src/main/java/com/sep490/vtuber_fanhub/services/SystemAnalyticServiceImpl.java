@@ -30,6 +30,7 @@ public class SystemAnalyticServiceImpl implements SystemAnalyticService {
     private final FanHubCategoryRepository fanHubCategoryRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final PostCommentGiftRepository postCommentGiftRepository;
+    private final ItemRepository itemRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -111,6 +112,18 @@ public class SystemAnalyticServiceImpl implements SystemAnalyticService {
         return response;
     }
 
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
+    }
+
     private UserResponse mapToUserResponse(User user) {
         UserResponse response = new UserResponse();
         response.setUserId(user.getId());
@@ -119,6 +132,7 @@ public class SystemAnalyticServiceImpl implements SystemAnalyticService {
         response.setDisplayName(user.getDisplayName());
         response.setAvatarUrl(user.getAvatarUrl());
         response.setFrameUrl(user.getFrameUrl());
+        setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         response.setBio(user.getBio());
         response.setRole(user.getRole());
         response.setPoints(user.getPoints());
@@ -135,6 +149,7 @@ public class SystemAnalyticServiceImpl implements SystemAnalyticService {
             oshiResponse.setDisplayName(user.getOshiUser().getDisplayName());
             oshiResponse.setAvatarUrl(user.getOshiUser().getAvatarUrl());
             oshiResponse.setFrameUrl(user.getOshiUser().getFrameUrl());
+            setFrameDetails(user.getOshiUser(), oshiResponse::setFrameSize, oshiResponse::setFrameXAxis, oshiResponse::setFrameYAxis);
             response.setOshi(oshiResponse);
         }
 

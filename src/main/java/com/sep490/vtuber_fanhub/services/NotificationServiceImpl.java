@@ -6,10 +6,7 @@ import com.sep490.vtuber_fanhub.models.FanHub;
 import com.sep490.vtuber_fanhub.models.Notification;
 import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.User;
-import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
-import com.sep490.vtuber_fanhub.repositories.NotificationRepository;
-import com.sep490.vtuber_fanhub.repositories.PostRepository;
-import com.sep490.vtuber_fanhub.repositories.UserRepository;
+import com.sep490.vtuber_fanhub.repositories.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +39,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final FanHubRepository fanHubRepository;
 
     private final AuthService authService;
+
+    private final ItemRepository itemRepository;
 
 
     private User getCurrentUser(HttpServletRequest request) {
@@ -80,8 +79,20 @@ public class NotificationServiceImpl implements NotificationService {
         return List.of();
     }
 
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
+    }
+
     private NotificationEventResponse convertToEventResponse(Notification notification) {
-        return NotificationEventResponse.builder()
+        NotificationEventResponse.NotificationEventResponseBuilder builder = NotificationEventResponse.builder()
                 .id(notification.getId())
                 .type(notification.getType())
                 .title(notification.getTitle())
@@ -93,8 +104,13 @@ public class NotificationServiceImpl implements NotificationService {
                 .triggeredByUserId(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getId() : null)
                 .triggeredByUsername(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getUsername() : null)
                 .triggeredByAvatarUrl(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getAvatarUrl() : null)
-                .triggeredByFrameUrl(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getFrameUrl() : null)
-                .isRead(notification.getIsRead())
+                .triggeredByFrameUrl(notification.getTriggeredBy() != null ? notification.getTriggeredBy().getFrameUrl() : null);
+
+        if (notification.getTriggeredBy() != null) {
+            setFrameDetails(notification.getTriggeredBy(), builder::triggeredByFrameSize, builder::triggeredByFrameXAxis, builder::triggeredByFrameYAxis);
+        }
+
+        return builder.isRead(notification.getIsRead())
                 .createdAt(notification.getCreatedAt())
                 .build();
     }
@@ -188,7 +204,7 @@ public class NotificationServiceImpl implements NotificationService {
         log.debug("Created notification {} for user {}: type={}", newId, user.getId(), type);
         
         // Create SSE event DTO and send via SSE
-        NotificationEventResponse eventDto = NotificationEventResponse.builder()
+        NotificationEventResponse.NotificationEventResponseBuilder builder = NotificationEventResponse.builder()
                 .id(newId)
                 .type(type)
                 .title(title)
@@ -200,8 +216,13 @@ public class NotificationServiceImpl implements NotificationService {
                 .triggeredByUserId(triggeredBy != null ? triggeredBy.getId() : null)
                 .triggeredByUsername(triggeredBy != null ? triggeredBy.getUsername() : null)
                 .triggeredByAvatarUrl(triggeredBy != null ? triggeredBy.getAvatarUrl() : null)
-                .triggeredByFrameUrl(triggeredBy != null ? triggeredBy.getFrameUrl() : null)
-                .isRead(false)
+                .triggeredByFrameUrl(triggeredBy != null ? triggeredBy.getFrameUrl() : null);
+
+        if (triggeredBy != null) {
+            setFrameDetails(triggeredBy, builder::triggeredByFrameSize, builder::triggeredByFrameXAxis, builder::triggeredByFrameYAxis);
+        }
+
+        NotificationEventResponse eventDto = builder.isRead(false)
                 .createdAt(Instant.now())
                 .build();
         

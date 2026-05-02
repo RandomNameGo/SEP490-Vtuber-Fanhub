@@ -14,6 +14,9 @@ public class UserResponse {
     private String displayName;
     private String avatarUrl;
     private String frameUrl;
+    private java.math.BigDecimal frameSize;
+    private java.math.BigDecimal frameXAxis;
+    private java.math.BigDecimal frameYAxis;
     private String bio;
     private String role;
     private Long points;
@@ -76,5 +79,8 @@ public class UserResponse {
         private String displayName;
         private String avatarUrl;
         private String frameUrl;
+        private java.math.BigDecimal frameSize;
+        private java.math.BigDecimal frameXAxis;
+        private java.math.BigDecimal frameYAxis;
     }
 }

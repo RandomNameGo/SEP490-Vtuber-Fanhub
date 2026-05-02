@@ -43,6 +43,9 @@ public class NotificationEventResponse {
 
     private String triggeredByAvatarUrl;
     private String triggeredByFrameUrl;
+    private java.math.BigDecimal triggeredByFrameSize;
+    private java.math.BigDecimal triggeredByFrameXAxis;
+    private java.math.BigDecimal triggeredByFrameYAxis;
     
 
     private Boolean isRead;

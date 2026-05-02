@@ -11,6 +11,7 @@ import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.BanMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
+import com.sep490.vtuber_fanhub.repositories.ItemRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,8 @@ public class BanMemberServiceImpl implements BanMemberService {
     private final HttpServletRequest httpServletRequest;
 
     private final NotificationService notificationService;
+
+    private final ItemRepository itemRepository;
 
     @Override
     @Transactional
@@ -330,6 +333,18 @@ public class BanMemberServiceImpl implements BanMemberService {
                 .collect(Collectors.toList());
     }
 
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
+    }
+
     private MemberWithBansResponse mapToMemberWithBansResponse(User user, Optional<FanHubMember> fanHubMemberOpt, FanHub fanHub, List<BanMember> bans) {
         MemberWithBansResponse response = new MemberWithBansResponse();
 
@@ -338,6 +353,7 @@ public class BanMemberServiceImpl implements BanMemberService {
         response.setDisplayName(user.getDisplayName());
         response.setAvatarUrl(user.getAvatarUrl());
         response.setFrameUrl(user.getFrameUrl());
+        setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
 
         if (fanHubMemberOpt.isPresent()) {
             FanHubMember fanHubMember = fanHubMemberOpt.get();

@@ -9,10 +9,7 @@ import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.PostComment;
 import com.sep490.vtuber_fanhub.models.ReportMember;
 import com.sep490.vtuber_fanhub.models.User;
-import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
-import com.sep490.vtuber_fanhub.repositories.PostCommentRepository;
-import com.sep490.vtuber_fanhub.repositories.ReportMemberRepository;
+import com.sep490.vtuber_fanhub.repositories.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -45,7 +43,10 @@ public class ReportMemberServiceImpl implements ReportMemberService {
 
     private final NotificationService notificationService;
 
+    private final ItemRepository itemRepository;
+
     @Override
+    @Transactional
     public String createReportMember(CreateReportMemberRequest createReportMemberRequest) {
 
         User currentUser = authService.getUserFromToken(httpServletRequest);
@@ -336,6 +337,18 @@ public class ReportMemberServiceImpl implements ReportMemberService {
                 .collect(Collectors.toList());
     }
 
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
+    }
+
     private MemberWithReportsResponse mapToMemberWithReportsResponse(User user, Optional<FanHubMember> fanHubMemberOpt, FanHub fanHub, List<ReportMember> reports) {
         MemberWithReportsResponse response = new MemberWithReportsResponse();
 
@@ -345,6 +358,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         response.setDisplayName(user.getDisplayName());
         response.setAvatarUrl(user.getAvatarUrl());
         response.setFrameUrl(user.getFrameUrl());
+        setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
 
         // FanHubMember information (if exists)
         if (fanHubMemberOpt.isPresent()) {
@@ -385,6 +399,7 @@ public class ReportMemberServiceImpl implements ReportMemberService {
         response.setReportedByDisplayName(reportMember.getReportedBy().getDisplayName());
         response.setReportedByAvatarUrl(reportMember.getReportedBy().getAvatarUrl());
         response.setReportedByFrameUrl(reportMember.getReportedBy().getFrameUrl());
+        setFrameDetails(reportMember.getReportedBy(), response::setReportedByFrameSize, response::setReportedByFrameXAxis, response::setReportedByFrameYAxis);
 
         // Resolver information (if resolved)
         if (reportMember.getResolveBy() != null) {
