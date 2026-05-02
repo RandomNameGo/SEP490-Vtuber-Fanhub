@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateBannerItemRequest;
 import com.sep490.vtuber_fanhub.dto.requests.GachaBannerItemRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateBannerItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.BannerItemResponse;
 import com.sep490.vtuber_fanhub.dto.responses.GachaResultResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,4 +16,8 @@ public interface BannerItemService {
     List<BannerItemResponse> getBannerItemsByBannerId(Long bannerId, int pageNo, int pageSize, String sortBy);
 
     GachaResultResponse gachaBannerItem(GachaBannerItemRequest request, HttpServletRequest httpRequest);
+
+    String updateBannerItem(Long id, UpdateBannerItemRequest request, MultipartFile image);
+
+    String deleteBannerItem(Long id);
 }

@@ -3,14 +3,18 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.sep490.vtuber_fanhub.dto.requests.CreatePaidPackageRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePaymentRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdatePaidPackageRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PaidPackageResponse;
 import com.sep490.vtuber_fanhub.services.PaidPackageService;
 import com.sep490.vtuber_fanhub.services.PaymentHistoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
@@ -44,6 +48,40 @@ public class PaymentController {
                 .build()
         );
     }
+
+    @PostMapping("/add")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<?> createPaidPackage(@RequestBody @Valid CreatePaidPackageRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(paidPackageService.createPaidPackage(request))
+                .build()
+        );
+    }
+
+    @PutMapping("/{id}/edit")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<?> updatePaidPackage(@PathVariable Long id, @RequestBody @Valid UpdatePaidPackageRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(paidPackageService.updatePaidPackage(id, request))
+                .build()
+        );
+    }
+
+    @DeleteMapping("/{id}/delete")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<?> deletePaidPackage(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(paidPackageService.deletePaidPackage(id))
+                .build()
+        );
+    }
+
 
     @GetMapping("/success")
     public ResponseEntity<?> paymentSuccess() {

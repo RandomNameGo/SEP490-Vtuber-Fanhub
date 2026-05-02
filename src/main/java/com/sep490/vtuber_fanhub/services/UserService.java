@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
+import com.sep490.vtuber_fanhub.dto.requests.ConvertPointRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
@@ -39,4 +40,6 @@ public interface UserService {
     UserDetailResponse getCurrentUserDetail();
 
     UserDailyMissionResponse getMyDailyMission();
+
+    String convertPoints(ConvertPointRequest request);
 }

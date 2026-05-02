@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.controllers;
 
 import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
+import com.sep490.vtuber_fanhub.dto.requests.ConvertPointRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
@@ -213,6 +214,16 @@ public class UserController {
         );
     }
 
-
-
+    @PostMapping("/convert-points")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> convertPoints(@RequestBody @Valid ConvertPointRequest request) {
+        String result = userService.convertPoints(request);
+        boolean success = "Converted points successfully".equals(result);
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(success)
+                .message(success ? "Success" : "Fail")
+                .data(result)
+                .build()
+        );
+    }
 }

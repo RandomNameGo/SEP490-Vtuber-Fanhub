@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.ChangePasswordRequest;
+import com.sep490.vtuber_fanhub.dto.requests.ConvertPointRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateUserRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SelectUserBadgeRequest;
 import com.sep490.vtuber_fanhub.dto.requests.SetOshiRequest;
@@ -411,5 +412,23 @@ public class UserServiceImpl implements UserService{
         response.setBonus20(mission.getBonus20());
 
         return response;
+    }
+
+    @Override
+    @Transactional
+    public String convertPoints(ConvertPointRequest request) {
+        User user = authService.getUserFromToken(httpServletRequest);
+
+        if (user.getPaidPoints() < request.getAmount()) {
+            return "Insufficient paid points";
+        }
+
+        user.setPaidPoints(user.getPaidPoints() - request.getAmount());
+        user.setPoints((user.getPoints() != null ? user.getPoints() : 0L) + request.getAmount());
+        user.setUpdatedAt(Instant.now());
+
+        userRepository.save(user);
+
+        return "Converted points successfully";
     }
 }

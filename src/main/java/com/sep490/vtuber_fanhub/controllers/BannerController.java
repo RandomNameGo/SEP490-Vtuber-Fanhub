@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.sep490.vtuber_fanhub.dto.requests.CreateBannerItemRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreateBannerRequest;
 import com.sep490.vtuber_fanhub.dto.requests.GachaBannerItemRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateBannerItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.BannerItemResponse;
 import com.sep490.vtuber_fanhub.dto.responses.BannerResponse;
@@ -109,6 +110,31 @@ public class BannerController {
                 .success(true)
                 .message("Success")
                 .data(bannerItemService.createBannerItem(request, image))
+                .build()
+        );
+    }
+
+    @PutMapping("/items/{id}/edit")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> updateBannerItem(
+            @PathVariable Long id,
+            @RequestPart("request") @Valid UpdateBannerItemRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(bannerItemService.updateBannerItem(id, request, image))
+                .build()
+        );
+    }
+
+    @DeleteMapping("/items/{id}/delete")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> deleteBannerItem(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(bannerItemService.deleteBannerItem(id))
                 .build()
         );
     }

@@ -20,5 +20,8 @@ public interface ReportMemberRepository extends JpaRepository<ReportMember, Long
 
     long countByHubIdAndStatus(Long fanHubId, String status);
 
+    @Query("SELECT COUNT(DISTINCT rm.user.id) FROM ReportMember rm WHERE rm.hub.id = :fanHubId AND rm.status = :status")
+    long countDistinctUserByHubIdAndStatus(@Param("fanHubId") Long fanHubId, @Param("status") String status);
+
     List<ReportMember> findByUserId(Long userId);
 }

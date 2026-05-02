@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateBannerItemRequest;
 import com.sep490.vtuber_fanhub.dto.requests.GachaBannerItemRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateBannerItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.BannerItemResponse;
 import com.sep490.vtuber_fanhub.dto.responses.GachaResultResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
@@ -215,6 +216,60 @@ public class BannerItemServiceImpl implements BannerItemService {
                 user.getId(), banner.getId(), selectedItem.getId(), gachaCost);
 
         return convertToGachaResponse(userItem, selectedBannerItem, gachaCost);
+    }
+
+    @Override
+    @Transactional
+    public String updateBannerItem(Long id, UpdateBannerItemRequest request, MultipartFile image) {
+        BannerItem bannerItem = bannerItemRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Banner item not found"));
+
+        if ("GOOD_LUCK".equalsIgnoreCase(request.getType())) {
+            bannerItem.setItem(null);
+        } else if (request.getItemId() != null) {
+            Item item = itemRepository.findById(request.getItemId())
+                    .orElseThrow(() -> new NotFoundException("Item not found"));
+            bannerItem.setItem(item);
+        } else {
+            Item item = bannerItem.getItem();
+            if (item == null) {
+                item = new Item();
+            }
+
+            if (image != null && !image.isEmpty()) {
+                try {
+                    String imageUrl = cloudinaryService.uploadFile(image);
+                    item.setImageUrl(imageUrl);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to upload image", e);
+                }
+            }
+
+            item.setItemName(request.getItemName());
+            item.setDescription(request.getDescription());
+            item.setCategory(request.getCategory());
+            item.setSize(request.getSize());
+            item.setXAxis(request.getXAxis());
+            item.setYAxis(request.getYAxis());
+            itemRepository.save(item);
+            bannerItem.setItem(item);
+        }
+
+        bannerItem.setMultiplier(request.getMultiplier());
+        bannerItem.setType(request.getType());
+
+        bannerItemRepository.save(bannerItem);
+        return "Updated banner item successfully";
+    }
+
+    @Override
+    @Transactional
+    public String deleteBannerItem(Long id) {
+        BannerItem bannerItem = bannerItemRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Banner item not found"));
+
+        bannerItemRepository.delete(bannerItem);
+        return "Deleted banner item successfully";
     }
 
     private BannerItem performWeightedRandomSelection(List<BannerItem> bannerItems) {

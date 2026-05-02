@@ -410,6 +410,6 @@ public class ReportMemberServiceImpl implements ReportMemberService {
 
     @Override
     public long countReportMembersByFanHubId(Long fanHubId) {
-        return reportMemberRepository.countByHubIdAndStatus(fanHubId, "PENDING");
+        return reportMemberRepository.countDistinctUserByHubIdAndStatus(fanHubId, "PENDING");
     }
 }
