@@ -49,7 +49,7 @@ public class PaymentController {
         );
     }
 
-    @PostMapping("/add")
+    @PostMapping("/package/add")
     @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<?> createPaidPackage(@RequestBody @Valid CreatePaidPackageRequest request) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
@@ -60,7 +60,7 @@ public class PaymentController {
         );
     }
 
-    @PutMapping("/{id}/edit")
+    @PutMapping("/package/{id}/edit")
     @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<?> updatePaidPackage(@PathVariable Long id, @RequestBody @Valid UpdatePaidPackageRequest request) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()
@@ -71,7 +71,7 @@ public class PaymentController {
         );
     }
 
-    @DeleteMapping("/{id}/delete")
+    @DeleteMapping("/package/{id}/delete")
     @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<?> deletePaidPackage(@PathVariable Long id) {
         return ResponseEntity.ok().body(APIResponse.<String>builder()

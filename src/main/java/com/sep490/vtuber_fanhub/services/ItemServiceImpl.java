@@ -38,6 +38,7 @@ public class ItemServiceImpl implements ItemService {
         item.setDescription(request.getDescription());
         item.setImageUrl(imageUrl);
         item.setCategory(request.getCategory());
+        item.setIsDeleted(false);
 
         itemRepository.save(item);
 
@@ -47,9 +48,27 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional(readOnly = true)
     public List<ItemResponse> getAllFrames() {
-        return itemRepository.findByCategory("FRAME").stream()
+        return itemRepository.findActiveByCategory("FRAME").stream()
                 .map(this::mapToItemResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ItemResponse> getAllItems() {
+        return itemRepository.findAllActive().stream()
+                .map(this::mapToItemResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public String deleteItem(Long id) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new com.sep490.vtuber_fanhub.exceptions.NotFoundException("Item not found"));
+        item.setIsDeleted(true);
+        itemRepository.save(item);
+        return "Deleted item successfully";
     }
 
     private ItemResponse mapToItemResponse(Item item) {

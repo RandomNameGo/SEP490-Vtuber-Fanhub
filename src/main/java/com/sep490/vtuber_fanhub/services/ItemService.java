@@ -9,4 +9,6 @@ import java.util.List;
 public interface ItemService {
     String createItem(CreateItemRequest request, MultipartFile image);
     List<ItemResponse> getAllFrames();
+    List<ItemResponse> getAllItems();
+    String deleteItem(Long id);
 }

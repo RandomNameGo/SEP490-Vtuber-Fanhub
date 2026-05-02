@@ -38,4 +38,7 @@ public class Item {
     @Column(name = "y_axis", precision = 65)
     private BigDecimal yAxis;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted;
+
 }
