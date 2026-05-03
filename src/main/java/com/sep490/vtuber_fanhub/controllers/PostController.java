@@ -325,6 +325,17 @@ public class PostController {
         );
     }
 
+    @PostMapping("/unbookmark")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> unbookmarkPost(@RequestParam long postId) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(userBookmarkService.deleteUserBookmark(postId))
+                .build()
+        );
+    }
+
     @GetMapping("/bookmark")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> getBookmarkPosts(@RequestParam(defaultValue = "0") int pageNo,
@@ -496,6 +507,28 @@ public class PostController {
                 .success(true)
                 .message("Success")
                 .data(reportPostService.resolveReportPost(reportId, resolveMessage))
+                .build()
+        );
+    }
+
+    @GetMapping("/count-pending-posts/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> countPendingPosts(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Long>builder()
+                .success(true)
+                .message("Success")
+                .data(postService.countPendingPostsByFanHubId(fanHubId))
+                .build()
+        );
+    }
+
+    @GetMapping("/count-report-posts/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> countReportPosts(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Long>builder()
+                .success(true)
+                .message("Success")
+                .data(reportPostService.countReportPostsByFanHubId(fanHubId))
                 .build()
         );
     }

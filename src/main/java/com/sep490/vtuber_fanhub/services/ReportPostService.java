@@ -22,4 +22,6 @@ public interface ReportPostService {
     String bulkResolveReportPosts(List<Long> reportIds, String resolveMessage);
 
     List<PostWithReportsResponse> getAllPostsWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
+
+    long countReportPostsByFanHubId(Long fanHubId);
 }

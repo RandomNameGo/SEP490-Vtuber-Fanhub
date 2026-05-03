@@ -21,4 +21,6 @@ public interface ReportMemberService {
     String bulkResolveReportMembers(List<Long> reportIds, String resolveMessage);
 
     List<MemberWithReportsResponse> getAllMembersWithReports(Long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir);
+
+    long countReportMembersByFanHubId(Long fanHubId);
 }

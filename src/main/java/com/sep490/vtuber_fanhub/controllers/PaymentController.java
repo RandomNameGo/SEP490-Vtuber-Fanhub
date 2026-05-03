@@ -3,14 +3,20 @@ package com.sep490.vtuber_fanhub.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.sep490.vtuber_fanhub.dto.requests.CreatePaidPackageRequest;
 import com.sep490.vtuber_fanhub.dto.requests.CreatePaymentRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdatePaidPackageRequest;
 import com.sep490.vtuber_fanhub.dto.responses.APIResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PaidPackageResponse;
+import com.sep490.vtuber_fanhub.dto.responses.PaymentHistoryResponse;
 import com.sep490.vtuber_fanhub.services.PaidPackageService;
 import com.sep490.vtuber_fanhub.services.PaymentHistoryService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
@@ -45,6 +51,51 @@ public class PaymentController {
         );
     }
 
+    @PostMapping("/package/add")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<?> createPaidPackage(@RequestBody @Valid CreatePaidPackageRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(paidPackageService.createPaidPackage(request))
+                .build()
+        );
+    }
+
+    @PutMapping("/package/{id}/edit")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<?> updatePaidPackage(@PathVariable Long id, @RequestBody @Valid UpdatePaidPackageRequest request) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(paidPackageService.updatePaidPackage(id, request))
+                .build()
+        );
+    }
+
+    @DeleteMapping("/package/{id}/delete")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<?> deletePaidPackage(@PathVariable Long id) {
+        return ResponseEntity.ok().body(APIResponse.<String>builder()
+                .success(true)
+                .message("Success")
+                .data(paidPackageService.deletePaidPackage(id))
+                .build()
+        );
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getPaymentHistory(HttpServletRequest request) {
+        List<PaymentHistoryResponse> history = paymentHistoryService.getPaymentHistoryByCurrentUser(request);
+        return ResponseEntity.ok().body(APIResponse.<List<PaymentHistoryResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(history)
+                .build()
+        );
+    }
+
+
     @GetMapping("/success")
     public ResponseEntity<?> paymentSuccess() {
         return ResponseEntity.ok("success");
@@ -76,7 +127,7 @@ public class PaymentController {
 
             WebhookData data = payOS.webhooks().verify(webhookBody);
             
-            String status = "00".equals(data.getCode()) ? "PAID" : "CANCELLED";
+            String status = "00".equals(data.getCode()) ? "SUCCESS" : "CANCELLED";
             paymentHistoryService.updatePaymentStatus(data.getOrderCode(), status);
             
             System.out.println(data);

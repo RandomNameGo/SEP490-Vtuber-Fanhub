@@ -26,6 +26,9 @@ public class FanHubResponse {
     private String ownerDisplayName;
     private String ownerAvatarUrl;
     private String ownerFrameUrl;
+    private java.math.BigDecimal ownerFrameSize;
+    private java.math.BigDecimal ownerFrameXAxis;
+    private java.math.BigDecimal ownerFrameYAxis;
 
     private List<String> categories;
 

@@ -11,15 +11,9 @@ import com.sep490.vtuber_fanhub.models.FanHubCategory;
 import com.sep490.vtuber_fanhub.models.FanHubMember;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.models.SystemAccount;
-import com.sep490.vtuber_fanhub.repositories.FanHubBackgroundRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubCategoryRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
-import com.sep490.vtuber_fanhub.repositories.UserRepository;
+import com.sep490.vtuber_fanhub.repositories.*;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubAnalyticsResponse;
 import com.sep490.vtuber_fanhub.dto.responses.FanHubMemberResponse;
-import com.sep490.vtuber_fanhub.repositories.PostRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubStrikeRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -66,6 +60,8 @@ public class FanHubServiceImpl implements FanHubService {
     private final com.sep490.vtuber_fanhub.repositories.FanHubJoinQuestionRepository questionRepository;
 
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    private final ItemRepository itemRepository;
 
     private static final String POPULAR_HUB_INDEX_KEY = "popular_hub_rotation_index";
 
@@ -439,6 +435,7 @@ public class FanHubServiceImpl implements FanHubService {
         response.setOwnerDisplayName(owner.getDisplayName());
         response.setOwnerAvatarUrl(owner.getAvatarUrl());
         response.setOwnerFrameUrl(owner.getFrameUrl());
+        setFrameDetails(owner, response::setOwnerFrameSize, response::setOwnerFrameXAxis, response::setOwnerFrameYAxis);
 
         List<String> categories = fanHubCategoryRepository.findByHubId(fanHub.getId())
                 .stream()
@@ -507,6 +504,7 @@ public class FanHubServiceImpl implements FanHubService {
         response.setDisplayName(member.getUser().getDisplayName());
         response.setAvatarUrl(member.getUser().getAvatarUrl());
         response.setFrameUrl(member.getUser().getFrameUrl());
+        setFrameDetails(member.getUser(), response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         response.setRoleInHub(member.getRoleInHub());
         response.setStatus(member.getStatus());
         response.setFanHubScore(member.getFanHubScore());
@@ -593,5 +591,17 @@ public class FanHubServiceImpl implements FanHubService {
             return Sort.Direction.ASC;
         }
         return Sort.Direction.DESC;
+    }
+
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
     }
 }

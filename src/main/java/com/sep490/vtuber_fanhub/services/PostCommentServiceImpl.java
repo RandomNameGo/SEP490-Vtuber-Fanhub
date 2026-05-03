@@ -13,14 +13,7 @@ import com.sep490.vtuber_fanhub.models.PostCommentGift;
 import com.sep490.vtuber_fanhub.models.PostCommentLike;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.models.UserDailyMission;
-import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
-import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
-import com.sep490.vtuber_fanhub.repositories.PostCommentGiftRepository;
-import com.sep490.vtuber_fanhub.repositories.PostCommentLikeRepository;
-import com.sep490.vtuber_fanhub.repositories.PostCommentRepository;
-import com.sep490.vtuber_fanhub.repositories.PostRepository;
-import com.sep490.vtuber_fanhub.repositories.UserDailyMissionRepository;
-import com.sep490.vtuber_fanhub.repositories.UserRepository;
+import com.sep490.vtuber_fanhub.repositories.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +64,8 @@ public class PostCommentServiceImpl implements PostCommentService {
     private final NotificationService notificationService;
 
     private final BanMemberService banMemberService;
+
+    private final ItemRepository itemRepository;
 
     @Override
     @Transactional
@@ -237,6 +232,18 @@ public class PostCommentServiceImpl implements PostCommentService {
         return "Comment deleted successfully";
     }
 
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
+    }
+
     private PostCommentResponse mapToResponse(PostComment comment) {
         PostCommentResponse response = new PostCommentResponse();
         response.setCommentId(comment.getId());
@@ -247,6 +254,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         response.setDisplayName(comment.getUser().getDisplayName());
         response.setAvatarUrl(comment.getUser().getAvatarUrl());
         response.setFrameUrl(comment.getUser().getFrameUrl());
+        setFrameDetails(comment.getUser(), response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         response.setMemberId(comment.getMemberId());
 
         response.setContent(comment.getContent());

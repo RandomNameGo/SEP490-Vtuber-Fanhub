@@ -35,8 +35,8 @@ public class VTuberApplication {
     @Column(name = "reason")
     private String reason;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "review_by", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "review_by")
     private SystemAccount reviewBy;
 
     @Column(name = "created_at")

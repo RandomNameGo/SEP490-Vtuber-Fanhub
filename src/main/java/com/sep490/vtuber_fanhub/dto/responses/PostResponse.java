@@ -19,6 +19,9 @@ public class PostResponse {
     private String authorDisplayName;
     private String authorAvatarUrl;
     private String authorFrameUrl;
+    private java.math.BigDecimal authorFrameSize;
+    private java.math.BigDecimal authorFrameXAxis;
+    private java.math.BigDecimal authorFrameYAxis;
 
     private String postType;
     private String title;

@@ -78,4 +78,6 @@ public interface PostService {
     PostResponse getLatestPublicApprovedPost();
 
     List<PostResponse> searchPosts(String keyword, int pageNo, int pageSize, String sortBy, String sortDir);
+
+    long countPendingPostsByFanHubId(Long fanHubId);
 }

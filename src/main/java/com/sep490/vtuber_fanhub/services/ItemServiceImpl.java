@@ -1,9 +1,12 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateItemRequest;
+import com.sep490.vtuber_fanhub.dto.requests.UpdateItemRequest;
 import com.sep490.vtuber_fanhub.dto.responses.ItemResponse;
 import com.sep490.vtuber_fanhub.models.Item;
+import com.sep490.vtuber_fanhub.repositories.BannerItemRepository;
 import com.sep490.vtuber_fanhub.repositories.ItemRepository;
+import com.sep490.vtuber_fanhub.repositories.ShopItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,10 @@ import java.util.stream.Collectors;
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
+
+    private final ShopItemRepository shopItemRepository;
+
+    private final BannerItemRepository bannerItemRepository;
 
     private final CloudinaryService cloudinaryService;
 
@@ -38,6 +45,10 @@ public class ItemServiceImpl implements ItemService {
         item.setDescription(request.getDescription());
         item.setImageUrl(imageUrl);
         item.setCategory(request.getCategory());
+        item.setSize(request.getSize());
+        item.setXAxis(request.getXAxis());
+        item.setYAxis(request.getYAxis());
+        item.setIsDeleted(false);
 
         itemRepository.save(item);
 
@@ -47,9 +58,58 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional(readOnly = true)
     public List<ItemResponse> getAllFrames() {
-        return itemRepository.findByCategory("FRAME").stream()
+        return itemRepository.findActiveByCategory("FRAME").stream()
                 .map(this::mapToItemResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ItemResponse> getAllItems() {
+        return itemRepository.findAllActive().stream()
+                .map(this::mapToItemResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public String deleteItem(Long id) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new com.sep490.vtuber_fanhub.exceptions.NotFoundException("Item not found"));
+        item.setIsDeleted(true);
+        itemRepository.save(item);
+
+        shopItemRepository.softDeleteByItemId(id);
+        bannerItemRepository.deleteByItemId(id);
+
+        return "Deleted item successfully";
+    }
+
+    @Override
+    @Transactional
+    public String updateItem(Long id, UpdateItemRequest request, MultipartFile image) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new com.sep490.vtuber_fanhub.exceptions.NotFoundException("Item not found"));
+
+        item.setItemName(request.getItemName());
+        item.setDescription(request.getDescription());
+        item.setCategory(request.getCategory());
+        item.setSize(request.getSize());
+        item.setXAxis(request.getXAxis());
+        item.setYAxis(request.getYAxis());
+
+        if (image != null && !image.isEmpty()) {
+            try {
+                String imageUrl = cloudinaryService.uploadFile(image);
+                item.setImageUrl(imageUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload image", e);
+            }
+        }
+
+        itemRepository.save(item);
+
+        return "Updated item successfully";
     }
 
     private ItemResponse mapToItemResponse(Item item) {
@@ -59,6 +119,9 @@ public class ItemServiceImpl implements ItemService {
         response.setDescription(item.getDescription());
         response.setImageUrl(item.getImageUrl());
         response.setCategory(item.getCategory());
+        response.setSize(item.getSize());
+        response.setXAxis(item.getXAxis());
+        response.setYAxis(item.getYAxis());
         return response;
     }
 }

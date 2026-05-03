@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.repositories;
 
 import com.sep490.vtuber_fanhub.models.VTuberApplication;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,8 +13,9 @@ public interface VTuberApplicationRepository extends JpaRepository<VTuberApplica
     @EntityGraph(attributePaths = {"user", "reviewBy"})
     Page<VTuberApplication> findByUserId(Long userId, Pageable pageable);
 
+    @NotNull
     @EntityGraph(attributePaths = {"user", "reviewBy"})
-    Page<VTuberApplication> findAll(Pageable pageable);
+    Page<VTuberApplication> findAll(@NotNull Pageable pageable);
 
     boolean existsByUserIdAndStatus(Long userId, String status);
 }

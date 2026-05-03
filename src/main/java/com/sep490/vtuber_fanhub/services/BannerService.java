@@ -1,6 +1,7 @@
 package com.sep490.vtuber_fanhub.services;
 
 import com.sep490.vtuber_fanhub.dto.requests.CreateBannerRequest;
+import com.sep490.vtuber_fanhub.dto.responses.BannerDetailResponse;
 import com.sep490.vtuber_fanhub.dto.responses.BannerResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,6 +13,8 @@ public interface BannerService {
     List<BannerResponse> getAllBanners(int pageNo, int pageSize, String sortBy);
 
     BannerResponse getActiveBanner();
+
+    BannerDetailResponse getBannerDetail(Long bannerId);
 
     String activateBanner(Long bannerId);
 

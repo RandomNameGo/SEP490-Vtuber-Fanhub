@@ -107,7 +107,7 @@ public class FanHubMemberController {
     }
 
     @PutMapping("/review")
-    @PreAuthorize("hasAnyRole('VTUBER', 'MODERATOR')")
+    @PreAuthorize("hasAnyRole('VTUBER', 'USER')")
     public ResponseEntity<?> reviewFanHubMember(
             @RequestParam long fanHubMemberId,
             @RequestParam String status) {
@@ -156,6 +156,28 @@ public class FanHubMemberController {
                 .success(true)
                 .message("Success")
                 .data(reportMemberService.resolveReportMember(reportId, resolveMessage))
+                .build()
+        );
+    }
+
+    @GetMapping("/count-pending-members/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> countPendingMembers(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Long>builder()
+                .success(true)
+                .message("Success")
+                .data(fanHubMemberService.countPendingMembersByFanHubId(fanHubId))
+                .build()
+        );
+    }
+
+    @GetMapping("/count-report-members/{fanHubId}")
+    @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
+    public ResponseEntity<?> countReportMembers(@PathVariable Long fanHubId) {
+        return ResponseEntity.ok().body(APIResponse.<Long>builder()
+                .success(true)
+                .message("Success")
+                .data(reportMemberService.countReportMembersByFanHubId(fanHubId))
                 .build()
         );
     }

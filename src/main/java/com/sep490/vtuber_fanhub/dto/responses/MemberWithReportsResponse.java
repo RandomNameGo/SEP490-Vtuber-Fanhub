@@ -15,6 +15,9 @@ public class MemberWithReportsResponse {
     private String displayName;
     private String avatarUrl;
     private String frameUrl;
+    private java.math.BigDecimal frameSize;
+    private java.math.BigDecimal frameXAxis;
+    private java.math.BigDecimal frameYAxis;
     private String roleInHub;
     private String memberStatus;
 
@@ -36,6 +39,9 @@ public class MemberWithReportsResponse {
         private String reportedByDisplayName;
         private String reportedByAvatarUrl;
         private String reportedByFrameUrl;
+        private java.math.BigDecimal reportedByFrameSize;
+        private java.math.BigDecimal reportedByFrameXAxis;
+        private java.math.BigDecimal reportedByFrameYAxis;
         private String reason;
         private String reportStatus;
         private String resolveMessage;

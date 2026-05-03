@@ -1,5 +1,6 @@
 package com.sep490.vtuber_fanhub.services;
 
+import com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest;
 import com.sep490.vtuber_fanhub.dto.requests.UpdateJoinAnswerRequest;
 import com.sep490.vtuber_fanhub.dto.responses.*;
 
@@ -9,7 +10,7 @@ public interface FanHubMemberService {
 
     String joinFanHubMember(long fanHubId);
 
-    String joinFanHubMemberWithAnswers(long fanHubId, List<com.sep490.vtuber_fanhub.dto.requests.FanHubJoinAnswerRequest> answers);
+    String joinFanHubMemberWithAnswers(long fanHubId, List<FanHubJoinAnswerRequest> answers);
 
     List<FanHubMemberResponse> getFanHubMembers(long fanHubId, int pageNo, int pageSize, String sortBy, String sortDir, String username, String role);
 
@@ -38,4 +39,6 @@ public interface FanHubMemberService {
     String leaveFanHub(long fanHubId);
 
     String kickMember(long fanHubId, long memberId);
+
+    long countPendingMembersByFanHubId(Long fanHubId);
 }

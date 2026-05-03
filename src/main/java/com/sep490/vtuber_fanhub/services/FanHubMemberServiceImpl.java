@@ -44,6 +44,10 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
     private final FanHubJoinAnswerRepository answerRepository;
 
+    private final PostCommentRepository postCommentRepository;
+
+    private final ItemRepository itemRepository;
+
     @Override
     @Transactional
     public String joinFanHubMember(long fanHubId) {
@@ -98,6 +102,11 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         }
 
         fanHubMemberRepository.save(member);
+
+        // Update memberId in existing comments if joined successfully
+        if ("JOINED".equals(member.getStatus())) {
+            postCommentRepository.updateMemberIdByUserIdAndHubId(currentUser.getId(), fanHubId, member.getId());
+        }
 
         if (answers != null && !answers.isEmpty()) {
             for (FanHubJoinAnswerRequest answerReq : answers) {
@@ -223,6 +232,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setDisplayName(user.getDisplayName());
             response.setAvatarUrl(user.getAvatarUrl());
             response.setFrameUrl(user.getFrameUrl());
+            setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         }
 
         // Fetch and map answers
@@ -343,6 +353,13 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             member.get().setStatus("JOINED");
             member.get().setRoleInHub("MEMBER");
             fanHubMemberRepository.save(member.get());
+
+            // Update memberId in existing comments
+            postCommentRepository.updateMemberIdByUserIdAndHubId(
+                    member.get().getUser().getId(),
+                    fanHubId,
+                    member.get().getId()
+            );
 
             // Send notification to the user
             notificationService.sendMemberAcceptedNotification(
@@ -561,6 +578,9 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         answerRepository.deleteByMemberId(fanHubMember.getId());
 
+        // Nullify memberId in comments
+        postCommentRepository.nullifyMemberId(fanHubMember.getId());
+
         fanHubMemberRepository.delete(fanHubMember);
 
         return "Left FanHub successfully";
@@ -621,10 +641,13 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
 
         answerRepository.deleteByMemberId(target.getId());
 
+        // Nullify memberId in comments
+        postCommentRepository.nullifyMemberId(target.getId());
+
         fanHubMemberRepository.delete(target);
 
-
         return "Member kicked successfully";
+
     }
 
     private FanHubMemberResponse mapToResponse(FanHubMember entity) {
@@ -643,6 +666,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setDisplayName(entity.getUser().getDisplayName());
             response.setAvatarUrl(entity.getUser().getAvatarUrl());
             response.setFrameUrl(entity.getUser().getFrameUrl());
+            setFrameDetails(entity.getUser(), response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         }
 
         response.setRoleInHub(entity.getRoleInHub());
@@ -680,6 +704,7 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             response.setDisplayName(user.getDisplayName());
             response.setAvatarUrl(user.getAvatarUrl());
             response.setFrameUrl(user.getFrameUrl());
+            setFrameDetails(user, response::setFrameSize, response::setFrameXAxis, response::setFrameYAxis);
         }
 
         // Populate join answers if they exist
@@ -700,5 +725,22 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         response.setQuestionContent(answer.getQuestion().getContent());
         response.setContent(answer.getContent());
         return response;
+    }
+
+    @Override
+    public long countPendingMembersByFanHubId(Long fanHubId) {
+        return fanHubMemberRepository.countByHubIdAndStatus(fanHubId, "PENDING");
+    }
+
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
     }
 }

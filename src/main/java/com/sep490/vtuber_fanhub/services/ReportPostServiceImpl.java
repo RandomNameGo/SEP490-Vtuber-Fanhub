@@ -12,6 +12,7 @@ import com.sep490.vtuber_fanhub.models.ReportPost;
 import com.sep490.vtuber_fanhub.models.User;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
+import com.sep490.vtuber_fanhub.repositories.ItemRepository;
 import com.sep490.vtuber_fanhub.repositories.PostHashtagRepository;
 import com.sep490.vtuber_fanhub.repositories.PostMediaRepository;
 import com.sep490.vtuber_fanhub.repositories.PostRepository;
@@ -51,6 +52,8 @@ public class ReportPostServiceImpl implements ReportPostService {
     private final PostHashtagRepository postHashtagRepository;
 
     private final NotificationService notificationService;
+
+    private final ItemRepository itemRepository;
 
     @Override
     public String createReportPost(CreateReportPostRequest createReportPostRequest) {
@@ -98,8 +101,10 @@ public class ReportPostServiceImpl implements ReportPostService {
         PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
         Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubId(fanHubId, pageRequest);
 
+        Map<String, com.sep490.vtuber_fanhub.models.Item> frameMap = getFrameMap(reportPostPage.getContent());
+
         return reportPostPage.getContent().stream()
-                .map(this::mapToReportPostResponse)
+                .map(report -> mapToReportPostResponse(report, frameMap))
                 .collect(Collectors.toList());
     }
 
@@ -157,8 +162,10 @@ public class ReportPostServiceImpl implements ReportPostService {
         PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
         Page<ReportPost> reportPostPage = reportPostRepository.findByReportedById(currentUser.getId(), pageRequest);
 
+        Map<String, com.sep490.vtuber_fanhub.models.Item> frameMap = getFrameMap(reportPostPage.getContent());
+
         return reportPostPage.getContent().stream()
-                .map(this::mapToReportPostResponse)
+                .map(report -> mapToReportPostResponse(report, frameMap))
                 .collect(Collectors.toList());
     }
 
@@ -187,8 +194,10 @@ public class ReportPostServiceImpl implements ReportPostService {
         PageRequest pageRequest = PageRequest.of(pageNo, pageSize, Sort.by(getSortDirection(sortDir), sortBy));
         Page<ReportPost> reportPostPage = reportPostRepository.findByFanHubIdAndStatus(fanHubId, "PENDING", pageRequest);
 
+        Map<String, com.sep490.vtuber_fanhub.models.Item> frameMap = getFrameMap(reportPostPage.getContent());
+
         return reportPostPage.getContent().stream()
-                .map(this::mapToReportPostResponse)
+                .map(report -> mapToReportPostResponse(report, frameMap))
                 .collect(Collectors.toList());
     }
 
@@ -248,7 +257,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         return "Successfully resolved " + resolvedCount + " report(s)";
     }
 
-    private ReportPostResponse mapToReportPostResponse(ReportPost reportPost) {
+    private ReportPostResponse mapToReportPostResponse(ReportPost reportPost, Map<String, com.sep490.vtuber_fanhub.models.Item> frameMap) {
         ReportPostResponse response = new ReportPostResponse();
         
         // Report information
@@ -281,6 +290,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setAuthorDisplayName(author.getDisplayName());
         response.setAuthorAvatarUrl(author.getAvatarUrl());
         response.setAuthorFrameUrl(author.getFrameUrl());
+        setFrameDetailsFromMap(author.getFrameUrl(), frameMap, response::setAuthorFrameSize, response::setAuthorFrameXAxis, response::setAuthorFrameYAxis);
         
         // Media count
         List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
@@ -345,13 +355,15 @@ public class ReportPostServiceImpl implements ReportPostService {
             return List.of();
         }
 
+        Map<String, com.sep490.vtuber_fanhub.models.Item> frameMap = getFrameMap(reportPostPage.getContent());
+
         // Group reports by post
         Map<Post, List<ReportPost>> postToReportsMap = reportPostPage.getContent().stream()
                 .collect(Collectors.groupingBy(ReportPost::getPost));
 
         // Convert to response
         return postToReportsMap.entrySet().stream()
-                .map(entry -> mapToPostWithReportsResponse(entry.getKey(), entry.getValue()))
+                .map(entry -> mapToPostWithReportsResponse(entry.getKey(), entry.getValue(), frameMap))
                 .collect(Collectors.toList());
     }
 
@@ -362,7 +374,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         return Sort.Direction.DESC;
     }
 
-    private PostWithReportsResponse mapToPostWithReportsResponse(Post post, List<ReportPost> reports) {
+    private PostWithReportsResponse mapToPostWithReportsResponse(Post post, List<ReportPost> reports, Map<String, com.sep490.vtuber_fanhub.models.Item> frameMap) {
         PostWithReportsResponse response = new PostWithReportsResponse();
 
         // Post information
@@ -390,6 +402,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setAuthorDisplayName(author.getDisplayName());
         response.setAuthorAvatarUrl(author.getAvatarUrl());
         response.setAuthorFrameUrl(author.getFrameUrl());
+        setFrameDetailsFromMap(author.getFrameUrl(), frameMap, response::setAuthorFrameSize, response::setAuthorFrameXAxis, response::setAuthorFrameYAxis);
 
         // Media count
         List<PostMedia> mediaList = postMediaRepository.findByPostId(post.getId());
@@ -410,14 +423,14 @@ public class ReportPostServiceImpl implements ReportPostService {
 
         // Convert all reports to SimpleReportResponse
         List<PostWithReportsResponse.SimpleReportResponse> reportResponses = reports.stream()
-                .map(this::mapToSimpleReportResponse)
+                .map(report -> mapToSimpleReportResponse(report, frameMap))
                 .collect(Collectors.toList());
         response.setReports(reportResponses);
 
         return response;
     }
 
-    private PostWithReportsResponse.SimpleReportResponse mapToSimpleReportResponse(ReportPost reportPost) {
+    private PostWithReportsResponse.SimpleReportResponse mapToSimpleReportResponse(ReportPost reportPost, Map<String, com.sep490.vtuber_fanhub.models.Item> frameMap) {
         PostWithReportsResponse.SimpleReportResponse response = new PostWithReportsResponse.SimpleReportResponse();
 
         // Report information
@@ -433,6 +446,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         response.setReportedByDisplayName(reportPost.getReportedBy().getDisplayName());
         response.setReportedByAvatarUrl(reportPost.getReportedBy().getAvatarUrl());
         response.setReportedByFrameUrl(reportPost.getReportedBy().getFrameUrl());
+        setFrameDetailsFromMap(reportPost.getReportedBy().getFrameUrl(), frameMap, response::setReportedByFrameSize, response::setReportedByFrameXAxis, response::setReportedByFrameYAxis);
 
         // Resolver information (if resolved)
         if (reportPost.getResolveBy() != null) {
@@ -442,5 +456,49 @@ public class ReportPostServiceImpl implements ReportPostService {
         }
 
         return response;
+    }
+
+    @Override
+    public long countReportPostsByFanHubId(Long fanHubId) {
+        return reportPostRepository.countByFanHubIdAndStatus(fanHubId, "PENDING");
+    }
+
+    private Map<String, com.sep490.vtuber_fanhub.models.Item> getFrameMap(List<ReportPost> reports) {
+        java.util.Set<String> imageUrls = reports.stream()
+                .flatMap(r -> java.util.stream.Stream.of(
+                        r.getPost().getUser().getFrameUrl(),
+                        r.getReportedBy().getFrameUrl()
+                ))
+                .filter(url -> url != null && !url.isEmpty())
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (imageUrls.isEmpty()) return java.util.Collections.emptyMap();
+
+        return itemRepository.findByImageUrlIn(imageUrls).stream()
+                .collect(Collectors.toMap(com.sep490.vtuber_fanhub.models.Item::getImageUrl, item -> item, (a, b) -> a));
+    }
+
+    private void setFrameDetailsFromMap(String frameUrl, Map<String, com.sep490.vtuber_fanhub.models.Item> frameMap,
+                                        java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                        java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                        java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (frameUrl != null && frameMap.containsKey(frameUrl)) {
+            com.sep490.vtuber_fanhub.models.Item item = frameMap.get(frameUrl);
+            sizeSetter.accept(item.getSize());
+            xAxisSetter.accept(item.getXAxis());
+            yAxisSetter.accept(item.getYAxis());
+        }
+    }
+
+    private void setFrameDetails(User user, java.util.function.Consumer<java.math.BigDecimal> sizeSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> xAxisSetter,
+                                 java.util.function.Consumer<java.math.BigDecimal> yAxisSetter) {
+        if (user.getFrameUrl() != null && !user.getFrameUrl().isEmpty()) {
+            itemRepository.findByImageUrl(user.getFrameUrl()).ifPresent(item -> {
+                sizeSetter.accept(item.getSize());
+                xAxisSetter.accept(item.getXAxis());
+                yAxisSetter.accept(item.getYAxis());
+            });
+        }
     }
 }

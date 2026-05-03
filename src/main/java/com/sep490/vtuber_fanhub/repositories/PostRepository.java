@@ -181,6 +181,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT COUNT(p) FROM Post p WHERE p.hub.id = :fanHubId AND p.status != 'DELETED' AND p.status != 'REJECTED' AND p.hub.isActive = true")
     long countPostsByHubId(@Param("fanHubId") Long fanHubId);
 
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.hub.id = :fanHubId AND p.status = :status AND p.hub.isActive = true")
+    long countByHubIdAndStatus(@Param("fanHubId") Long fanHubId, @Param("status") String status);
+
     // Search posts by title or content containing keyword
     // Note: Using CAST on content because it's a @Lob field and cannot use LIKE directly
     @EntityGraph(attributePaths = {"hub", "user"})
