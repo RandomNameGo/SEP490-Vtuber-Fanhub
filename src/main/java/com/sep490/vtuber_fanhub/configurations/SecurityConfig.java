@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/fan-hub/{fanHubId}/announcements-events").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/{postId}/comments").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/comments/{parentCommentId}/replies").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/{postId}/comments/hidden").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/comments/{parentCommentId}/replies/hidden").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/fan-hub/subdomain/{subdomain}").permitAll()
                         .requestMatchers(HttpMethod.GET,"/vhub/api/v1/posts/fan-hub/*").permitAll()
                         .requestMatchers("/vhub/api/v1/search/**").permitAll()

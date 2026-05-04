@@ -382,6 +382,26 @@ public class PostController {
         );
     }
 
+    @GetMapping("/{postId}/comments/hidden")
+    public ResponseEntity<?> getHiddenPostComments(@PathVariable long postId) {
+        return ResponseEntity.ok().body(APIResponse.<List<PostCommentResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.getHiddenPostCommentsByPostId(postId))
+                .build()
+        );
+    }
+
+    @GetMapping("/comments/{parentCommentId}/replies/hidden")
+    public ResponseEntity<?> getHiddenCommentsByParentId(@PathVariable Long parentCommentId) {
+        return ResponseEntity.ok().body(APIResponse.<List<PostCommentResponse>>builder()
+                .success(true)
+                .message("Success")
+                .data(postCommentService.getHiddenCommentsByParentId(parentCommentId))
+                .build()
+        );
+    }
+
     @PutMapping("/comment/{commentId}")
     @PreAuthorize("hasAnyRole('USER', 'VTUBER')")
     public ResponseEntity<?> editComment(@PathVariable Long commentId, @RequestBody @Valid EditPostCommentRequest request) {

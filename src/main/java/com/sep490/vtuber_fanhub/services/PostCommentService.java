@@ -15,6 +15,10 @@ public interface PostCommentService {
 
     List<PostCommentResponse> getCommentsByParentId(Long parentCommentId);
 
+    List<PostCommentResponse> getHiddenPostCommentsByPostId(Long postId);
+
+    List<PostCommentResponse> getHiddenCommentsByParentId(Long parentCommentId);
+
     String editComment(Long commentId, EditPostCommentRequest request);
 
     String deleteComment(Long commentId);
