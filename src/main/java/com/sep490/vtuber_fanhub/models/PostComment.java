@@ -43,4 +43,7 @@ public class PostComment {
     @Column(name = "member_id")
     private Long memberId;
 
+    @Column(name = "is_edited")
+    private Boolean isEdited;
+
 }

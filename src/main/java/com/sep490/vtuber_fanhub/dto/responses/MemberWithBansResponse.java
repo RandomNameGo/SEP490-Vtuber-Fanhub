@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.dto.responses;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -15,9 +16,9 @@ public class MemberWithBansResponse {
     private String displayName;
     private String avatarUrl;
     private String frameUrl;
-    private java.math.BigDecimal frameSize;
-    private java.math.BigDecimal frameXAxis;
-    private java.math.BigDecimal frameYAxis;
+    private BigDecimal frameSize;
+    private BigDecimal frameXAxis;
+    private BigDecimal frameYAxis;
     private String roleInHub;
     private String memberStatus;
 

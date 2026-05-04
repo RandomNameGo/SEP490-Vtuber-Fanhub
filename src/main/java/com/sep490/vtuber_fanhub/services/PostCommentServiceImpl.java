@@ -99,6 +99,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         postComment.setContent(createPostCommentRequest.getContent());
         postComment.setStatus("VISIBLE");
         postComment.setCreatedAt(Instant.now());
+        postComment.setIsEdited(false);
 
         // Set memberId if user is a member, otherwise use null for hub owner
         member.ifPresent(fanHubMember -> postComment.setMemberId(fanHubMember.getId()));
@@ -238,6 +239,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         }
 
         comment.get().setContent(request.getContent());
+        comment.get().setIsEdited(true);
         postCommentRepository.save(comment.get());
 
         return "Comment edited successfully";
@@ -262,6 +264,12 @@ public class PostCommentServiceImpl implements PostCommentService {
         boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(hub.getId(), currentUser.getId())
                 .map(member -> "MODERATOR".equals(member.getRoleInHub()))
                 .orElse(false);
+
+        // If the comment is from the hub owner, only they can delete it
+        boolean isCommentFromHubOwner = commentAuthor.getId().equals(hub.getOwnerUser().getId());
+        if (isCommentFromHubOwner && !isAuthor) {
+            throw new CustomAuthenticationException("Access denied. Only the hub owner can delete their own comments.");
+        }
 
         if (!isAuthor && !isOwner && !isModerator) {
             throw new CustomAuthenticationException("Access denied. You do not have permission to delete this comment.");
@@ -315,6 +323,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         response.setContent(comment.getContent());
         response.setStatus(comment.getStatus());
         response.setCreatedAt(comment.getCreatedAt());
+        response.setIsEdited(comment.getIsEdited() != null ? comment.getIsEdited() : false);
 
         if (comment.getParentComment() != null) {
             response.setParentCommentId(comment.getParentComment().getId());

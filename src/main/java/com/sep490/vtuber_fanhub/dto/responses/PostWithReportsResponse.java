@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.dto.responses;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -19,9 +20,9 @@ public class PostWithReportsResponse {
     private String authorDisplayName;
     private String authorAvatarUrl;
     private String authorFrameUrl;
-    private java.math.BigDecimal authorFrameSize;
-    private java.math.BigDecimal authorFrameXAxis;
-    private java.math.BigDecimal authorFrameYAxis;
+    private BigDecimal authorFrameSize;
+    private BigDecimal authorFrameXAxis;
+    private BigDecimal authorFrameYAxis;
 
     private String postType;
     private String title;

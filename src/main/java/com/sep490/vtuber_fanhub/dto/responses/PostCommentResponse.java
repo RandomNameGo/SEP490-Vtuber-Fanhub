@@ -2,6 +2,7 @@ package com.sep490.vtuber_fanhub.dto.responses;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
@@ -15,9 +16,9 @@ public class PostCommentResponse {
     private String displayName;
     private String avatarUrl;
     private String frameUrl;
-    private java.math.BigDecimal frameSize;
-    private java.math.BigDecimal frameXAxis;
-    private java.math.BigDecimal frameYAxis;
+    private BigDecimal frameSize;
+    private BigDecimal frameXAxis;
+    private BigDecimal frameYAxis;
     private Long memberId;
 
     private String content;
@@ -26,6 +27,7 @@ public class PostCommentResponse {
     private Long parentCommentId;
 
     private Instant createdAt;
+    private Boolean isEdited;
 
     private Long likeCount;
     private Boolean isLikedByCurrentUser;
