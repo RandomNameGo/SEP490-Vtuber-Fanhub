@@ -526,4 +526,26 @@ public class NotificationServiceImpl implements NotificationService {
 
         log.info("Sent post rejection notification to user {} for post {}", userId, postId);
     }
+
+    @Override
+    @Transactional
+    public void sendCommentDeletedNotification(Long userId, Long postId, String postTitle, Long fanHubId, String fanHubName, String deletedByUsername) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        FanHub hub = fanHubRepository.findById(fanHubId)
+                .orElseThrow(() -> new NotFoundException("FanHub not found"));
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+
+        String type = "COMMENT_DELETED";
+        String title = "Comment Deleted";
+        String message = String.format("Your comment on post \"%s\" in FanHub \"%s\" has been deleted by %s.",
+                postTitle, fanHubName, deletedByUsername);
+
+        createNotification(user, type, title, message, hub, post, null);
+
+        log.info("Sent comment deleted notification to user {} for post {} in hub {}", userId, postId, fanHubId);
+    }
 }

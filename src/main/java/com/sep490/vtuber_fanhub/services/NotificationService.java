@@ -64,4 +64,6 @@ public interface NotificationService {
     void sendPostApprovalNotification(Long userId, Long postId, String postTitle, Long fanHubId, String fanHubName);
 
     void sendPostRejectionNotification(Long userId, Long postId, String postTitle, Long fanHubId, String fanHubName, String reason);
+
+    void sendCommentDeletedNotification(Long userId, Long postId, String postTitle, Long fanHubId, String fanHubName, String deletedByUsername);
 }

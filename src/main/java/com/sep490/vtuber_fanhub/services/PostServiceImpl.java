@@ -1194,7 +1194,7 @@ public class PostServiceImpl implements PostService {
         response.setLikeCount(likeCount);
 
         // Count comments
-        Long commentCount = postCommentRepository.countByPostId(post.getId());
+        Long commentCount = postCommentRepository.countByPostIdAndStatusNot(post.getId(), "DELETED");
         response.setCommentCount(commentCount);
 
         // Check if current user liked this post

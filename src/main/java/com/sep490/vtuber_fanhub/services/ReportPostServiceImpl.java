@@ -4,12 +4,7 @@ import com.sep490.vtuber_fanhub.dto.requests.CreateReportPostRequest;
 import com.sep490.vtuber_fanhub.dto.responses.ReportPostResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostWithReportsResponse;
 import com.sep490.vtuber_fanhub.exceptions.NotFoundException;
-import com.sep490.vtuber_fanhub.models.FanHub;
-import com.sep490.vtuber_fanhub.models.Post;
-import com.sep490.vtuber_fanhub.models.PostHashtag;
-import com.sep490.vtuber_fanhub.models.PostMedia;
-import com.sep490.vtuber_fanhub.models.ReportPost;
-import com.sep490.vtuber_fanhub.models.User;
+import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.repositories.FanHubMemberRepository;
 import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import com.sep490.vtuber_fanhub.repositories.ItemRepository;
@@ -463,7 +458,7 @@ public class ReportPostServiceImpl implements ReportPostService {
         return reportPostRepository.countByFanHubIdAndStatus(fanHubId, "PENDING");
     }
 
-    private Map<String, com.sep490.vtuber_fanhub.models.Item> getFrameMap(List<ReportPost> reports) {
+    private Map<String, Item> getFrameMap(List<ReportPost> reports) {
         java.util.Set<String> imageUrls = reports.stream()
                 .flatMap(r -> java.util.stream.Stream.of(
                         r.getPost().getUser().getFrameUrl(),

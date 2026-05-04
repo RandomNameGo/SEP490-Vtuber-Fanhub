@@ -9,8 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PostCommentRepository extends JpaRepository<PostComment, Long> {
+
+    @EntityGraph(attributePaths = {"user", "post", "post.hub"})
+    Optional<PostComment> findWithPostAndUserById(Long id);
 
     @Modifying
     @Query("UPDATE PostComment pc SET pc.memberId = NULL WHERE pc.memberId = :memberId")
@@ -28,12 +32,12 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
     List<PostComment> findByPostOrderByCreatedAtAsc(Post post);
 
     @EntityGraph(attributePaths = {"user"})
-    List<PostComment> findByPostIdAndParentCommentIsNullOrderByCreatedAtAsc(Long postId);
+    List<PostComment> findByPostIdAndParentCommentIsNullAndStatusOrderByCreatedAtAsc(Long postId, String status);
 
-    Long countByPostId(Long postId);
+    Long countByPostIdAndStatusNot(Long postId, String status);
 
     @EntityGraph(attributePaths = {"user"})
-    List<PostComment> findByParentCommentIdOrderByCreatedAtAsc(Long parentCommentId);
+    List<PostComment> findByParentCommentIdAndStatusOrderByCreatedAtAsc(Long parentCommentId, String status);
 
-    boolean existsByParentCommentId(Long parentCommentId);
+    boolean existsByParentCommentIdAndStatus(Long parentCommentId, String status);
 }

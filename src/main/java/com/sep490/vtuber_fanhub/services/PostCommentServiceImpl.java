@@ -152,7 +152,7 @@ public class PostCommentServiceImpl implements PostCommentService {
             throw new NotFoundException("Post not found");
         }
 
-        List<PostComment> comments = postCommentRepository.findByPostIdAndParentCommentIsNullOrderByCreatedAtAsc(postId);
+        List<PostComment> comments = postCommentRepository.findByPostIdAndParentCommentIsNullAndStatusOrderByCreatedAtAsc(postId, "VISIBLE");
 
         if (currentUser == null) {
             return comments.stream()
@@ -186,7 +186,37 @@ public class PostCommentServiceImpl implements PostCommentService {
             throw new NotFoundException("Parent comment not found");
         }
 
-        List<PostComment> comments = postCommentRepository.findByParentCommentIdOrderByCreatedAtAsc(parentCommentId);
+        List<PostComment> comments = postCommentRepository.findByParentCommentIdAndStatusOrderByCreatedAtAsc(parentCommentId, "VISIBLE");
+
+        return comments.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostCommentResponse> getHiddenPostCommentsByPostId(Long postId) {
+        Optional<Post> post = postRepository.findById(postId);
+        if (post.isEmpty()) {
+            throw new NotFoundException("Post not found");
+        }
+
+        List<PostComment> comments = postCommentRepository.findByPostIdAndParentCommentIsNullAndStatusOrderByCreatedAtAsc(postId, "HIDDEN");
+
+        return comments.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostCommentResponse> getHiddenCommentsByParentId(Long parentCommentId) {
+        Optional<PostComment> parentComment = postCommentRepository.findById(parentCommentId);
+        if (parentComment.isEmpty()) {
+            throw new NotFoundException("Parent comment not found");
+        }
+
+        List<PostComment> comments = postCommentRepository.findByParentCommentIdAndStatusOrderByCreatedAtAsc(parentCommentId, "HIDDEN");
 
         return comments.stream()
                 .map(this::mapToResponse)
@@ -218,16 +248,41 @@ public class PostCommentServiceImpl implements PostCommentService {
     public String deleteComment(Long commentId) {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        Optional<PostComment> comment = postCommentRepository.findById(commentId);
+        Optional<PostComment> comment = postCommentRepository.findWithPostAndUserById(commentId);
         if (comment.isEmpty()) {
             throw new NotFoundException("Comment not found");
         }
 
-        if (!comment.get().getUser().getId().equals(currentUser.getId())) {
-            throw new CustomAuthenticationException("Access denied. Only the author can delete this comment.");
+        PostComment postComment = comment.get();
+        User commentAuthor = postComment.getUser();
+        FanHub hub = postComment.getPost().getHub();
+
+        boolean isAuthor = commentAuthor.getId().equals(currentUser.getId());
+        boolean isOwner = hub.getOwnerUser().getId().equals(currentUser.getId());
+        boolean isModerator = fanHubMemberRepository.findByHubIdAndUserId(hub.getId(), currentUser.getId())
+                .map(member -> "MODERATOR".equals(member.getRoleInHub()))
+                .orElse(false);
+
+        if (!isAuthor && !isOwner && !isModerator) {
+            throw new CustomAuthenticationException("Access denied. You do not have permission to delete this comment.");
         }
 
-        postCommentRepository.delete(comment.get());
+        postComment.setStatus("DELETED");
+        postCommentRepository.save(postComment);
+
+        // If deleted by owner or moderator (someone other than the author), send notification to the author
+        if (!isAuthor) {
+            notificationService.sendCommentDeletedNotification(
+                    commentAuthor.getId(),
+                    postComment.getPost().getId(),
+                    postComment.getPost().getTitle(),
+                    hub.getId(),
+                    hub.getHubName(),
+                    currentUser.getDisplayName() != null ? currentUser.getDisplayName() : currentUser.getUsername()
+            );
+            log.info("Comment {} deleted by hub owner/moderator {}. Notification sent to author {}.",
+                    commentId, currentUser.getId(), commentAuthor.getId());
+        }
 
         return "Comment deleted successfully";
     }
@@ -283,7 +338,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         response.setGiftCount((long) gifts.size());
 
         // Check if comment has children (replies)
-        boolean hasChildren = postCommentRepository.existsByParentCommentId(comment.getId());
+        boolean hasChildren = postCommentRepository.existsByParentCommentIdAndStatus(comment.getId(), "VISIBLE");
         response.setHasChildren(hasChildren);
 
         return response;
