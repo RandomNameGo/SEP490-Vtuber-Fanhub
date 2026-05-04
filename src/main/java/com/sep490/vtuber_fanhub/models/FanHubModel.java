@@ -3,8 +3,11 @@ package com.sep490.vtuber_fanhub.models;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -22,11 +25,11 @@ public class FanHubModel {
     @Column(name = "file_url")
     private String fileUrl;
 
-    @Lob
-    @Column(name = "sprite_url")
-    private String spriteUrl;
-
     @Column(name = "created_at")
     private Instant createdAt;
+
+    @Column(name = "sprites")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Object> sprites;
 
 }

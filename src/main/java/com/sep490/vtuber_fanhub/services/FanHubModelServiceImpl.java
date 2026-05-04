@@ -16,6 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +32,9 @@ public class FanHubModelServiceImpl implements FanHubModelService {
 
     @Override
     @Transactional
-    public FanHubModelResponse uploadModel(Long fanHubId, String name, MultipartFile modelFile, MultipartFile spriteFile) throws IOException {
+    public FanHubModelResponse uploadModel(Long fanHubId, String name, MultipartFile modelFile,
+                                          List<MultipartFile> spriteFiles, List<String> spriteNames,
+                                          List<Integer> spriteFrames) throws IOException {
         User currentUser = authService.getUserFromToken(httpServletRequest);
 
         FanHub fanHub = fanHubRepository.findByIdAndIsActive(fanHubId, true)
@@ -48,9 +53,36 @@ public class FanHubModelServiceImpl implements FanHubModelService {
             model.setFileUrl(modelUrl);
         }
 
-        if (spriteFile != null && !spriteFile.isEmpty()) {
-            String spriteUrl = cloudinaryService.uploadFile(spriteFile);
-            model.setSpriteUrl(spriteUrl);
+        // Handle multiple sprites
+        if (spriteFiles != null && !spriteFiles.isEmpty()) {
+            // Validation: Ensure metadata matches file count
+            if (spriteNames == null || spriteNames.size() != spriteFiles.size() ||
+                spriteFrames == null || spriteFrames.size() != spriteFiles.size()) {
+                throw new IllegalArgumentException("The number of sprite names and frames must match the number of sprite files.");
+            }
+
+            Map<String, Object> spritesMap = model.getSprites();
+            if (spritesMap == null) {
+                spritesMap = new HashMap<>();
+            }
+
+            for (int i = 0; i < spriteFiles.size(); i++) {
+                MultipartFile file = spriteFiles.get(i);
+                if (file != null && !file.isEmpty()) {
+                    String spriteUrl = cloudinaryService.uploadFile(file);
+                    
+                    String sName = spriteNames.get(i);
+                    Integer sFrames = spriteFrames.get(i);
+
+                    Map<String, Object> spriteData = new HashMap<>();
+                    spriteData.put("url", spriteUrl);
+                    spriteData.put("totalFrames", sFrames);
+                    spriteData.put("name", sName);
+
+                    spritesMap.put(sName, spriteData);
+                }
+            }
+            model.setSprites(spritesMap);
         }
 
         if (model.getCreatedAt() == null) {
@@ -74,7 +106,7 @@ public class FanHubModelServiceImpl implements FanHubModelService {
                 .id(model.getId())
                 .name(model.getName())
                 .fileUrl(model.getFileUrl())
-                .spriteUrl(model.getSpriteUrl())
+                .sprites(model.getSprites())
                 .createdAt(model.getCreatedAt())
                 .build();
     }

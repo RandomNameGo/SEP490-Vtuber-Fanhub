@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -11,6 +12,6 @@ public class FanHubModelResponse {
     private Long id;
     private String name;
     private String fileUrl;
-    private String spriteUrl;
+    private Map<String, Object> sprites;
     private Instant createdAt;
 }

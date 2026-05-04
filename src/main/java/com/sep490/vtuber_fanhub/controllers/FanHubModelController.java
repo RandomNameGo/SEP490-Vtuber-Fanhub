@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("vhub/api/v1/fan-hub-model")
@@ -24,12 +25,14 @@ public class FanHubModelController {
             @PathVariable Long fanHubId,
             @RequestParam("name") String name,
             @RequestParam(value = "modelFile", required = false) MultipartFile modelFile,
-            @RequestParam(value = "spriteFile", required = false) MultipartFile spriteFile) throws IOException {
+            @RequestParam(value = "spriteFiles", required = false) List<MultipartFile> spriteFiles,
+            @RequestParam(value = "spriteNames", required = false) List<String> spriteNames,
+            @RequestParam(value = "spriteFrames", required = false) List<Integer> spriteFrames) throws IOException {
 
         return ResponseEntity.ok(APIResponse.<FanHubModelResponse>builder()
                 .success(true)
                 .message("Model uploaded successfully")
-                .data(fanHubModelService.uploadModel(fanHubId, name, modelFile, spriteFile))
+                .data(fanHubModelService.uploadModel(fanHubId, name, modelFile, spriteFiles, spriteNames, spriteFrames))
                 .build());
     }
 
