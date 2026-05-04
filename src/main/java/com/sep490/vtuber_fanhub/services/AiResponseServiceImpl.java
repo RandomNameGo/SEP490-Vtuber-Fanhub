@@ -129,6 +129,7 @@ public class AiResponseServiceImpl implements AiResponseService {
     - Language: Always respond in the same language as the USER PROMPT.
     - Context: Use LAST_MESSAGES for continuity, but never meta-comment on them (don't say "As I mentioned before").
     - Style: Conversational, enthusiastic, and helpful. Use common VTuber terminology (debut, lore, graduation, clipping, oshi).
+    - Reply short and precise.
     
     USER PROMPT: %s
     
