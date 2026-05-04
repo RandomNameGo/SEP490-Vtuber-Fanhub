@@ -55,11 +55,7 @@ public class FanHubReportServiceImpl implements FanHubReportService {
     @Override
     @Transactional
     public String bulkResolveFanHubReports(List<Long> reportIds, String resolveMessage) {
-        User currentUser = authService.getUserFromToken(httpServletRequest);
 
-        if (!"ADMIN".equals(currentUser.getRole())) {
-            throw new CustomAuthenticationException("Only ADMIN can resolve FanHub reports");
-        }
 
         if (reportIds == null || reportIds.isEmpty()) {
             throw new IllegalArgumentException("Report IDs cannot be empty");
