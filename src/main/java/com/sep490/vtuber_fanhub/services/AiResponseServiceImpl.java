@@ -24,7 +24,7 @@ public class AiResponseServiceImpl implements AiResponseService {
     private final PostRepository postRepository;
     private final PostMediaRepository postMediaRepository;
     private final GeminiAIService geminiAIService;
-    private final ChatPersonalityType AI_CHATBOT_RESPONSE_PERSONALITY_TYPE = ChatPersonalityType.MatikanetannHauser;
+    private final ChatPersonalityType AI_CHATBOT_RESPONSE_PERSONALITY_TYPE = ChatPersonalityType.VGuide;
     private final ChatMessageMetadataRepository chatMessageMetadataRepository;
 
     @Override
@@ -131,8 +131,14 @@ public class AiResponseServiceImpl implements AiResponseService {
     - Style: Conversational, enthusiastic, and helpful. Use common VTuber terminology (debut, lore, graduation, clipping, oshi).
     - Reply short and precise.
     
-    USER PROMPT: %s
+    RESPONSE PARSING RULES:
+    - Bold: **text**
+    - Italic: *text*
+    - Underline: __text__
+    - Strikethrough: ~~text~~
+    - Break line: /n
     
+    USER PROMPT: %s
     LAST_MESSAGES: %s
     """, userPrompt, lastMessages);
 

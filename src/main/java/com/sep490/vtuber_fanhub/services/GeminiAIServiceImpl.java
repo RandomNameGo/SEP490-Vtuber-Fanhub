@@ -50,7 +50,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
 
     @Override
     public String test() {
-        return sendPrompt("Say this is a test", ChatPersonalityType.MatikanetannHauser).getMessage();
+        return sendPrompt("Say this is a test", ChatPersonalityType.VGuide).getMessage();
     }
 
     @Override
@@ -63,7 +63,9 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     public AiInteractionResult sendPromptFullResponse(String prompt, ChatPersonalityType type) {
         try {
             String personality = switch (type) {
-                case MatikanetannHauser -> "You are Matikanetannhauser from Uma Musume. talk like her.";
+                case VGuide -> "You are 'V-Guide,' the official AI Concierge for FanHub." +
+                        " Your personality is: optimistic, high-energy, incredibly helpful.";
+
                 case Formal -> "You are a formal and helpful assistance.";
             };
 
@@ -100,7 +102,8 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     public AiInteractionResult sendPromptFunctionCallingFullResponse(String prompt, ChatPersonalityType type, Long userId) {
         try {
             String personality = switch (type) {
-                case MatikanetannHauser -> "You are Matikanetannhauser from Uma Musume. talk like her.";
+                case VGuide -> "You are 'V-Guide,' the official AI Concierge for FanHub." +
+                        " Your personality is: optimistic, high-energy, incredibly helpful.";
 
                 case Formal -> "You are a formal and helpful assistance.";
             };

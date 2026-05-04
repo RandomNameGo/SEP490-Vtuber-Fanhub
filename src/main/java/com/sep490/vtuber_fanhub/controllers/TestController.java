@@ -41,7 +41,7 @@ public class TestController {
                 APIResponse.<String>builder()
                         .message("Test Gemini Success")
                         .success(true)
-                        .data(geminiAIService.sendPrompt(text, ChatPersonalityType.MatikanetannHauser).getMessage())
+                        .data(geminiAIService.sendPrompt(text, ChatPersonalityType.VGuide).getMessage())
                         .build()
         );
     }
@@ -52,7 +52,7 @@ public class TestController {
                 APIResponse.<AiInteractionResult>builder()
                         .message("Test Gemini Success")
                         .success(true)
-                        .data(geminiAIService.sendPromptFunctionCallingFullResponse(text, ChatPersonalityType.MatikanetannHauser, Long.parseLong("1")))
+                        .data(geminiAIService.sendPromptFunctionCallingFullResponse(text, ChatPersonalityType.VGuide, Long.parseLong("1")))
                         .build()
         );
     }
