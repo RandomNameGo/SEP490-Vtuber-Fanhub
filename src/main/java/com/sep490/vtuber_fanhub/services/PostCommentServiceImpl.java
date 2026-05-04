@@ -470,6 +470,12 @@ public class PostCommentServiceImpl implements PostCommentService {
                 .map(member -> "MODERATOR".equals(member.getRoleInHub()))
                 .orElse(false);
 
+        // If the comment is from the hub owner, only they can hide it
+        boolean isCommentFromHubOwner = comment.getUser().getId().equals(hub.getOwnerUser().getId());
+        if (isCommentFromHubOwner && !isOwner) {
+            throw new CustomAuthenticationException("Access denied. Only the hub owner can hide their own comments.");
+        }
+
         if (!isOwner && !isModerator) {
             throw new AccessDeniedException("Only the FanHub owner or a moderator can hide comments");
         }
