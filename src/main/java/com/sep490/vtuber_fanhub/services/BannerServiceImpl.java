@@ -9,10 +9,12 @@ import com.sep490.vtuber_fanhub.models.Banner;
 import com.sep490.vtuber_fanhub.repositories.BannerItemRepository;
 import com.sep490.vtuber_fanhub.repositories.BannerRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +26,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BannerServiceImpl implements BannerService {
 
     private final BannerRepository bannerRepository;
@@ -165,6 +168,24 @@ public class BannerServiceImpl implements BannerService {
         bannerRepository.delete(banner);
 
         return "Banner and its items deleted successfully";
+    }
+
+
+    @Override
+    @Transactional
+    @Scheduled(cron = "0 0 */12 * * *", zone = "Asia/Ho_Chi_Minh")
+    public void deactivateExpiredBanners() {
+        Instant now = Instant.now();
+        List<Banner> expiredBanners = bannerRepository.findExpiredActiveBanners(now);
+
+        if (!expiredBanners.isEmpty()) {
+            log.info("Deactivating {} expired banners", expiredBanners.size());
+            for (Banner banner : expiredBanners) {
+                banner.setIsActive(false);
+            }
+            bannerRepository.saveAll(expiredBanners);
+            log.info("Successfully deactivated {} expired banners", expiredBanners.size());
+        }
     }
 
     private BannerResponse convertToResponse(Banner banner) {

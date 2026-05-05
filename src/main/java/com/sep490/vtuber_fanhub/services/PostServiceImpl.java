@@ -390,15 +390,22 @@ public class PostServiceImpl implements PostService {
 
         // Check access permissions
         boolean isMember = false;
+        boolean isOwner = false;
+        boolean isAdmin = false;
+
         if (currentUser != null) {
             Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
                     fanHubId, currentUser.getId());
             isMember = member.isPresent();
+            isOwner = fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+            isAdmin = "ADMIN".equals(currentUser.getRole());
         }
 
-        // If not a member and fanHub is private, deny access
-        if (!isMember && fanHub.get().getIsPrivate()) {
-            throw new AccessDeniedException("You must be a member of this FanHub to view posts");
+        // If fanHub is private, only allow members, owners, or admins
+        if (Boolean.TRUE.equals(fanHub.get().getIsPrivate())) {
+            if (!isMember && !isOwner && !isAdmin) {
+                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
+            }
         }
 
         // Pinned posts first, then by user's sortBy
@@ -441,15 +448,22 @@ public class PostServiceImpl implements PostService {
 
         // Check access permissions
         boolean isMember = false;
+        boolean isOwner = false;
+        boolean isAdmin = false;
+
         if (currentUser != null) {
             Optional<FanHubMember> member = fanHubMemberRepository.findByHubIdAndUserId(
                     fanHub.get().getId(), currentUser.getId());
             isMember = member.isPresent();
+            isOwner = fanHub.get().getOwnerUser().getId().equals(currentUser.getId());
+            isAdmin = "ADMIN".equals(currentUser.getRole());
         }
 
-        // If not a member and fanHub is private, deny access
-        if (!isMember && fanHub.get().getIsPrivate()) {
-            throw new AccessDeniedException("You must be a member of this FanHub to view posts");
+        // If fanHub is private, only allow members, owners, or admins
+        if (Boolean.TRUE.equals(fanHub.get().getIsPrivate())) {
+            if (!isMember && !isOwner && !isAdmin) {
+                throw new AccessDeniedException("You must be a member of this FanHub to view posts");
+            }
         }
 
         // Pinned posts first, then by user's sortBy

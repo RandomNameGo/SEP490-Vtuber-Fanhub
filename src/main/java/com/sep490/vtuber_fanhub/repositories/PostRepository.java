@@ -190,6 +190,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p " +
             "WHERE p.status = 'APPROVED' " +
             "AND p.hub.isActive = true " +
+            "AND p.hub.isPrivate = false " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(CAST(p.content AS STRING)) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Post> searchPosts(@Param("keyword") String keyword, Pageable pageable);
