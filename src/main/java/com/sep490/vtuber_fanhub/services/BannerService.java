@@ -21,4 +21,6 @@ public interface BannerService {
     String deactivateBanner(Long bannerId);
 
     String deleteBanner(Long bannerId);
+
+    void deactivateExpiredBanners();
 }

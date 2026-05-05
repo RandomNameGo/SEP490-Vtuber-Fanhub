@@ -13,6 +13,9 @@ public interface BannerRepository extends JpaRepository<Banner, Long> {
     @Query("SELECT b FROM Banner b WHERE b.isActive = true")
     Optional<Banner> findActiveBanner(@Param("now") Instant now);
 
+    @Query("SELECT b FROM Banner b WHERE b.isActive = true AND b.endTime < :now")
+    java.util.List<Banner> findExpiredActiveBanners(@Param("now") Instant now);
+
     @Query("SELECT b FROM Banner b WHERE b.isActive = true AND b.startTime < :endTime AND b.endTime > :startTime AND b.id <> :bannerId")
     java.util.List<Banner> findOverlappingBanners(@Param("startTime") Instant startTime, @Param("endTime") Instant endTime, @Param("bannerId") Long bannerId);
 }

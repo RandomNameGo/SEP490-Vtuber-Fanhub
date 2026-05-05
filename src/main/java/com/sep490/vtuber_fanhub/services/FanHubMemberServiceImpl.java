@@ -77,14 +77,19 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
             return "User is already a member of this FanHub";
         }
 
-        // Check if hub has active join questions
-        List<FanHubJoinQuestion> activeQuestions = questionRepository.findActiveQuestionsByHubId(fanHubId);
-        if (!activeQuestions.isEmpty()) {
-            if (answers == null || answers.isEmpty()) {
-                throw new IllegalArgumentException("This FanHub requires answering questions to join. Please submit your answers first.");
-            }
-            if (answers.size() < activeQuestions.size()) {
-                throw new IllegalArgumentException("All questions must be answered.");
+        // Check if hub has active join questions and requires enforcement (private or requires approval)
+        boolean requiresApproval = Boolean.TRUE.equals(fanHub.get().getRequiresApproval());
+        boolean isPrivate = Boolean.TRUE.equals(fanHub.get().getIsPrivate());
+
+        if (requiresApproval || isPrivate) {
+            List<FanHubJoinQuestion> activeQuestions = questionRepository.findActiveQuestionsByHubId(fanHubId);
+            if (!activeQuestions.isEmpty()) {
+                if (answers == null || answers.isEmpty()) {
+                    throw new IllegalArgumentException("This FanHub requires answering questions to join. Please submit your answers first.");
+                }
+                if (answers.size() < activeQuestions.size()) {
+                    throw new IllegalArgumentException("All questions must be answered.");
+                }
             }
         }
 
