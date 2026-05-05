@@ -1068,6 +1068,16 @@ public class PostServiceImpl implements PostService {
         // the response will be in such format: TitleTranslation@ContentTranslation
         String translateResponse = geminiAIServiceImpl.translatePost(post.getContent(), post.getTitle(), translatingLanguage);
 
+        // if the post's type is POLL, translate its options too
+        List<String> listOptions = new ArrayList<>();
+        if(post.getPostType().equals("POLL")){
+            String translatedOptions = geminiAIServiceImpl.translatePostPollOptions(post.getId());
+            String[] translatedOptionsSplit = translatedOptions.split("@");
+            for(int i = 0 ; i < translatedOptionsSplit.length; i++){
+                listOptions.add(translatedOptionsSplit[i]);
+            }
+        }
+
         String[] responseSplit = translateResponse.split("@");
         String translatedTitle = responseSplit[0];
         String translatedContent = "";
@@ -1079,6 +1089,7 @@ public class PostServiceImpl implements PostService {
                 .translatedTitle(translatedTitle)
                 .translatedContent(translatedContent)
                 .translateLanguageSet(userHasSetLanguage)
+                .pollOptionsTranslation(listOptions)
                     .extraComment(!userHasSetLanguage ? "Set your preferred language in the settings!" : null)
                 .build();
     }

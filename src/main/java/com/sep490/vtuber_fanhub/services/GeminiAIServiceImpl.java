@@ -8,6 +8,8 @@ import com.sep490.vtuber_fanhub.dto.responses.AIMessageResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.Enum.MetadataType;
+import com.sep490.vtuber_fanhub.models.VoteOption;
+import com.sep490.vtuber_fanhub.repositories.VoteOptionRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
             .build();
 
     private final FunctionCallingService functionCallingService;
+    private final VoteOptionRepository voteOptionRepository;
 
     // After using function calling, the result can return Multiple metadata
     // Now? no. right now I expect it to return only one metadata. i mean we have like 1 function to call
@@ -193,6 +196,33 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     LANGUAGE: %s
                 """, content, title, language);
         return sendPrompt(prompt, ChatPersonalityType.Formal).getMessage();
+    }
+
+    @Override
+    public String translatePostPollOptions(Long postId) {
+        List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(postId);
+        String[] voteOptionStrings = {"", "", "", ""};
+        for(int i = 0; i <voteOptions.size(); i++ ){
+            voteOptionStrings[i] = voteOptions.get(i).getOptionText();
+        }
+        String intentPrompt = String.format("""
+            Your task is to translate each of the poll options.
+            A post may have up to 4 poll options, minimum is 2.
+
+
+            The respond Must Not be in quotes. Only text.
+            !!!IMPORTANT: Your answer must be in format: "option1@option2@option3@option4"
+            example: option1@option2
+            example: option1@option2@option3
+            example: option1@option2@option3@option4
+
+            Option 1: "%s"
+            Option 2: "%s"
+            Option 3: "%s"
+            Option 4: "%s"
+
+            """, voteOptionStrings[0], voteOptionStrings[1], voteOptionStrings[2], voteOptionStrings[3]);
+        return sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 
     private AiInteractionResult handleFunctionCalls(GenerateContentResponse response,

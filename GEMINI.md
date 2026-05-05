@@ -1,3 +1,4 @@
+- 
 - When generating Mermaid sequence diagrams, follow these rules:
 1. Use `actor Client` (not participant) - actors MUST have activation bars (activate/deactivate)
 2. Do NOT use `autonumber` directive
