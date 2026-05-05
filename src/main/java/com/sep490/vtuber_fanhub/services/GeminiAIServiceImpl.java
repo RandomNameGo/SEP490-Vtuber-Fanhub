@@ -5,7 +5,6 @@ import com.google.genai.Client;
 import com.google.genai.types.*;
 import com.sep490.vtuber_fanhub.dto.internal.AiInteractionResult;
 import com.sep490.vtuber_fanhub.dto.responses.AIMessageResponse;
-import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.models.Enum.ChatPersonalityType;
 import com.sep490.vtuber_fanhub.models.Enum.MetadataType;
 import com.sep490.vtuber_fanhub.models.VoteOption;
@@ -31,7 +30,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     private String googleApiKey;
 
     private Client client;
-    private final String MODEL_ID = "gemini-3.1-flash-lite-preview";
+    private final String MODEL_ID = "gemini-3-flash-preview";
 
     private final ThinkingConfig THINKING_CONFIG = ThinkingConfig.builder()
             .includeThoughts(true)
@@ -125,10 +124,14 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     .name("get_trending_post")
                     .description("A function that returns a trending post.")
                     .build();
+            FunctionDeclaration getPopularHubFunc = FunctionDeclaration.builder()
+                    .name("get_popular_hub")
+                    .description("A function that returns the most popular FanHub.")
+                    .build();
 
 
             Tool tool = Tool.builder()
-                    .functionDeclarations(List.of(getDisplayNameFunc, testFunctionCallFunc, getRandomPost))
+                    .functionDeclarations(List.of(getDisplayNameFunc, testFunctionCallFunc, getRandomPost, getPopularHubFunc))
                     .build();
 
             GenerateContentConfig config = GenerateContentConfig.builder()
@@ -187,6 +190,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     - Make it averagely short and precise, that's the sole purpose of a Summary.
                     - Explain what the Author's purpose of this pose.
                     - Dont add anything like 'Here's the summary of the following post'.
+                    - You must answer in the specified
                     - Examples:
                     + User A is feeling happy because he won a game
                     + User B is doing a livestream at date - month - year
@@ -342,6 +346,10 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     case "POST" -> {
                         metadataType = MetadataType.POST;
                         metadataTargetId = (Long) metadata.get("postId");
+                    }
+                    case "HUB" -> {
+                        metadataType = MetadataType.HUB;
+                        metadataTargetId = (Long) metadata.get("fanHubId");
                     }
                     case "ERROR" -> {
                         log.error("AI reported a function error: {}", metadata.get("errorMessage"));
