@@ -203,14 +203,14 @@ public class GeminiAIServiceImpl implements GeminiAIService {
     }
 
     @Override
-    public String translatePostPollOptions(Long postId) {
+    public String translatePostPollOptions(Long postId, String language) {
         List<VoteOption> voteOptions = voteOptionRepository.findAllByPostId(postId);
         String[] voteOptionStrings = {"", "", "", ""};
         for(int i = 0; i <voteOptions.size(); i++ ){
             voteOptionStrings[i] = voteOptions.get(i).getOptionText();
         }
         String intentPrompt = String.format("""
-            Your task is to translate each of the poll options.
+            Your task is to translate each of the poll options to specified language.
             A post may have up to 4 poll options, minimum is 2.
 
 
@@ -220,12 +220,13 @@ public class GeminiAIServiceImpl implements GeminiAIService {
             example: option1@option2@option3
             example: option1@option2@option3@option4
 
+            LANGUAGE: "%s"
             Option 1: "%s"
             Option 2: "%s"
             Option 3: "%s"
             Option 4: "%s"
 
-            """, voteOptionStrings[0], voteOptionStrings[1], voteOptionStrings[2], voteOptionStrings[3]);
+            """, language,  voteOptionStrings[0], voteOptionStrings[1], voteOptionStrings[2], voteOptionStrings[3]);
         return sendPrompt(intentPrompt, ChatPersonalityType.Formal).getMessage();
     }
 

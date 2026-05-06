@@ -13,7 +13,7 @@ public interface GeminiAIService {
     AiInteractionResult sendPromptFullResponse(String prompt, ChatPersonalityType type);
     String translatePost(String content, String title, String language);
     String summarizePost(String content, String title, String language);
-    String translatePostPollOptions(Long postId);
+    String translatePostPollOptions(Long postId, String language);
 
     // these are for function calling of chatbot, which require userid for authentication
     AIMessageResponse sendPromptFunctionCalling(String prompt, ChatPersonalityType type, Long userId);
