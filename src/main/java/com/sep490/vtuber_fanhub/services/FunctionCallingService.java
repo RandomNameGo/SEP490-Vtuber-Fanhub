@@ -3,6 +3,7 @@ package com.sep490.vtuber_fanhub.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.types.FunctionCall;
 import com.google.genai.types.FunctionResponse;
+import com.sep490.vtuber_fanhub.dto.responses.FanHubResponse;
 import com.sep490.vtuber_fanhub.dto.responses.PostResponse;
 import com.sep490.vtuber_fanhub.models.Post;
 import com.sep490.vtuber_fanhub.models.User;
@@ -26,6 +27,10 @@ public class FunctionCallingService {
     @Autowired
     @Lazy
     private PostService postService;
+
+    @Autowired
+    @Lazy
+    private FanHubService fanHubService;
 
     public Map<String, Object> get_display_name(Long userId) {
         try{
@@ -86,6 +91,30 @@ public class FunctionCallingService {
         }
     }
 
+    public Map<String, Object> get_popular_hub(){
+        try{
+            FanHubResponse fanHubResponse = fanHubService.getMostPopularFanHub();
+            Map<String, Object> result = new HashMap<>();
+            result.put("fanHubId", fanHubResponse.getFanHubId());
+            result.put("hubName", fanHubResponse.getHubName());
+            result.put("subdomain", fanHubResponse.getSubdomain());
+            result.put("description", fanHubResponse.getDescription());
+            result.put("memberCount", fanHubResponse.getMemberCount());
+            result.put("bannerUrl", fanHubResponse.getBannerUrl());
+            result.put("avatarUrl", fanHubResponse.getAvatarUrl());
+
+            result.put("functionCallType", "HUB");
+            result.put("extraInstruction","User called for get_popular_hub, you'll respond with something short" +
+                    "and concise like 'Here's the most popular FanHub right now!' followed by a brief mention" +
+                    "of the hub's name and maybe its member count.");
+            return result;
+        }catch(Exception e){
+            return Map.of(
+                    "functionCallType", "ERROR",
+                    "errorMessage", "Failed to get popular hub:" + e.getMessage()
+            );
+        }
+    }
 
 
     public FunctionResponse handleFunctionCall(FunctionCall functionCall, Long userId) {
@@ -105,6 +134,11 @@ public class FunctionCallingService {
                 case "get_trending_post":
                     System.out.println("Get trending post");
                     result = get_trending_post();
+                    break;
+
+                case "get_popular_hub":
+                    System.out.println("Get popular hub");
+                    result = get_popular_hub();
                     break;
 
                 default:
