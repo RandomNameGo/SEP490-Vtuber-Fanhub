@@ -23,6 +23,7 @@ public class AiResponseServiceImpl implements AiResponseService {
     private final ChatSessionRepository chatSessionRepository;
     private final PostRepository postRepository;
     private final PostMediaRepository postMediaRepository;
+    private final FanHubRepository fanHubRepository;
     private final GeminiAIService geminiAIService;
     private final ChatPersonalityType AI_CHATBOT_RESPONSE_PERSONALITY_TYPE = ChatPersonalityType.VGuide;
     private final ChatMessageMetadataRepository chatMessageMetadataRepository;
@@ -52,7 +53,7 @@ public class AiResponseServiceImpl implements AiResponseService {
             if(aiResponse.isHasMetadata()){
                 ChatMessageMetadata chatMessageMetadata = new ChatMessageMetadata();
                 chatMessageMetadata.setMessage(chatMessage);
-                chatMessageMetadata.setMetadataType(MetadataType.POST);
+                chatMessageMetadata.setMetadataType(aiResponse.getMetadataType());
                 chatMessageMetadata.setTargetId(aiResponse.getMetadataTargetId());
                 chatMessageMetadataRepository.save(chatMessageMetadata);
 
@@ -72,9 +73,8 @@ public class AiResponseServiceImpl implements AiResponseService {
             }
 
             if(aiResponse.isHasMetadata()){
-                // currently i use if statement, but if soon do we have multiple metadata types, it'll be a switch case instead
-                if(aiResponse.getMetadataType().equals(MetadataType.POST)){
-                    postRepository.findById(aiResponse.getMetadataTargetId())
+                switch (aiResponse.getMetadataType()) {
+                    case POST -> postRepository.findById(aiResponse.getMetadataTargetId())
                             .ifPresent(post -> {
                                 // if the post is image type, return additional preview image url
                                 String mediaPreviewUrl = "";
@@ -86,11 +86,22 @@ public class AiResponseServiceImpl implements AiResponseService {
 
                                 }
                                 responseBuilder.metadataResponse(MetadataResponse.builder()
-                                                .metadataType(aiResponse.getMetadataType())
-                                                .postId(post.getId())
-                                                .postTitle(post.getTitle())
-                                                .postContent(post.getContent())
-                                                .imagePreviewUrl(mediaPreviewUrl)
+                                        .metadataType(aiResponse.getMetadataType())
+                                        .postId(post.getId())
+                                        .postTitle(post.getTitle())
+                                        .postContent(post.getContent())
+                                        .imagePreviewUrl(mediaPreviewUrl)
+                                        .build());
+                            });
+                    case HUB -> fanHubRepository.findById(aiResponse.getMetadataTargetId())
+                            .ifPresent(fanHub -> {
+                                responseBuilder.metadataResponse(MetadataResponse.builder()
+                                        .metadataType(aiResponse.getMetadataType())
+                                        .fanHubId(fanHub.getId())
+                                        .subdomain(fanHub.getSubdomain())
+                                        .hubName(fanHub.getHubName())
+                                        .avatarUrl(fanHub.getAvatarUrl())
+                                        .bannerUrl(fanHub.getBannerUrl())
                                         .build());
                             });
                 }
@@ -136,7 +147,6 @@ public class AiResponseServiceImpl implements AiResponseService {
     - Italic: *text*
     - Underline: __text__
     - Strikethrough: ~~text~~
-    - Break line: /n
     
     USER PROMPT: %s
     LAST_MESSAGES: %s

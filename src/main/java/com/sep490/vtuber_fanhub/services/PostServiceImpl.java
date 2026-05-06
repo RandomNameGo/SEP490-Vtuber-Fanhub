@@ -1071,7 +1071,7 @@ public class PostServiceImpl implements PostService {
         // if the post's type is POLL, translate its options too
         List<String> listOptions = new ArrayList<>();
         if(post.getPostType().equals("POLL")){
-            String translatedOptions = geminiAIServiceImpl.translatePostPollOptions(post.getId());
+            String translatedOptions = geminiAIServiceImpl.translatePostPollOptions(post.getId(), translatingLanguage);
             String[] translatedOptionsSplit = translatedOptions.split("@");
             for(int i = 0 ; i < translatedOptionsSplit.length; i++){
                 listOptions.add(translatedOptionsSplit[i]);

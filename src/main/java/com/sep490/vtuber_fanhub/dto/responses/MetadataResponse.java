@@ -12,4 +12,11 @@ public class MetadataResponse {
     String postTitle;
     String postContent;
     String imagePreviewUrl;
+
+    // for HUB metadata
+    Long fanHubId;
+    String subdomain;
+    String hubName;
+    String avatarUrl;
+    String bannerUrl;
 }
