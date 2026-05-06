@@ -15,6 +15,7 @@ public class MetadataResponse {
 
     // for HUB metadata
     Long fanHubId;
+    String subdomain;
     String hubName;
     String avatarUrl;
     String bannerUrl;

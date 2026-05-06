@@ -190,7 +190,7 @@ public class GeminiAIServiceImpl implements GeminiAIService {
                     - Make it averagely short and precise, that's the sole purpose of a Summary.
                     - Explain what the Author's purpose of this pose.
                     - Dont add anything like 'Here's the summary of the following post'.
-                    - You must answer in the specified
+                    !!!IMPORTANT: You must answer in the specified LANGUAGE.
                     - Examples:
                     + User A is feeling happy because he won a game
                     + User B is doing a livestream at date - month - year
