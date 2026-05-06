@@ -98,6 +98,7 @@ public class AiResponseServiceImpl implements AiResponseService {
                                 responseBuilder.metadataResponse(MetadataResponse.builder()
                                         .metadataType(aiResponse.getMetadataType())
                                         .fanHubId(fanHub.getId())
+                                        .subdomain(fanHub.getSubdomain())
                                         .hubName(fanHub.getHubName())
                                         .avatarUrl(fanHub.getAvatarUrl())
                                         .bannerUrl(fanHub.getBannerUrl())

@@ -167,6 +167,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                                 builder.metadataResponse(MetadataResponse.builder()
                                         .metadataType(MetadataType.HUB)
                                         .fanHubId(hub.getId())
+                                        .subdomain(hub.getSubdomain())
                                         .hubName(hub.getHubName())
                                         .avatarUrl(hub.getAvatarUrl())
                                         .bannerUrl(hub.getBannerUrl())
