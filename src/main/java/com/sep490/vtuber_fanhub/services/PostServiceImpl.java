@@ -1365,18 +1365,7 @@ public class PostServiceImpl implements PostService {
         // Update user track
         userTrackService.updateOnLike(currentUser);
 
-        Optional<UserDailyMission> userDailyMission = userDailyMissionRepository.findById(userId);
-        if (userDailyMission.isPresent()) {
-            UserDailyMission mission = userDailyMission.get();
-            int newLikeAmount = mission.getLikeAmount() + 1;
-            mission.setLikeAmount(newLikeAmount);
-            userDailyMissionRepository.save(mission);
-            
-            // Award points based on daily mission milestones
-            userDailyMissionService.awardPointsForLikes(userId, newLikeAmount);
-        } else {
-            throw new NotFoundException("User daily mission not found");
-        }
+        userDailyMissionService.awardPoints(userId, "LIKE");
 
         // Send SSE notification to post author about the new like
         // Only send if the liker is not the post author themselves

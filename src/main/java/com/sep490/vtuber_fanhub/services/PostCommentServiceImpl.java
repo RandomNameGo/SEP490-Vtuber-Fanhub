@@ -114,6 +114,8 @@ public class PostCommentServiceImpl implements PostCommentService {
         // Update user track
         userTrackService.updateOnComment(currentUser);
 
+        userDailyMissionService.awardPoints(currentUser.getId(), "COMMENT");
+
         // Send SSE notification to post author about the new comment
         // Only send if the commenter is not the post author themselves
         // Also persists notification to database

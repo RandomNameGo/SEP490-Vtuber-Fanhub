@@ -79,6 +79,7 @@ public class UserServiceImpl implements UserService{
         user.setPasswordHash(passwordEncoder.encode(createUserRequest.getPassword()));
         user.setDisplayName(createUserRequest.getDisplayName());
         user.setBio(createUserRequest.getBio());
+        user.setTranslateLanguage(createUserRequest.getTranslateLanguage());
 
         user.setPoints(0L);
         user.setPaidPoints(0L);
@@ -92,6 +93,7 @@ public class UserServiceImpl implements UserService{
         UserDailyMission userDailyMission = new UserDailyMission();
         userDailyMission.setUser(user);
         userDailyMission.setLikeAmount(0);
+        userDailyMission.setCommentAmount(0);
         userDailyMissionRepository.save(userDailyMission);
 
         // Award registration badges dynamically
@@ -429,6 +431,7 @@ public class UserServiceImpl implements UserService{
 
         UserDailyMissionResponse response = new UserDailyMissionResponse();
         response.setLikeAmount(mission.getLikeAmount());
+        response.setCommentAmount(mission.getCommentAmount() != null ? mission.getCommentAmount() : 0);
         response.setBonus10(mission.getBonus10());
         response.setBonus20(mission.getBonus20());
 
