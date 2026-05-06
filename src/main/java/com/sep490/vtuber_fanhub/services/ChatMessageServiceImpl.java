@@ -9,6 +9,7 @@ import com.sep490.vtuber_fanhub.models.*;
 import com.sep490.vtuber_fanhub.models.Enum.MetadataType;
 import com.sep490.vtuber_fanhub.repositories.ChatMessageRepository;
 import com.sep490.vtuber_fanhub.repositories.ChatSessionRepository;
+import com.sep490.vtuber_fanhub.repositories.FanHubRepository;
 import com.sep490.vtuber_fanhub.repositories.PostMediaRepository;
 import com.sep490.vtuber_fanhub.repositories.PostRepository;
 import com.sep490.vtuber_fanhub.repositories.UserRepository;
@@ -32,6 +33,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final PostMediaRepository postMediaRepository;
+    private final FanHubRepository fanHubRepository;
     private final AiResponseService aiResponseService;
 
     @Override
@@ -98,22 +100,30 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             Page<ChatMessage> messagesPage = chatMessageRepository.findAllWithMetadata(chatSession.get().getId(), pageable);
             List<ChatMessage> messages = messagesPage.getContent();
 
-            // 3. Collect Unique Post IDs from metadata (Loop #1)
+            // 3. Collect Unique IDs from metadata (Loop #1)
             Set<Long> postIds = new HashSet<>();
+            Set<Long> hubIds = new HashSet<>();
             for (ChatMessage msg : messages) {
                 if (msg.getHasMetadata() != null && msg.getHasMetadata()) {
                     for (ChatMessageMetadata meta : msg.getMetadataList()) {
                         if (meta.getMetadataType() == MetadataType.POST) {
                             postIds.add(meta.getTargetId());
+                        } else if (meta.getMetadataType() == MetadataType.HUB) {
+                            hubIds.add(meta.getTargetId());
                         }
                     }
                 }
             }
 
-            // 4. Batch Fetch Posts and Images into Maps (Loop #2)
+            // 4. Batch Fetch Posts, Hubs, and Images into Maps (Loop #2)
             Map<Long, Post> postMap = new HashMap<>();
             for (Post p : postRepository.findAllById(postIds)) {
                 postMap.put(p.getId(), p);
+            }
+
+            Map<Long, FanHub> hubMap = new HashMap<>();
+            for (FanHub h : fanHubRepository.findAllById(hubIds)) {
+                hubMap.put(h.getId(), h);
             }
 
             Map<Long, String> postImageMap = new HashMap<>();
@@ -136,7 +146,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                         .senderRole(chatMessage.getSenderRole())
                         .thought(chatMessage.getThought());
 
-                // Link the metadata (Post info) if it exists
+                // Link the metadata if it exists
                 if (chatMessage.getHasMetadata() != null && chatMessage.getHasMetadata()) {
                     for (ChatMessageMetadata meta : chatMessage.getMetadataList()) {
                         if (meta.getMetadataType() == MetadataType.POST) {
@@ -149,7 +159,19 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                                         .postContent(post.getContent())
                                         .imagePreviewUrl(postImageMap.get(post.getId()))
                                         .build());
-                                break; // Stop after finding the first post
+                                break; // Stop after finding the first metadata
+                            }
+                        } else if (meta.getMetadataType() == MetadataType.HUB) {
+                            FanHub hub = hubMap.get(meta.getTargetId());
+                            if (hub != null) {
+                                builder.metadataResponse(MetadataResponse.builder()
+                                        .metadataType(MetadataType.HUB)
+                                        .fanHubId(hub.getId())
+                                        .hubName(hub.getHubName())
+                                        .avatarUrl(hub.getAvatarUrl())
+                                        .bannerUrl(hub.getBannerUrl())
+                                        .build());
+                                break;
                             }
                         }
                     }
