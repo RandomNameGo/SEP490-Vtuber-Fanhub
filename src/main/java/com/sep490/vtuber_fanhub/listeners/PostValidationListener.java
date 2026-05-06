@@ -27,7 +27,6 @@ public class PostValidationListener {
     public void handlePostCreated(PostCreatedEvent event) {
         try{
             Post post = event.getPost();
-            post.setAiValidationLastSentAt(Instant.now());
             postRepository.save(post);
             postValidationServiceImplAsync.validatePost(event.getPost());
         }
