@@ -27,4 +27,14 @@ public class Badge {
     @Column(name = "requirement")
     private String requirement;
 
+    @Column(name = "like_require")
+    private Long likeRequire;
+
+    @Column(name = "comment_require")
+    private Long commentRequire;
+
+    @Lob
+    @Column(name = "type")
+    private String type;
+
 }
