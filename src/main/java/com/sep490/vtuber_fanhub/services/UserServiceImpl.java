@@ -94,8 +94,8 @@ public class UserServiceImpl implements UserService{
         userDailyMission.setLikeAmount(0);
         userDailyMissionRepository.save(userDailyMission);
 
-        // Award badge ID 6 for successful registration
-        userBadgeService.awardBadge(user, 6L);
+        // Award registration badges dynamically
+        userBadgeService.evaluateAndAward(user, "REGISTRATION", 1L);
 
         return "Created user successfully";
     }

@@ -9,6 +9,9 @@ import java.util.List;
 
 public interface UserBadgeRepository extends JpaRepository<UserBadge, Long> {
 
+    @Query("SELECT ub.badge.id FROM UserBadge ub WHERE ub.user.id = :userId")
+    java.util.Set<Long> findBadgeIdsByUserId(@Param("userId") Long userId);
+
     @Query("SELECT ub FROM UserBadge ub WHERE ub.user.id = :userId")
     List<UserBadge> findByUserId(@Param("userId") Long userId);
 

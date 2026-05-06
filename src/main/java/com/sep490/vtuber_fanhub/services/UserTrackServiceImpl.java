@@ -37,25 +37,20 @@ public class UserTrackServiceImpl implements UserTrackService {
             newMaxLikes = 1L;
         }
 
-        // Award badge ID 7 for first like (max likes = 1)
-        if (newMaxLikes == 1) {
-            userBadgeService.awardBadge(user, 7L);
-        }
-        // Award badge ID 8 for reaching 100 likes (max likes = 100)
-        else if (newMaxLikes == 100) {
-            userBadgeService.awardBadge(user, 8L);
-        }
+        // Award badges based on like requirements
+        userBadgeService.evaluateAndAward(user, "LIKE", newMaxLikes);
     }
 
     @Override
     @Transactional
     public void updateOnComment(User user) {
         Optional<UserTrack> existingTrack = userTrackRepository.findByUserId(user.getId());
+        Long newMaxComments;
 
         if (existingTrack.isPresent()) {
             UserTrack track = existingTrack.get();
-            Long currentMaxComments = track.getMaxComments() != null ? track.getMaxComments() : 0L;
-            track.setMaxComments(currentMaxComments + 1);
+            newMaxComments = (track.getMaxComments() != null ? track.getMaxComments() : 0L) + 1;
+            track.setMaxComments(newMaxComments);
             userTrackRepository.save(track);
         } else {
             UserTrack track = new UserTrack();
@@ -63,6 +58,10 @@ public class UserTrackServiceImpl implements UserTrackService {
             track.setMaxLikes(0L);
             track.setMaxComments(1L);
             userTrackRepository.save(track);
+            newMaxComments = 1L;
         }
+
+        // Award badges based on comment requirements
+        userBadgeService.evaluateAndAward(user, "COMMENT", newMaxComments);
     }
 }
