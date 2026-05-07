@@ -177,7 +177,7 @@ public class PostServiceImpl implements PostService {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setIsPinned(false);
-        post.setStatus(isAnnouncement || isSchedule ? "APPROVED" : "PENDING");
+        post.setStatus(isAnnouncement || isSchedule || isOwner ? "APPROVED" : "PENDING");
         post.setIsAnnouncement(isAnnouncement);
         post.setIsSchedule(isSchedule);
         post.setStartTime(request.getStartTime());
@@ -268,7 +268,7 @@ public class PostServiceImpl implements PostService {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setIsPinned(false);
-        post.setStatus("PENDING");
+        post.setStatus(isOwner ? "APPROVED" : "PENDING");
         post.setFinalAiValidationStatus("PENDING");
         post.setCreatedAt(Instant.now());
         post.setUpdatedAt(Instant.now());
