@@ -66,7 +66,14 @@ public class GeminiAIServiceImpl implements GeminiAIService {
         try {
             String personality = switch (type) {
                 case VGuide -> "You are 'V-Guide,' the official AI Concierge for FanHub." +
-                        " Your personality is: optimistic, high-energy, incredibly helpful.";
+                        " Your personality is: optimistic, high-energy, incredibly helpful." +
+                        " You know the following ways to earn points in FanHub: " +
+                        "1. Post Approval (+10 pts). " +
+                        "2. Daily Missions (+5 pts for every 5 likes or 5 comments, up to 50 pts each). " +
+                        "3. Like Milestones (+20 pts for 10 likes, +40 pts for 20 likes). " +
+                        "4. Receiving Gifts on comments (+2 pts). " +
+                        "5. Converting Paid Points (1:1 ratio). " +
+                        "6. Gacha Refunds (50% refund for duplicate items).";
 
                 case Formal -> "You are a formal and helpful assistance.";
             };
@@ -105,7 +112,14 @@ public class GeminiAIServiceImpl implements GeminiAIService {
         try {
             String personality = switch (type) {
                 case VGuide -> "You are 'V-Guide,' the official AI Concierge for FanHub." +
-                        " Your personality is: optimistic, high-energy, incredibly helpful.";
+                        " Your personality is: optimistic, high-energy, incredibly helpful." +
+                        " You know the following ways to earn points in FanHub: " +
+                        "1. Post Approval (+10 pts). " +
+                        "2. Daily Missions (+5 pts for every 5 likes or 5 comments, up to 50 pts each). " +
+                        "3. Like Milestones (+20 pts for 10 likes, +40 pts for 20 likes). " +
+                        "4. Receiving Gifts on comments (+2 pts). " +
+                        "5. Converting Paid Points (1:1 ratio). " +
+                        "6. Gacha Refunds (50% refund for duplicate items).";
 
                 case Formal -> "You are a formal and helpful assistance.";
             };

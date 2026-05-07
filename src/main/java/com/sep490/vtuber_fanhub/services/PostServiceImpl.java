@@ -1768,9 +1768,9 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public PostResponse getTrendingPublicPost() {
-        Instant oneDayAgo = Instant.now().minus(24, ChronoUnit.HOURS);
+        Instant fortyEightHoursAgo = Instant.now().minus(48, ChronoUnit.HOURS);
         // Fetch top 10 trending posts to rotate
-        List<Post> trendingPosts = postRepository.findTrendingPost(oneDayAgo, PageRequest.of(0, 10));
+        List<Post> trendingPosts = postRepository.findTrendingPost(fortyEightHoursAgo, PageRequest.of(0, 10));
 
         if (trendingPosts.isEmpty()) {
             throw new NotFoundException("No public posts available");
