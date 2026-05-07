@@ -169,7 +169,7 @@ public class PostValidationServiceImplAsync implements PostValidationService {
 
             StringBuilder commentBuilder = new StringBuilder(post.getAiValidationComment() != null ? post.getAiValidationComment() : "");
             if (!pollComment.isEmpty()) {
-                commentBuilder.append("/n").append("Poll options: ").append(pollComment);
+                commentBuilder.append("\\n").append("Poll options: ").append(pollComment);
             }
 
             boolean isContentUnsafe = "AI_UNSAFE".equals(contentStatus);
@@ -183,7 +183,7 @@ public class PostValidationServiceImplAsync implements PostValidationService {
             if ("IMAGE".equals(post.getPostType()) || "VIDEO".equals(post.getPostType())) {
                 String mediaComment = anyMediaUnsafe ? MEDIA_UNSAFE_COMMENT : MEDIA_SAFE_COMMENT;
                 if (commentBuilder.indexOf(mediaComment) == -1) {
-                    commentBuilder.append("/n").append(mediaComment);
+                    commentBuilder.append("\\n").append(mediaComment);
                 }
             }
 
