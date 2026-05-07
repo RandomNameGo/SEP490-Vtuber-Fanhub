@@ -90,6 +90,11 @@ public class FanHubServiceImpl implements FanHubService {
 
         fanHubRepository.save(fanHub);
 
+        // Award 50 points to VTuber for creating a hub
+        User vtuber = Vtuber.get();
+        vtuber.setPoints((vtuber.getPoints() != null ? vtuber.getPoints() : 0L) + 50L);
+        userRepository.save(vtuber);
+
         if (request.getCategory() != null && !request.getCategory().isEmpty()) {
             for (String categoryName : request.getCategory()) {
                 FanHubCategory category = new FanHubCategory();
@@ -126,6 +131,11 @@ public class FanHubServiceImpl implements FanHubService {
         fanHub.setCreatedAt(Instant.now());
 
         fanHubRepository.save(fanHub);
+
+        // Award 50 points to VTuber for creating a hub
+        User vtuber = Vtuber.get();
+        vtuber.setPoints((vtuber.getPoints() != null ? vtuber.getPoints() : 0L) + 50L);
+        userRepository.save(vtuber);
 
         if (request.getCategory() != null && !request.getCategory().isEmpty()) {
             for (String categoryName : request.getCategory()) {

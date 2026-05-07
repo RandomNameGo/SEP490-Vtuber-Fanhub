@@ -111,6 +111,11 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
         // Update memberId in existing comments if joined successfully
         if ("JOINED".equals(member.getStatus())) {
             postCommentRepository.updateMemberIdByUserIdAndHubId(currentUser.getId(), fanHubId, member.getId());
+
+            // Award 5 points to the owner
+            User owner = fanHub.get().getOwnerUser();
+            owner.setPoints((owner.getPoints() != null ? owner.getPoints() : 0L) + 5L);
+            userRepository.save(owner);
         }
 
         if (answers != null && !answers.isEmpty()) {
@@ -365,6 +370,11 @@ public class FanHubMemberServiceImpl implements FanHubMemberService {
                     fanHubId,
                     member.get().getId()
             );
+
+            // Award 5 points to the owner
+            User owner = member.get().getHub().getOwnerUser();
+            owner.setPoints((owner.getPoints() != null ? owner.getPoints() : 0L) + 5L);
+            userRepository.save(owner);
 
             // Send notification to the user
             notificationService.sendMemberAcceptedNotification(
