@@ -25,6 +25,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u.role, COUNT(u) FROM User u GROUP BY u.role")
     List<Object[]> countUsersByRole();
 
-    @Query("SELECT u FROM User u WHERE u.role = 'VTUBER' ORDER BY (SELECT COUNT(follower) FROM User follower WHERE follower.oshiUser = u) DESC")
-    List<User> findTopVtubersByOshiCount(org.springframework.data.domain.Pageable pageable);
+    @Query("SELECT u, (SELECT COUNT(f) FROM User f WHERE f.oshiUser = u) FROM User u WHERE u.role = 'VTUBER' ORDER BY (SELECT COUNT(follower) FROM User follower WHERE follower.oshiUser = u) DESC")
+    List<Object[]> findTopVtubersByOshiCount(org.springframework.data.domain.Pageable pageable);
 }

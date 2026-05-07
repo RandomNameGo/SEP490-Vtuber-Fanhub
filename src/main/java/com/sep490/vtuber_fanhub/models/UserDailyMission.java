@@ -32,4 +32,7 @@ public class UserDailyMission {
     @Column(name = "bonus_20")
     private Boolean bonus20;
 
+    @Column(name = "comment_amount")
+    private Integer commentAmount;
+
 }

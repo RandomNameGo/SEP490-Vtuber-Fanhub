@@ -5,4 +5,6 @@ public interface UserDailyMissionService {
     void resetDailyMission();
 
     void awardPointsForLikes(Long userId, Integer likeAmount);
+
+    void awardPoints(Long userId, String actionType);
 }

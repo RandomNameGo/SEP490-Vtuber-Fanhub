@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class UserDailyMissionResponse {
     private Integer likeAmount;
+    private Integer commentAmount;
     private Boolean bonus10;
     private Boolean bonus20;
 }

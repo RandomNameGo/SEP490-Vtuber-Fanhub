@@ -54,9 +54,15 @@ public class SystemAnalyticServiceImpl implements SystemAnalyticService {
         Instant oneWeekAgo = Instant.now().minus(7, ChronoUnit.DAYS);
         long newUsersInWeek = userRepository.countByCreatedAtAfter(oneWeekAgo);
 
-        List<User> topVtubers = userRepository.findTopVtubersByOshiCount(PageRequest.of(0, 5));
-        List<UserResponse> topVtubersByOshi = topVtubers.stream()
-                .map(this::mapToUserResponse)
+        List<Object[]> topVtubersData = userRepository.findTopVtubersByOshiCount(PageRequest.of(0, 5));
+        List<UserResponse> topVtubersByOshi = topVtubersData.stream()
+                .map(result -> {
+                    User vtuber = (User) result[0];
+                    Long count = (Long) result[1];
+                    UserResponse response = mapToUserResponse(vtuber);
+                    response.setOshiCount(count);
+                    return response;
+                })
                 .collect(Collectors.toList());
 
         List<String> trendingHashtags = postRepository.findTrendingHashtags(PageRequest.of(0, 5))

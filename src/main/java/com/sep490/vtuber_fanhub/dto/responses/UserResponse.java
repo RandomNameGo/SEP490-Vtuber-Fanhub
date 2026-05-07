@@ -29,6 +29,7 @@ public class UserResponse {
     private Long totalBadges;
     private Long totalFanHubs;
     private Long totalReceivedGifts;
+    private Long oshiCount;
 
     private List<UserDisplayBadgeResponse> displayBadges;
 
