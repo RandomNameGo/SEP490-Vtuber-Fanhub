@@ -23,7 +23,7 @@
 
 ## 🎯 Overview
 
-VTuber FanHub is a sophisticated community platform designed specifically for VTubers (Virtual YouTubers) and their fans. It provides a complete ecosystem for community management, content sharing, gamification, and moderation.
+VTuber FanHub is a sophisticated community platform designed specifically for VTubers (Virtual YouTubers) and their fans. It provides a complete ecosystem for community management, content sharing[...]
 
 The platform enables VTubers to:
 - Create and manage exclusive community spaces (FanHubs)
@@ -169,8 +169,8 @@ SEP490-Vtuber-Fanhub/
 │   │   │   ├── util/                # Utility classes
 │   │   │   └── VtuberFanhubApplication.java
 │   │   └── resources/
-│   │       ├── application.yml      # Application configuration
-│   │       └── application-*.yml    # Profile-specific configs
+│   │       ├── application.properties      # Application configuration
+│   │       └── application-*.properties    # Profile-specific configs
 │   └── test/                        # Unit and integration tests
 ├── pom.xml                          # Maven configuration
 ├── BUSINESS_RULES.txt               # Detailed business rules
@@ -197,57 +197,48 @@ SEP490-Vtuber-Fanhub/
 
 2. **Configure application properties**
    
-   Create `src/main/resources/application-local.yml`:
-   ```yaml
-   spring:
-     datasource:
-       url: jdbc:mysql://localhost:3306/vtuber_fanhub
-       username: root
-       password: your_password
-       driver-class-name: com.mysql.cj.jdbc.Driver
-     
-     jpa:
-       hibernate:
-         ddl-auto: update
-       properties:
-         hibernate:
-           dialect: org.hibernate.dialect.MySQL8Dialect
-     
-     data:
-       redis:
-         host: localhost
-         port: 6379
-         database: 0
-     
-     mail:
-       host: smtp.gmail.com
-       port: 587
-       username: your_email@gmail.com
-       password: your_app_password
-       properties:
-         mail:
-           smtp:
-             auth: true
-             starttls:
-               enable: true
-               required: true
+   Create `src/main/resources/application-local.properties`:
+   ```properties
+   # Server Configuration
+   server.port=8080
+   server.servlet.context-path=/api
+   
+   # Database Configuration
+   spring.datasource.url=jdbc:mysql://localhost:3306/vtuber_fanhub
+   spring.datasource.username=root
+   spring.datasource.password=your_password
+   spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+   
+   # JPA/Hibernate Configuration
+   spring.jpa.hibernate.ddl-auto=update
+   spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+   
+   # Redis Configuration
+   spring.data.redis.host=localhost
+   spring.data.redis.port=6379
+   spring.data.redis.database=0
+   
+   # Mail Configuration
+   spring.mail.host=smtp.gmail.com
+   spring.mail.port=587
+   spring.mail.username=your_email@gmail.com
+   spring.mail.password=your_app_password
+   spring.mail.properties.mail.smtp.auth=true
+   spring.mail.properties.mail.smtp.starttls.enable=true
+   spring.mail.properties.mail.smtp.starttls.required=true
    
    # Google Gemini API
-   google:
-     genai:
-       api-key: your_gemini_api_key
+   google.genai.api-key=your_gemini_api_key
    
-   # Cloudinary
-   cloudinary:
-     cloud-name: your_cloud_name
-     api-key: your_api_key
-     api-secret: your_api_secret
+   # Cloudinary Configuration
+   cloudinary.cloud-name=your_cloud_name
+   cloudinary.api-key=your_api_key
+   cloudinary.api-secret=your_api_secret
    
-   # PayOS
-   payos:
-     client-id: your_client_id
-     api-key: your_api_key
-     checksum-key: your_checksum_key
+   # PayOS Configuration
+   payos.client-id=your_client_id
+   payos.api-key=your_api_key
+   payos.checksum-key=your_checksum_key
    ```
 
 3. **Create database**
@@ -355,31 +346,28 @@ mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=prod"
 
 ### Key Configuration Files
 
-- **application.yml**: Base configuration
-- **application-local.yml**: Local development settings
-- **application-dev.yml**: Development server settings
-- **application-prod.yml**: Production settings
+- **application.properties**: Base configuration
+- **application-local.properties**: Local development settings
+- **application-dev.properties**: Development server settings
+- **application-prod.properties**: Production settings
 
 ### Important Configuration Properties
 
-```yaml
+```properties
 # Server
-server:
-  port: 8080
-  servlet:
-    context-path: /api
+server.port=8080
+server.servlet.context-path=/api
 
 # JWT Security
-jwt:
-  secret: your-secret-key
-  expiration: 86400000 # 24 hours
+jwt.secret=your-secret-key
+jwt.expiration=86400000
 
 # Email Configuration
-spring.mail.host: smtp.gmail.com
-spring.mail.port: 587
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
 
 # Database Connection Pool
-spring.datasource.hikari.maximum-pool-size: 20
+spring.datasource.hikari.maximum-pool-size=20
 ```
 
 ## 📚 Business Rules
@@ -543,7 +531,7 @@ Contributions are welcome! Please follow these guidelines:
 # Check MySQL service
 sudo systemctl status mysql
 
-# Verify connection credentials in application-local.yml
+# Verify connection credentials in application-local.properties
 mysql -h localhost -u root -p
 ```
 
