@@ -370,19 +370,6 @@ spring.mail.port=587
 spring.datasource.hikari.maximum-pool-size=20
 ```
 
-## 📚 Business Rules
-
-Detailed business rules are documented in [BUSINESS_RULES.txt](BUSINESS_RULES.txt).
-
-### Key Business Constraints
-
-1. **One Active Banner**: Only one banner can be active at any given time period
-2. **Post Approval Workflow**: All posts must be reviewed before publication
-3. **Good Luck Items**: Bonus items that don't persist to inventory
-4. **Point Deduction**: Points are deducted before gacha/shop transactions
-5. **Ban Enforcement**: Banned users cannot participate in community activities
-6. **Membership Required**: Users must be FanHub members to create/view posts
-
 ## 📖 API Documentation
 
 ### Interactive API Docs
@@ -524,56 +511,3 @@ Contributions are welcome! Please follow these guidelines:
 | RAM       | 2GB     | 4GB+       |
 | Storage   | 1GB     | 5GB+       |
 
-## 🐛 Troubleshooting
-
-### Database Connection Issues
-```bash
-# Check MySQL service
-sudo systemctl status mysql
-
-# Verify connection credentials in application-local.properties
-mysql -h localhost -u root -p
-```
-
-### Redis Connection Issues
-```bash
-# Check Redis service
-redis-cli ping
-
-# Should return: PONG
-```
-
-### Port Already in Use
-```bash
-# Find process on port 8080
-lsof -i :8080
-
-# Kill the process
-kill -9 <PID>
-```
-
-### Gradle/Maven Build Issues
-```bash
-# Clear cache and rebuild
-mvn clean
-mvn install -DskipTests
-```
-
-## 📞 Support & Contact
-
-For questions or issues:
-- Create an [Issue](https://github.com/RandomNameGo/SEP490-Vtuber-Fanhub/issues)
-- Check [Discussions](https://github.com/RandomNameGo/SEP490-Vtuber-Fanhub/discussions)
-- Review [Business Rules](BUSINESS_RULES.txt)
-
-## 📄 License
-
-This project is part of FPTU's SEP490 Capstone Project.
-
----
-
-**Last Updated**: May 2026
-
-**Version**: 0.0.1-SNAPSHOT
-
-**Status**: In Development 🚀
